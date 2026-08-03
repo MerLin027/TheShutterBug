@@ -18,6 +18,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/health', (req, res) => res.status(200).send('ok'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/photos', photoRoutes);
