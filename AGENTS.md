@@ -72,6 +72,6 @@ here instead of re-deriving it from the whole codebase.
 - [x] Phase 1.5 — Verification/bug-fix pass on Phase 1 (Claude Opus)
 - [x] Phase 2 — Literal port: Work/gallery + lightbox, hardcoded data (Gemini 3.1 Pro)
 - [x] Phase 2.5 — Verification/bug-fix pass on Phase 2 (Claude Opus)
-- [x] Phase 3 — Backend API (Gemini 3.1 Pro)
+- [x] Phase 3 — Backend API (Gemini 3.1 Pro); post-audit fixes: added backend/scripts/seedAdmin.js, patched .env.example with ADMIN_EMAIL/ADMIN_PASSWORD
 - [ ] Phase 4 — Wire frontend to backend (Claude Opus)
 - [ ] Phase 5 — Admin CRUD + reorder (Claude Opus / Gemini 3.1 Pro)
