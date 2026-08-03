@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>The Shutter Bug</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error-container": "#93000a",
+                        "surface": "#141313",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#c8c6c2",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-variant": "#353434",
+                        "outline-variant": "#444748",
+                        "on-tertiary-container": "#727a80",
+                        "on-primary": "#313030",
+                        "tertiary-fixed-dim": "#c0c7ce",
+                        "on-tertiary": "#2a3137",
+                        "tertiary": "#c0c7ce",
+                        "secondary-fixed": "#e5e2dd",
+                        "on-secondary-fixed": "#1c1c19",
+                        "on-primary-fixed": "#1c1b1b",
+                        "on-tertiary-fixed": "#151d21",
+                        "inverse-primary": "#5f5e5e",
+                        "on-primary-fixed-variant": "#474646",
+                        "secondary-fixed-dim": "#c8c6c2",
+                        "on-surface": "#e5e2e1",
+                        "on-secondary-container": "#b7b5b0",
+                        "surface-dim": "#141313",
+                        "inverse-on-surface": "#313030",
+                        "on-secondary-fixed-variant": "#474743",
+                        "surface-tint": "#c9c6c5",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#3a3939",
+                        "surface-container-highest": "#353434",
+                        "on-background": "#e5e2e1",
+                        "primary-fixed-dim": "#c9c6c5",
+                        "outline": "#8e9192",
+                        "secondary-container": "#474743",
+                        "tertiary-container": "#040b0f",
+                        "on-primary-container": "#7b7979",
+                        "on-secondary": "#31302d",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary": "#c9c6c5",
+                        "on-surface-variant": "#c4c7c7",
+                        "on-tertiary-fixed-variant": "#40484d",
+                        "background": "#141313",
+                        "primary-container": "#0a0a0a",
+                        "primary-fixed": "#e5e2e1",
+                        "surface-container-high": "#2b2a2a",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#dce3ea",
+                        "surface-container": "#201f1f",
+                        "inverse-surface": "#e5e2e1"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "gutter": "24px",
+                        "margin-desktop": "64px",
+                        "section-gap": "120px",
+                        "margin-mobile": "20px",
+                        "element-gap": "16px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "headline-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display-lg": ["84px", { "lineHeight": "92px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0A0A0A;
+        }
+
+        .glass-edge {
+            box-shadow: inset 1px 1px 0px 0px rgba(255, 255, 255, 0.15), inset -1px -1px 0px 0px rgba(255, 255, 255, 0.05);
+        }
+
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 24px;
+        }
+
+        @media (min-width: 768px) {
+            .masonry-grid {
+                column-count: 2;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .masonry-grid {
+                column-count: 3;
+            }
+        }
+
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 24px;
+        }
+
+        .photo-card:hover img {
+            transform: scale(1.02);
+        }
+
+        .photo-card img {
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .photo-overlay {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .photo-card:hover .photo-overlay {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="text-on-surface antialiased bg-[#0A0A0A]">
+    <!-- TopNavBar -->
+    <nav
+        class="fixed top-0 left-0 right-0 z-50 flex justify-center items-center w-full px-margin-mobile md:px-margin-desktop pointer-events-none">
+        <div
+            class="pointer-events-auto bg-white/10 backdrop-blur-[20px] rounded-full mt-8 mx-auto w-fit px-8 py-3 border-t border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-between gap-8 md:gap-16">
+            <a class="font-headline-md text-headline-md tracking-tighter text-on-surface hover:text-primary transition-colors"
+                href="#">THE SHUTTER BUG</a>
+            <div class="hidden md:flex items-center gap-8">
+                <a class="font-label-sm text-label-sm tracking-widest text-primary font-bold" href="#">Work</a>
+                <a class="font-label-sm text-label-sm tracking-widest text-on-surface/70 hover:text-on-surface hover:bg-white/20 transition-all duration-300 rounded-full px-3 py-1"
+                    href="#">About</a>
+                <a class="font-label-sm text-label-sm tracking-widest text-on-surface/70 hover:text-on-surface hover:bg-white/20 transition-all duration-300 rounded-full px-3 py-1"
+                    href="#">Contact</a>
+            </div>
+            <button aria-label="grid_view"
+                class="text-on-surface hover:text-primary transition-colors flex items-center justify-center hover:bg-white/20 rounded-full p-2 scale-105 active:scale-95 transition-transform">
+                <span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+            </button>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <header class="relative h-screen w-full overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 z-0">
+            <img alt="Hero Background" class="w-full h-full object-cover opacity-80"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBN4WALWq_emxJIYSU6-Ph6fTn37OTV7OLsoCQ18yhMT1Ch35bNiLM4PlaQGpX7yMywVF0SKr_lWFJ0A6ljA2Yse8ng0wVoQcgD1VWlj6NH6Vg-IzAvUuJumBOqGqNybIThpITt94pICLEZ8H6K_d4Wb02uA12APN9PrHFTTgDRm8p5-amoOw1XUMQii1fxOS90Sa87ajqewjmm2EyiY2NfdJGKNZS3vFiAIkpfpm1A2Y83s1FHV9wH">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/30 to-[#0a0a0a]"></div>
+        </div>
+        <div class="relative z-10 text-center px-4 mix-blend-overlay">
+            <h1 class="font-display-lg text-display-lg text-white opacity-90 tracking-tighter mix-blend-plus-lighter">
+                THE SHUTTER BUG</h1>
+        </div>
+    </header>
+    <!-- Gallery Section -->
+    <main class="w-full px-margin-mobile md:px-margin-desktop py-section-gap">
+        <div class="masonry-grid">
+            <div class="masonry-item">
+                <div
+                    class="photo-card relative rounded-lg overflow-hidden glass-edge group cursor-pointer bg-surface/50">
+                    <img class="w-full h-auto object-cover aspect-[3/4]"
+                        data-alt="A striking digital installation art piece featuring glowing, generative geometric shapes suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHQgBGXgkuLgyan__B3YASlg4AUfvBUvn44xlFzz2cMfMX0GeqfDne9yrm5UGrMOqYQacVSjGFXVMODEOQ9YNhPVLHh020XjvdcXI-qg259jfrCCZhLymc268ZisIQ-Ol1vWR9jBCPMqvsvrKqn5dhAmNopUS5hs5ULd1eVF3nt8xxJcuvz8_oaX3D3Bg96iy8cVIYDlxpNvku685ldnnDntYNvq3igKA9rkHM3MySpT8sjGnLs3bS">
+                    <div
+                        class="photo-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
+                        <span
+                            class="font-label-sm text-label-sm text-primary tracking-widest mb-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit">2024</span>
+                        <h3 class="font-body-lg text-body-lg text-on-surface">Urban Silence</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="masonry-item">
+                <div
+                    class="photo-card relative rounded-lg overflow-hidden glass-edge group cursor-pointer bg-surface/50">
+                    <img class="w-full h-auto object-cover aspect-video"
+                        data-alt="A striking digital installation art piece featuring glowing, generative geometric shapes suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgAC60DKJ4tOZlRWj-vRon1I72QOjRFauxfxBIhdAlroi6WjjBWLcoOZXC-AlBKjCLAqLEapCaJCJLH68jJJnMVbXXuz_R-iO86qv_b5A-hcRI5Mloc--oYX4GXL5lVzMcwNkFUD5ayX_FFl41kOVTjPGTrcoMlepPKKLfuo9T1_nMJsGf3WvvcflOcN7loQYu-fqPiRPnf94QlHVtvKrJt-4Hmw9-RWXab6f86vlo-Lr3l2s33Xby">
+                    <div
+                        class="photo-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
+                        <span
+                            class="font-label-sm text-label-sm text-primary tracking-widest mb-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit">2023</span>
+                        <h3 class="font-body-lg text-body-lg text-on-surface">Nordic Coast</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="masonry-item">
+                <div
+                    class="photo-card relative rounded-lg overflow-hidden glass-edge group cursor-pointer bg-surface/50">
+                    <img class="w-full h-auto object-cover aspect-square"
+                        data-alt="A striking digital installation art piece featuring glowing, generative geometric shapes suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBT0_w77T7y30_fqNaiG4_izGva69EswbKYM65r9jE1XLcHekJv9It3bslzW6oEtyqTPRFkmZB16aZqTi1-RW4sEVSJnNhyqL7IBJ378_rWgaGMv8X_6IM1cy-mjWZjDOWjTRQBCNNyzayOCt_8eIh_TtpXcJyDkGu7IpIeyU-SYjCdImr-1uBhJJ9CJrPfYm7Cxcq2MCVeUMDjsnSBSHumRUV8IQSFGbcJEw8oCQknQW4noMtyBp3G">
+                    <div
+                        class="photo-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
+                        <span
+                            class="font-label-sm text-label-sm text-primary tracking-widest mb-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit">2024</span>
+                        <h3 class="font-body-lg text-body-lg text-on-surface">Texture Study I</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="masonry-item">
+                <div
+                    class="photo-card relative rounded-lg overflow-hidden glass-edge group cursor-pointer bg-surface/50">
+                    <img class="w-full h-auto object-cover aspect-[4/5]"
+                        data-alt="A striking digital installation art piece featuring glowing, generative geometric shapes suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_wY8CGmww7h8FZeri5LEfTsLniUP0QAiFdiUqF2qZjn1uAjrnfdv6VfBK9g4-Z3ndJmxyyfLLoClE2PVCN9PNitRCSl498hx6rDGLdQlofv7YAhBTGmsPfjX2KJ1c3xrW6a9lBbnZKvcjGYCPsPCW6DLmrCPBmngIl7W7Hr-kegBERzufZA0zL2il9J6uOugquScNwhFWu4idUTMyvBDoIdxcNnwLpNiAWoqDlpp8GLlb_uHodr_S">
+                    <div
+                        class="photo-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
+                        <span
+                            class="font-label-sm text-label-sm text-primary tracking-widest mb-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit">2022</span>
+                        <h3 class="font-body-lg text-body-lg text-on-surface">Midnight Chrome</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+    <footer
+        class="bg-transparent full-width py-section-gap no-border flex flex-col items-center justify-center gap-element-gap w-full px-margin-desktop pb-[120px]">
+        <div class="font-headline-md text-headline-md text-on-surface mb-4">THE SHUTTER BUG</div>
+        <div class="flex gap-8 mb-8">
+            <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">Instagram</a>
+            <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">Twitter</a>
+            <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">LinkedIn</a>
+        </div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant/50">© 2024 The Shutter Bug. All rights reserved.
+        </div>
+    </footer>
+
+
+
+
+</body>
+
+</html>

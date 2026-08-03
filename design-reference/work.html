@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>The Shutter Bug - Work</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Space+Grotesk:wght@100..900&amp;display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#b7b5b0",
+                        "surface-container-low": "#1c1b1b",
+                        "on-primary-fixed": "#1c1b1b",
+                        "on-tertiary-fixed-variant": "#40484d",
+                        "on-secondary-fixed": "#1c1c19",
+                        "error": "#ffb4ab",
+                        "secondary-container": "#474743",
+                        "on-surface-variant": "#c4c7c7",
+                        "surface": "#141313",
+                        "secondary": "#c8c6c2",
+                        "secondary-fixed": "#e5e2dd",
+                        "on-secondary": "#31302d",
+                        "background": "#141313",
+                        "inverse-primary": "#5f5e5e",
+                        "surface-dim": "#141313",
+                        "tertiary-fixed": "#dce3ea",
+                        "surface-container": "#201f1f",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-container-high": "#2b2a2a",
+                        "surface-variant": "#353434",
+                        "surface-bright": "#3a3939",
+                        "on-primary-container": "#7b7979",
+                        "primary-container": "#0a0a0a",
+                        "outline-variant": "#444748",
+                        "on-tertiary": "#2a3137",
+                        "surface-container-highest": "#353434",
+                        "primary": "#c9c6c5",
+                        "tertiary-fixed-dim": "#c0c7ce",
+                        "on-primary": "#313030",
+                        "error-container": "#93000a",
+                        "surface-tint": "#c9c6c5",
+                        "secondary-fixed-dim": "#c8c6c2",
+                        "primary-fixed": "#e5e2e1",
+                        "on-tertiary-fixed": "#151d21",
+                        "on-background": "#e5e2e1",
+                        "inverse-on-surface": "#313030",
+                        "tertiary": "#c0c7ce",
+                        "tertiary-container": "#040b0f",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-tertiary-container": "#727a80",
+                        "on-primary-fixed-variant": "#474646",
+                        "on-error-container": "#ffdad6",
+                        "outline": "#8e9192",
+                        "on-secondary-fixed-variant": "#474743",
+                        "primary-fixed-dim": "#c9c6c5",
+                        "on-surface": "#e5e2e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "element-gap": "16px",
+                        "margin-desktop": "64px",
+                        "section-gap": "120px",
+                        "margin-mobile": "20px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Space Grotesk"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["84px", { "lineHeight": "92px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "headline-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom subtle highlight for active pill */
+        .glass-pill-active {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+    <!-- TopNavBar (Floating Pill Variant as requested, adapting JSON content) -->
+    <header
+        class="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex justify-between items-center px-8 py-4 w-11/12 max-w-5xl rounded-full bg-white/10 backdrop-blur-[30px] border-[0.5px] border-white/15">
+        <div class="font-display-lg text-headline-md tracking-tighter text-on-surface uppercase">The Shutter Bug</div>
+        <nav class="hidden md:flex items-center gap-8">
+            <!-- Active Tab: Series -->
+            <a class="font-headline-md text-headline-md text-on-surface border-b border-on-surface pb-1 scale-95 active:scale-90 transition-transform"
+                href="#">Series</a>
+            <a class="font-headline-md text-headline-md text-outline hover:text-on-surface transition-colors hover:opacity-80 scale-95 active:scale-90 transition-transform"
+                href="#">Archives</a>
+            <a class="font-headline-md text-headline-md text-outline hover:text-on-surface transition-colors hover:opacity-80 scale-95 active:scale-90 transition-transform"
+                href="#">About</a>
+        </nav>
+        <a class="font-headline-md text-headline-md text-primary hover:opacity-80 transition-opacity" href="#">
+            Connect
+        </a>
+    </header>
+    <main class="flex-grow pt-40 px-margin-mobile md:px-margin-desktop">
+        <!-- Filters -->
+        <section class="mb-section-gap">
+            <div class="flex items-center justify-center gap-element-gap overflow-x-auto no-scrollbar py-4">
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 text-on-surface glass-pill-active transition-all uppercase tracking-[0.1em]">All</button>
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 bg-white/5 text-outline hover:text-on-surface hover:bg-white/10 transition-all uppercase tracking-[0.1em]">Nature</button>
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 bg-white/5 text-outline hover:text-on-surface hover:bg-white/10 transition-all uppercase tracking-[0.1em]">Objects</button>
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 bg-white/5 text-outline hover:text-on-surface hover:bg-white/10 transition-all uppercase tracking-[0.1em]">Monochrome</button>
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 bg-white/5 text-outline hover:text-on-surface hover:bg-white/10 transition-all uppercase tracking-[0.1em]">Urban</button>
+            </div>
+        </section>
+        <!-- Masonry Gallery -->
+        <section class="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-gutter pb-section-gap space-y-gutter">
+            <!-- Portrait 2:3 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[2/3] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A striking portrait-oriented architectural photograph capturing the austere geometry of a modern brutalist building. Shot in cinematic, moody lighting with deep shadows and high contrast, evoking a somber, silent atmosphere. The concrete textures are highly detailed, set against a dark, cloudy sky. The overall color palette leans heavily into monochromatic grays and charcoal blacks, aligning perfectly with a premium dark-mode aesthetic."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqs37aBkPsE8jd2T3JgJlZQoigK7KDI3k9f4eOntIfnXlRsU7SqDaA-8T_6iKcLVuTEYosLcikJ7tInMx4mg7NhQDl89iN5SheK86gts9eOuvDkKpBTAD8lC-x39iNyxadkoGjeBksJyp-N3CMjQml0GnlsabYssKca3kVj2DLl_D2bUnLTpH6IF_ScVD3-cwOu9pINS9T4jur6rYG2KT3CbBM4UVXVO3OFnkDVTqmWhlf7eGODdAx">
+                </div>
+            </div>
+            <!-- Landscape 16:9 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[16/9] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A cinematic, wide-angle landscape photograph of a dense, misty forest at twilight. The scene is shrouded in atmospheric fog, with silhouetted pine trees fading into the darkness. A single, subtle sliver of moonlight pierces the canopy. The color grade is cool and desaturated, utilizing deep navy blues, forest greens, and obsidian blacks to create a quiet, tactile, and immersive visual experience fitting for a high-end editorial portfolio."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo3u7bnMhaQZf4FArGoF6b1i7NfJx9PbO6cfcjBOrcOtXExevBY7_cgGKPVK6t-RRZ2_Ms5qTBlN3npSFdoGECSTLkUphITZRs8DWyd8kI3EFXPROLzStwunJutqqLY2NwsSdk-0uOnU0vS-vIDcJwqqinbgj7Dl1tiiiKUUiWUgwNvzAGJdK2QyH0pJeb7Ul7kCRx3tux0stJtQOayJ2Hb8729Ltv9pQvvsABeYRg2N9oxeMahHAR">
+                </div>
+            </div>
+            <!-- Square 1:1 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-square w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="An ultra-minimalist still life photograph of a single smooth, dark river stone resting on a piece of frosted glass. Shot from a top-down perspective with soft, diffused top-lighting that highlights the tactile texture of the stone and creates subtle, liquid-like reflections on the glass surface below. The background fades seamlessly into pure black (#0A0A0A), emphasizing the object's solitary elegance and refined, gallery-quality composition."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTeYDkyMeWJbn4TjVfRUmjSNwU_wasjo7Sg6YMObW45eKQo-nNjtDLYDoy9s4rva0vvw4DhSxo2OU7QF_7V-LZ0lkRsPhOytF1GRj0oZeLxoxI16Aj3jgQu9HtSviYp0eKyMYxWRRhg9wR-QT4Nj0Xyz-ZZMk8P8CywcWNmSF0IvkMAyvzGJArak3OIZSo5Dyh0I7V1Y1N-RbmVGFtIPKMng4ctyP-au6wnvibQ5N7svFY9CvaOy-I">
+                </div>
+            </div>
+            <!-- Portrait 3:4 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[3/4] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A dramatic black and white street photography portrait of a solitary figure walking through a narrow, rain-slicked alleyway at night. The lighting is harsh and directional, creating stark chiaroscuro effects and deep, impenetrable shadows. The reflections on the wet cobblestones add a cinematic depth. The high-contrast monochrome treatment aligns seamlessly with a dark, sophisticated, and observant visual narrative."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDajlfWjzJp-zHDNqsmDkoJCBm2sfIwTeFtSi1TcRGNHZT1i5H7AaftrWfUdL-rDVAB0FxldfVZOzb_MrYIL6lozB4yaSwRGvuIr7mYzMwiwqooQ6mkY_v539h60x71_KJkz34TcWy1vjE0f2ZDqiDV9N81vHq2Dbig2h5oL9sGxpkKED37R2bHD40Tw_eo-DxJlkA3JOLItQugvIt41poh4tupsl_EMfafNBjcmkuHsP2ELXNWZcEr">
+                </div>
+            </div>
+            <!-- Landscape 3:2 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[3/2] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A refined, atmospheric capture of a coastal cliff edge plunging into a dark, churning ocean under an overcast sky. The image uses a slow shutter speed to render the water as a smooth, ghostly mist, contrasting with the sharp, jagged textures of the black volcanic rock. The mood is powerful yet deeply calm, utilizing a muted palette of dark grays, slate blues, and deep blacks to enhance the premium, immersive feel."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfrOooshWG2bGhjZmRe1h-0PLSzE4C3PFww7GkFhorkelSZRRpoc1PRLwC4dB8kmE4Yn-OpnyKxTIHKHf7g0mGzfXUQ0fPKbo_vJ7jdcKO3NDgDmyQoO5WaZVBspNLw369k9Bnl7nSodRwVW2gvoMB4pkQIltxFhDFmQwnt48JEUVI9QACwyasj-X_sXKY9rJZYVt7LZHlaoYBMkaBYtdBegkDE37o2GKhwYUVvFvrgKWa3WH6s31V">
+                </div>
+            </div>
+            <!-- Portrait 4:5 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[4/5] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A close-up, highly detailed photograph of abstract, layered glass planes illuminated by a thin strip of cool white LED light in an otherwise pitch-black room. The light catches the frosted edges of the glass, creating a physical manifestation of glassmorphism. The aesthetic is incredibly modern, sterile, and quiet, relying entirely on the interplay between pure light and total darkness to define the composition."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsOrIK_oa02smXw-NcWJjojoum-fEnhhxzPY7z1l183WtliInMFrOm_REYFYWMO4EpGE9UrV2cHQ2MvHCIKgnzJYlVLQQrNXU3qoIzYKqzq7V7TaIa2mXix_HaY5bUQrjDHxtFlo5cogZpSdVXzuvRBqIGc64RLf3wpDl17ET5bNkdbuy_oXBRvxDKRDW4Aejm7X8a2DldDzfJUhPBGqvS-tqx4bOsBLxUE3IP_b5iYkMrgJOpGE5r">
+                </div>
+            </div>
+            <!-- Square 1:1 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-square w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A minimalist macro shot of a solitary dried thistle plant against an absolute black background. The delicate, spiky textures of the plant are side-lit to create sharp, sculptural definition without revealing the light source. The extreme negative space (blackspace) around the subject gives it a profound sense of isolation and focus, fitting for a highly curated, quiet art gallery exhibition."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjUrHBnGpvIQb4uOg9_XqQ0CppJLXkuP0ccnwWYB99PRpHOw4ks2m79sCkOP3apQFGzfQabsnkgtflMm5EGTGq8NaQPeqcKjnkpokregjwjg3SX_RxUSwsMvQ9b-X__GByo9nzDXWRo2Y_6dyBXXlv1Jxac5KKRWBqAPSYjiFqLkw5KUBQQDLwMwJ03Wrgk_1Zf2z1zWVDCdsQ6ZPgr3Ot7k0KIRzfnwwSqVydK8wzx5DiOX-hqr54">
+                </div>
+            </div>
+            <!-- Landscape 21:9 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[21/9] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="An expansive, ultra-wide panoramic photograph of an empty, brutalist concrete plaza at dusk. The horizon line is perfectly centered. A single, small puddle reflects the fading ambient light, breaking the stark geometry. The color grade is deeply desaturated, focusing on the heavy, tactile presence of the concrete and the vast, oppressive emptiness of the space, invoking a cinematic and solitary emotion."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBt5KOpTkbMgU2KdAcY3AmyXs3v9yjne4tzdFrLg8RfTMdS3ljLHiyCtgsQHsd-YvHUfucJt69A13bUkFssjYxDI5xxSxZuEs32syuhs4z5FcQ0ATku1BEbLX9og9gNbODBjP-W0fJjfajh82yopWURQxqHRoKf-J42ia7CTUYxgMFw6uYSUp9LxPFfixtE822QI-3knVROdya79teUNpLjkqSBNJTMSH1nVzAzEWfiU8SRTvGB0RD9">
+                </div>
+            </div>
+            <!-- Portrait 2:3 -->
+            <div class="break-inside-avoid relative overflow-hidden group">
+                <div class="aspect-[2/3] w-full bg-surface-container-low">
+                    <img class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        data-alt="A moody, low-key portrait of a vintage mechanical watch face resting in absolute shadow, with only the slimmest crescent of light revealing the metallic edge and a portion of the dial. The macro detail highlights the brushed steel texture. The overwhelming dominance of deep shadows and black tones creates a feeling of timelessness and extreme luxury, matching a dark-mode editorial style."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5HqfTEKuZaru9M9CO3D0dey_uKwVGqlWy2OyB8im1X7TrCWqRJNe1qaR5qm3CHQibfwxi1rqpXAaty2iB3EMYug-Yr8iCmriyq3HNos2xrBsOE0xR3af60SwAG1Oi4Fsm7LxMzbNt62g_g38niy8NYEAQ4TSP6n--OhXp2H8IUS-I6X1CryGn_zbMdsOMY3c75KT-Zwp-OBgHtWVNweMVKHO_U5yNwyeAMiJkpZhMQqF5GawBEIWo">
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- Footer -->
+    <footer
+        class="bg-background text-on-surface font-label-sm text-label-sm py-section-gap flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop w-full border-t border-white/5 pt-12">
+        <div class="font-display-lg text-headline-md text-on-surface mb-8 md:mb-0">© 2024 The Shutter Bug</div>
+        <div class="flex gap-8">
+            <a class="text-outline hover:text-primary transition-colors opacity-70 hover:opacity-100 uppercase tracking-[0.1em]"
+                href="#">Instagram</a>
+            <a class="text-outline hover:text-primary transition-colors opacity-70 hover:opacity-100 uppercase tracking-[0.1em]"
+                href="#">Vimeo</a>
+            <a class="text-outline hover:text-primary transition-colors opacity-70 hover:opacity-100 uppercase tracking-[0.1em]"
+                href="#">Journal</a>
+            <a class="text-outline hover:text-primary transition-colors opacity-70 hover:opacity-100 uppercase tracking-[0.1em]"
+                href="#">License</a>
+        </div>
+    </footer>
+
+
+</body>
+
+</html>
