@@ -1,25 +1,22 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
-import { photos } from "@/lib/data";
+import { fetchPhotos } from "@/lib/data";
+import GalleryClient from "./GalleryClient";
 
-export default function Work() {
-  const [activeFilter, setActiveFilter] = useState("All");
+// Revalidate the page every 60 s (matches the fetch revalidation in data.ts).
+export const revalidate = 60;
 
-  const filteredPhotos = activeFilter === "All" 
-    ? photos 
-    : photos.filter(photo => photo.category === activeFilter);
+export default async function Work() {
+  // Fetches from the live Render API. Returns [] when DB is empty.
+  const photos = await fetchPhotos();
 
   return (
     <div className="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col">
-      {/* TopNavBar (Floating Pill Variant as requested, adapting JSON content) */}
+      {/* TopNavBar (Floating Pill Variant) */}
       <header className="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex justify-between items-center px-8 py-4 w-11/12 max-w-5xl rounded-full bg-white/10 backdrop-blur-[30px] border-[0.5px] border-white/15">
         <Link href="/" className="font-display-lg text-headline-md tracking-tighter text-on-surface uppercase hover:text-primary transition-colors">
           The Shutter Bug
         </Link>
         <nav className="hidden md:flex items-center gap-8">
-          {/* Active Tab: Series */}
           <Link
             className="font-headline-md text-headline-md text-on-surface border-b border-on-surface pb-1 scale-95 active:scale-90 transition-transform"
             href="/work"
@@ -28,7 +25,7 @@ export default function Work() {
           </Link>
           <Link
             className="font-headline-md text-headline-md text-outline hover:text-on-surface transition-colors hover:opacity-80 scale-95 active:scale-90 transition-transform"
-            href="/work" // Placeholder for Archives
+            href="/work"
           >
             Archives
           </Link>
@@ -48,42 +45,8 @@ export default function Work() {
       </header>
 
       <main className="flex-grow pt-40 px-margin-mobile md:px-margin-desktop">
-        {/* Filters */}
-        <section className="mb-section-gap">
-          <div className="flex items-center justify-center gap-element-gap overflow-x-auto no-scrollbar py-4">
-            {["All", "Nature", "Objects", "Monochrome", "Urban"].map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 transition-all uppercase tracking-[0.1em] ${
-                  activeFilter === filter
-                    ? "text-on-surface glass-pill-active"
-                    : "bg-white/5 text-outline hover:text-on-surface hover:bg-white/10"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Masonry Gallery */}
-        <section className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-gutter pb-section-gap space-y-gutter">
-          {filteredPhotos.map((photo) => (
-            <div key={photo.id} className="break-inside-avoid relative overflow-hidden group cursor-pointer">
-              <Link href={`/lightbox/${photo.id}`}>
-                <div className={`${photo.aspect} w-full bg-surface-container-low`}>
-                  <img
-                    className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
-                    data-alt={photo.alt}
-                    alt={photo.alt}
-                    src={photo.src}
-                  />
-                </div>
-              </Link>
-            </div>
-          ))}
-        </section>
+        {/* GalleryClient owns filter state; receives all photos from the server. */}
+        <GalleryClient photos={photos} />
       </main>
 
       {/* Footer */}

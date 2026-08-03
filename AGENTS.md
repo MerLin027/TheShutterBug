@@ -78,11 +78,26 @@ here instead of re-deriving it from the whole codebase.
   - Added `GET /api/health` — lightweight, no-DB-call endpoint, used by an
     external cron-job.org ping every 10 min to prevent Render free-tier
     idle spin-down. Not a substitute for real uptime monitoring.
-- [ ] Phase 4 — Wire frontend to backend (Claude Opus) — IN PROGRESS
-  - Decision: DB is intentionally left empty for this phase. Do not
-    pre-seed via curl. Build a proper empty-state UI ("No photos yet")
-    for the gallery, since real photos will only be added later via the
-    Phase 5 admin panel.
+- [x] Phase 4 — Wire frontend to backend (Claude Sonnet 4.6 Thinking)
+  - `src/lib/data.ts` — hardcoded array replaced with `fetchPhotos()` /
+    `fetchPhoto()` / `fetchPhotoNeighbours()`. Adapter maps DB shape
+    (lowercase category, `aspectRatio` number, `imageUrl`) → frontend
+    `Photo` type. `next: { revalidate: 60 }` on all fetches.
+  - `src/app/work/page.tsx` — converted to async Server Component; data
+    fetched server-side and passed to new `GalleryClient.tsx` (client
+    component that owns filter state).
+  - `src/app/work/GalleryClient.tsx` — [NEW] empty-state UI ("No photos
+    yet" with camera icon) when DB is empty; category-filter empty state
+    ("No photos in this category yet") when filter matches nothing.
+  - `src/app/lightbox/[id]/page.tsx` — converted to async Server
+    Component; fetches photo + neighbours in parallel; uses `notFound()`
+    for missing IDs; prev/next arrows gracefully disabled when only one
+    photo exists.
+  - `next.config.ts` — added `remotePatterns` for `res.cloudinary.com`
+    and `lh3.googleusercontent.com` (home hero).
+  - `.env.local` — `NEXT_PUBLIC_API_URL=https://theshutterbug.onrender.com`
+  - Home page (`/`) left untouched — uses inline hardcoded images, not
+    data.ts, and is outside Phase 4 scope.
 - [ ] Phase 5 — Admin CRUD + reorder (Claude Opus / Gemini 3.1 Pro)
 
 ## Operational Notes

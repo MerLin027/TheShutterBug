@@ -1,25 +1,26 @@
-"use client";
-
 import Link from "next/link";
-import { use } from "react";
-import { photos } from "@/lib/data";
+import { notFound } from "next/navigation";
+import { fetchPhoto, fetchPhotoNeighbours } from "@/lib/data";
 
-export default function Lightbox({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export const revalidate = 60;
 
-  const currentIndex = photos.findIndex((p) => p.id === id);
-  const photo = currentIndex !== -1 ? photos[currentIndex] : null;
+export default async function Lightbox({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
+  // Fetch the target photo and its neighbours in parallel.
+  const [photo, { prev, next }] = await Promise.all([
+    fetchPhoto(id),
+    fetchPhotoNeighbours(id),
+  ]);
+
+  // If the photo genuinely doesn't exist, use Next.js notFound().
   if (!photo) {
-    return (
-      <div className="bg-primary-container min-h-screen w-full flex items-center justify-center text-on-surface">
-        Photo not found.
-      </div>
-    );
+    notFound();
   }
-
-  const prevPhoto = currentIndex > 0 ? photos[currentIndex - 1] : photos[photos.length - 1];
-  const nextPhoto = currentIndex < photos.length - 1 ? photos[currentIndex + 1] : photos[0];
 
   return (
     <div className="bg-primary-container min-h-screen w-full flex items-center justify-center overflow-hidden font-body-md text-on-surface">
@@ -37,38 +38,55 @@ export default function Lightbox({ params }: { params: Promise<{ id: string }> }
             <h2 className="font-headline-md text-headline-md text-on-surface mb-1">
               {photo.title}
             </h2>
-            <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
-              <span
-                className="material-symbols-outlined text-[16px]"
-                data-icon="location_on"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                location_on
-              </span>
-              <span>{photo.location}</span>
-            </div>
+            {photo.location && (
+              <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+                <span
+                  className="material-symbols-outlined text-[16px]"
+                  data-icon="location_on"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  location_on
+                </span>
+                <span>{photo.location}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* BottomNavBar (Lightbox Controls) */}
       <nav className="fixed bottom-10 left-1/2 -translate-x-1/2 w-fit rounded-full backdrop-blur-[20px] border-[0.5px] border-white/10 bg-white/5 dark:bg-white/5 flex gap-4 p-2 z-50">
-        {/* Previous */}
-        <Link
-          href={`/lightbox/${prevPhoto.id}`}
-          aria-label="Previous"
-          className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
-        >
-          <span
-            className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-            data-icon="arrow_back_ios"
+        {/* Previous — disabled/hidden when only one photo */}
+        {prev ? (
+          <Link
+            href={`/lightbox/${prev.id}`}
+            aria-label="Previous"
+            className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
           >
-            arrow_back_ios
+            <span
+              className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
+              data-icon="arrow_back_ios"
+            >
+              arrow_back_ios
+            </span>
+            <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
+              Previous
+            </span>
+          </Link>
+        ) : (
+          <span
+            aria-hidden
+            className="flex flex-col items-center justify-center text-on-surface-variant/20 px-6 py-2 cursor-not-allowed"
+          >
+            <span
+              className="material-symbols-outlined"
+              data-icon="arrow_back_ios"
+            >
+              arrow_back_ios
+            </span>
           </span>
-          <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-            Previous
-          </span>
-        </Link>
+        )}
+
         {/* Info */}
         <button
           aria-label="Info"
@@ -84,6 +102,7 @@ export default function Lightbox({ params }: { params: Promise<{ id: string }> }
             Info
           </span>
         </button>
+
         {/* Close (X) */}
         <Link
           href="/work"
@@ -100,22 +119,37 @@ export default function Lightbox({ params }: { params: Promise<{ id: string }> }
             Close
           </span>
         </Link>
+
         {/* Next */}
-        <Link
-          href={`/lightbox/${nextPhoto.id}`}
-          aria-label="Next"
-          className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
-        >
-          <span
-            className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-            data-icon="arrow_forward_ios"
+        {next ? (
+          <Link
+            href={`/lightbox/${next.id}`}
+            aria-label="Next"
+            className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
           >
-            arrow_forward_ios
+            <span
+              className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
+              data-icon="arrow_forward_ios"
+            >
+              arrow_forward_ios
+            </span>
+            <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
+              Next
+            </span>
+          </Link>
+        ) : (
+          <span
+            aria-hidden
+            className="flex flex-col items-center justify-center text-on-surface-variant/20 px-6 py-2 cursor-not-allowed"
+          >
+            <span
+              className="material-symbols-outlined"
+              data-icon="arrow_forward_ios"
+            >
+              arrow_forward_ios
+            </span>
           </span>
-          <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-            Next
-          </span>
-        </Link>
+        )}
       </nav>
     </div>
   );
