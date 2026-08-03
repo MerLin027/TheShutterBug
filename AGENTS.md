@@ -98,7 +98,45 @@ here instead of re-deriving it from the whole codebase.
   - `.env.local` — `NEXT_PUBLIC_API_URL=https://theshutterbug.onrender.com`
   - Home page (`/`) left untouched — uses inline hardcoded images, not
     data.ts, and is outside Phase 4 scope.
-- [ ] Phase 5 — Admin CRUD + reorder (Claude Opus / Gemini 3.1 Pro)
+- [x] Phase 5 — Admin CRUD + reorder (Claude Opus 4.6 Thinking)
+  - `src/app/admin/page.tsx` — [NEW] JWT login screen, literal port of
+    `design-reference/admin-login.html`. Blurred background, liquid-glass
+    card, email/password form → `POST /api/auth/login`. Stores token in
+    `localStorage`, redirects to `/admin/dashboard`. Loading spinner while
+    checking existing token (no content flash).
+  - `src/app/admin/layout.tsx` — [NEW] Minimal layout, sets metadata title.
+  - `src/app/admin/actions.ts` — [NEW] Server Action calling
+    `revalidatePath('/work')` and `revalidatePath('/')` so the public
+    gallery reflects admin changes without waiting for the 60s ISR TTL.
+  - `src/app/admin/dashboard/page.tsx` — [NEW] Thin server component
+    wrapper.
+  - `src/app/admin/dashboard/DashboardClient.tsx` — [NEW] Main client
+    component, literal port of `design-reference/admin-dashboard.html`.
+    Sidebar nav + top app bar + masonry grid. Auth guard with loading state
+    before rendering any dashboard content. Features: category filter,
+    upload/edit/delete modals, dnd-kit drag-to-reorder → `PUT
+    /api/photos/reorder`. Sign Out clears `localStorage` token and
+    redirects to `/admin`. All mutations call `revalidatePublicPages()`.
+  - `src/app/admin/dashboard/PhotoCard.tsx` — [NEW] dnd-kit `useSortable`
+    wrapper. Drag handles (top-left `drag_indicator` + bottom-right
+    `drag_pan`), glass overlay on hover with edit/delete buttons.
+  - `src/app/admin/dashboard/UploadModal.tsx` — [NEW] File upload via
+    FormData → `POST /api/photos`. Client-side validation: max 10 MB,
+    `image/*` type only. Computes `aspectRatio` from image dimensions.
+    Category select values `['nature','objects','monochrome','urban']`
+    match DB enum exactly.
+  - `src/app/admin/dashboard/EditModal.tsx` — [NEW] Edit metadata modal
+    (category, caption, location, tags, isFeatured) → `PUT /api/photos/:id`.
+    Same category enum as upload.
+  - `src/app/globals.css` — Added admin styles: `.glass-overlay`,
+    `.liquid-hover`, `.image-scale-hover`, `.bg-moody-overlay`, modal
+    backdrop/animation, loading spinner, drag overlay.
+  - Dependencies added: `@dnd-kit/core`, `@dnd-kit/sortable`,
+    `@dnd-kit/utilities`.
+  - Backend `DELETE /api/photos/:id` already calls
+    `cloudinary.uploader.destroy(photo.cloudinaryId)` before
+    `photo.deleteOne()` — no orphaned Cloudinary images. No backend
+    changes needed.
 
 ## Operational Notes
 - **Git history was squashed once** (repo previously had `node_modules`
@@ -112,7 +150,6 @@ here instead of re-deriving it from the whole codebase.
   it's caught at any depth, in any subfolder, going forward.
 - Backend health/keep-alive: `GET /api/health` → cron-job.org pings every
   10 minutes.
-- Real photo uploads are not possible yet — there is no admin UI until
-  Phase 5. Until then, the only way to add photos to MongoDB is directly
-  via the API (curl or similar), which is intentionally being deferred
-  rather than done manually right now.
+- Admin UI is now live at `/admin` — photo uploads are possible through
+  the dashboard. The admin route is client-rendered (no SSR for auth
+  state); JWT token is stored in `localStorage`.

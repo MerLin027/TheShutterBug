@@ -228,3 +228,81 @@ body {
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
     background-color: rgba(255, 255, 255, 0.1);
 }
+
+/* ─── Admin page styles (from design-reference/admin-*.html) ────────────── */
+
+/* Admin login — moody background gradient */
+.bg-moody-overlay {
+    background: linear-gradient(to bottom, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0.95) 100%);
+}
+
+/* Admin dashboard — glass overlay on photo cards (hover reveal) */
+.glass-overlay {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid transparent;
+    border-top-color: rgba(255, 255, 255, 0.15);
+    border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+.liquid-hover .glass-overlay {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.liquid-hover:hover .glass-overlay {
+    opacity: 1;
+}
+
+/* Admin dashboard — image scale on card hover */
+.image-scale-hover img {
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.image-scale-hover:hover img {
+    transform: scale(1.02);
+}
+
+/* Admin — modal backdrop */
+.admin-modal-backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Admin — modal enter animation */
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.admin-modal-enter {
+    animation: modalIn 0.25s ease-out;
+}
+
+/* Admin — loading spinner */
+@keyframes adminSpin {
+    to { transform: rotate(360deg); }
+}
+
+.admin-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #c9c6c5;
+    border-radius: 50%;
+    animation: adminSpin 0.7s linear infinite;
+}
+
+/* Admin — drag overlay styles */
+.admin-drag-overlay {
+    opacity: 0.85;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    transform: scale(1.03);
+}
