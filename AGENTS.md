@@ -72,6 +72,32 @@ here instead of re-deriving it from the whole codebase.
 - [x] Phase 1.5 — Verification/bug-fix pass on Phase 1 (Claude Opus)
 - [x] Phase 2 — Literal port: Work/gallery + lightbox, hardcoded data (Gemini 3.1 Pro)
 - [x] Phase 2.5 — Verification/bug-fix pass on Phase 2 (Claude Opus)
-- [x] Phase 3 — Backend API (Gemini 3.1 Pro); post-audit fixes: added backend/scripts/seedAdmin.js, patched .env.example with ADMIN_EMAIL/ADMIN_PASSWORD
-- [ ] Phase 4 — Wire frontend to backend (Claude Opus)
+- [x] Phase 3 — Backend API deployed to Render (Gemini 3.1 Pro)
+  - Post-audit fixes applied: created missing `backend/scripts/seedAdmin.js`,
+    completed `backend/.env.example` with admin credential keys
+  - Added `GET /api/health` — lightweight, no-DB-call endpoint, used by an
+    external cron-job.org ping every 10 min to prevent Render free-tier
+    idle spin-down. Not a substitute for real uptime monitoring.
+- [ ] Phase 4 — Wire frontend to backend (Claude Opus) — IN PROGRESS
+  - Decision: DB is intentionally left empty for this phase. Do not
+    pre-seed via curl. Build a proper empty-state UI ("No photos yet")
+    for the gallery, since real photos will only be added later via the
+    Phase 5 admin panel.
 - [ ] Phase 5 — Admin CRUD + reorder (Claude Opus / Gemini 3.1 Pro)
+
+## Operational Notes
+- **Git history was squashed once** (repo previously had `node_modules`
+  committed inside a stray `temp-app/` scratch folder, which exceeded
+  GitHub's 100MB file limit and blocked all pushes). Repo was reset to a
+  single clean commit via `git checkout --orphan` + force-push. Full
+  phase-by-phase commit history prior to that point no longer exists.
+  Going forward: **commit and push after every phase, before starting the
+  next agent session** — this is the actual fix, not just the cleanup.
+- `.gitignore` uses an unanchored `node_modules` (not `/node_modules`) so
+  it's caught at any depth, in any subfolder, going forward.
+- Backend health/keep-alive: `GET /api/health` → cron-job.org pings every
+  10 minutes.
+- Real photo uploads are not possible yet — there is no admin UI until
+  Phase 5. Until then, the only way to add photos to MongoDB is directly
+  via the API (curl or similar), which is intentionally being deferred
+  rather than done manually right now.
