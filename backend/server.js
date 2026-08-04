@@ -15,7 +15,7 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: 'https://the-shutter-bug.vercel.app' }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.status(200).send('ok'));
