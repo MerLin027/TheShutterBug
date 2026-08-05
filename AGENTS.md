@@ -128,7 +128,7 @@ here instead of re-deriving it from the whole codebase.
   - `src/app/admin/dashboard/EditModal.tsx` — [NEW] Edit metadata modal
     (category, caption, location, tags, isFeatured) → `PUT /api/photos/:id`.
     Same category enum as upload.
-  - `src/app/globals.css` — Added admin styles: `.glass-overlay`,
+  - `src/globals.css` — Added admin styles: `.glass-overlay`,
     `.liquid-hover`, `.image-scale-hover`, `.bg-moody-overlay`, modal
     backdrop/animation, loading spinner, drag overlay.
   - Dependencies added: `@dnd-kit/core`, `@dnd-kit/sortable`,
@@ -137,6 +137,33 @@ here instead of re-deriving it from the whole codebase.
     `cloudinary.uploader.destroy(photo.cloudinaryId)` before
     `photo.deleteOne()` — no orphaned Cloudinary images. No backend
     changes needed.
+- [x] Phase 5.1 — Admin Navigation Link
+  - `src/components/AdminNavLink.tsx` — [NEW] Client component that reads `localStorage` to route to `/admin/dashboard` if authenticated, or `/admin` if not.
+  - Integrated into all public pages (`/`, `/work`, `/about`, `/contact`, `/lightbox/[id]`).
+- [x] Phase 5.5 — Bug-fix pass: nav + lightbox (Claude Sonnet 4.6 Thinking)
+  - **Gallery nav link** — Removed stray "Series" + "Archives" links from
+    `/work` navbar. All pages (home, contact, about, work) now have exactly
+    one "Gallery" link pointing to `/work`. Previous bad states:
+    home/contact had "Work" → `/` (home); about had "Portfolio" → `/`;
+    work had two dead links "Series"/"Archives" both pointing to `/work`.
+  - **Lightbox filter-aware navigation** — Gallery photo links now encode
+    the active filter as `?filter=Category` (omitted when "All").
+    `fetchPhotoNeighbours` accepts an optional `filter` param and narrows
+    the neighbour pool to photos in that category. Prev/next in the
+    lightbox now navigate within the filtered set, not the full list.
+  - **Filter state restore on close** — Lightbox close button now returns
+    to `/work?filter=Category` (preserves filter). `work/page.tsx` reads
+    that param and passes `initialFilter` to `GalleryClient`, which uses
+    it as the `useState` seed so the gallery re-opens on the same filter.
+  - **Lightbox controls** — close/prev/next all use helper functions
+    (`lightboxHref`, `closeHref`) that carry the filter param through every
+    navigation step.
+  - TypeScript: `tsc --noEmit` passes clean.
+- [x] Phase 6 — Contact backend
+  - `backend/models/Contact.js` — [NEW] Contact model.
+  - `backend/routes/contact.js` — [NEW] POST /api/contact (public) and GET /api/contact (admin).
+  - `backend/server.js` — Registered `/api/contact`.
+
 
 ## Operational Notes
 - **Git history was squashed once** (repo previously had `node_modules`

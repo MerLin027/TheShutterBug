@@ -8,6 +8,7 @@ import { connectDB } from './config/db.js';
 
 import authRoutes from './routes/auth.js';
 import photoRoutes from './routes/photos.js';
+import contactRoutes from './routes/contact.js';
 
 // Connect to database
 connectDB();
@@ -23,6 +24,7 @@ app.get('/api/health', (req, res) => res.status(200).send('ok'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/photos', photoRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
