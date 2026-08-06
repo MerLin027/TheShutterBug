@@ -108,7 +108,7 @@ export default function AdminLoginPage() {
                 Email
               </label>
               <input
-                className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+                className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
                 placeholder="admin@obsidian.com"
                 type="email"
                 value={email}
@@ -121,7 +121,7 @@ export default function AdminLoginPage() {
                 Password
               </label>
               <input
-                className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+                className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
                 placeholder="••••••••"
                 type="password"
                 value={password}

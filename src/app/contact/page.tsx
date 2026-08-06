@@ -57,7 +57,7 @@ export default function Contact() {
       {/* Main Content */}
       <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop pt-40 pb-section-gap relative z-10 w-full max-w-2xl mx-auto">
         <Reveal className="text-center mb-14 space-y-4">
-          <span className="font-label-sm text-label-sm uppercase tracking-widest text-[#D4AF37]">
+          <span className="font-label-sm text-label-sm uppercase tracking-widest text-accent">
             Contact
           </span>
           <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
@@ -73,7 +73,7 @@ export default function Contact() {
         {status === "success" && (
           <div className="w-full mb-8 flex items-center gap-3 px-5 py-4 rounded-xl bg-white/5 border border-white/15 text-on-surface animate-[fadeInUp_0.4s_ease-out]">
             <span
-              className="material-symbols-outlined text-[20px] text-primary shrink-0"
+              className="material-symbols-outlined text-[20px] text-accent shrink-0"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               check_circle

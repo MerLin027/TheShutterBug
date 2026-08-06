@@ -40,7 +40,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
         <nav className="studio-sidebar hidden md:flex flex-col h-full p-4 gap-element-gap fixed left-0 top-0 w-64 z-40">
           <Link
             href="/"
-            className="font-title text-headline-md text-on-surface hover:text-primary transition-colors px-2 mb-1"
+            className="font-title text-[26px] leading-none tracking-[0.012em] text-on-surface hover:text-accent transition-colors px-2 mb-2"
           >
             The Shutter Bug
           </Link>
@@ -57,7 +57,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all group ${
                     active
-                      ? "bg-secondary-container text-on-secondary-container font-bold"
+                      ? "bg-accent/10 text-accent font-bold"
                       : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
                   }`}
                 >

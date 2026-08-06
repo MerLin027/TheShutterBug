@@ -189,7 +189,7 @@ export default function MessagesClient() {
                         <span className="font-body-md text-body-md text-on-surface font-bold truncate">
                           {msg.name}
                         </span>
-                        <span className="font-label-sm text-label-sm text-[#D4AF37] truncate">
+                        <span className="font-label-sm text-label-sm text-accent truncate">
                           {msg.email}
                         </span>
                       </div>
@@ -232,7 +232,7 @@ export default function MessagesClient() {
                             </span>
                             <a
                               href={`mailto:${msg.email}`}
-                              className="font-label-sm text-label-sm uppercase text-primary hover:underline"
+                              className="font-label-sm text-label-sm uppercase text-accent hover:underline"
                             >
                               {msg.email}
                             </a>

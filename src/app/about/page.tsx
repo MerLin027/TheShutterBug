@@ -24,7 +24,7 @@ export default function About() {
         {/* Right: Bio Text */}
         <Reveal className="w-full md:w-1/2 flex items-center" delay={0.1}>
           <div className="max-w-xl space-y-6">
-            <span className="font-label-sm text-label-sm uppercase tracking-widest text-[#D4AF37]">
+            <span className="font-label-sm text-label-sm uppercase tracking-widest text-accent">
               About
             </span>
             <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface leading-tight">

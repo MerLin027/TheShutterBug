@@ -103,7 +103,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-surface-container-high border border-white/10 rounded-lg px-3 py-2 text-on-surface font-body-md focus:border-tertiary focus:ring-0 transition-colors"
+              className="w-full bg-surface-container-high border border-white/10 rounded-lg px-3 py-2 text-on-surface font-body-md focus:border-accent focus:ring-0 transition-colors"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -123,7 +123,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               placeholder="A brief description…"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
             />
           </div>
 
@@ -137,7 +137,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Mumbai, India"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="landscape, golden hour, coast"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
             />
           </div>
 

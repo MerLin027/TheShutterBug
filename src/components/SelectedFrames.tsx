@@ -18,7 +18,7 @@ export default function SelectedFrames({ photos }: { photos: Photo[] }) {
         </h2>
         <Link
           href="/work"
-          className="font-label-sm text-label-sm tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors"
+          className="font-label-sm text-label-sm tracking-widest uppercase text-on-surface-variant hover:text-accent transition-colors"
         >
           View All
         </Link>

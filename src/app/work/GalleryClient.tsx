@@ -65,8 +65,8 @@ export default function GalleryClient({
               onClick={() => setActiveFilter(filter)}
               className={`px-6 py-2 rounded-full font-label-sm text-label-sm transition-all uppercase tracking-[0.1em] whitespace-nowrap ${
                 activeFilter === filter
-                  ? "text-on-surface glass-pill-active"
-                  : "text-outline hover:text-on-surface hover:bg-white/10"
+                  ? "text-accent glass-pill-active"
+                  : "text-outline hover:text-accent hover:bg-white/10"
               }`}
             >
               {filter}

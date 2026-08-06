@@ -53,6 +53,11 @@
   --color-surface-container: #201f1f;
   --color-inverse-surface: #e5e2e1;
 
+  /* Single site-wide accent — every interactive/active state uses this.
+     Registered as a theme token so `text-accent`, `border-accent/40`,
+     `hover:text-accent` etc. all generate with full variant support. */
+  --color-accent: #d4af37;
+
   /* Border radius */
   --radius-DEFAULT: 1rem;
   --radius-lg: 2rem;
@@ -184,7 +189,7 @@ body {
 
 .liquid-glass-input:focus {
     background: rgba(255, 255, 255, 0.08);
-    border-bottom-color: #D4AF37;
+    border-bottom-color: var(--color-accent);
     box-shadow: 0 4px 20px -5px rgba(212, 175, 55, 0.15);
     outline: none;
 }
@@ -223,10 +228,11 @@ body {
     scrollbar-width: none;
 }
 
-/* Work page — active pill */
+/* Work page — active filter pill. Uses the site accent so the active
+   state reads the same as every other active state on the site. */
 .glass-pill-active {
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
-    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 0 rgba(212, 175, 55, 0.35);
+    background-color: rgba(212, 175, 55, 0.14);
 }
 
 /* ─── Admin page styles (from design-reference/admin-*.html) ────────────── */
@@ -309,9 +315,12 @@ body {
 
 /* ─── Stage 1 — Shared restructure additions ────────────────────────────── */
 
-/* Site title / display headings — "curved/flowing" per plan.md §1.1 */
+/* Site title / display headings — curved/flowing display face. Used at both
+   large (hero) and small (navbar/studio) sizes; see .hero-title-base and
+   SiteNav for the per-size legibility tuning this font needs. */
 .font-title {
-    font-family: "Outfit", sans-serif;
+    font-family: "Berkshire Swash", serif;
+    font-weight: 400;
 }
 
 /* Shared navbar (SiteNav) — glass pill, longer + thinner than the old
@@ -324,14 +333,63 @@ body {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Home hero — contained glass panel behind the title only (the one place
-   glass sits over a photo, per explicit product decision) */
+/* ── Home hero — glass TEXT (not a glass box) ───────────────────────────
+   The frosted refraction is clipped to the letterforms themselves via the
+   inline SVG <mask> in HeroParallax. No card, no panel, no border. */
+
+.hero-title {
+    /* Berkshire Swash's full font box is 1.242em (typo asc 0.980 +
+       desc 0.262). 1.32em leaves headroom for the swash flourishes. */
+    font-size: clamp(3.25rem, 11vw, 10.5rem);
+    height: 1.32em;
+}
+
+.hero-title-svg {
+    display: block;
+    overflow: visible;
+}
+
+/* Shared by the visible text and the mask text — identical metrics are
+   what keep the frosted glyphs in register with the painted ones. */
+.hero-title-text {
+    font-family: "Berkshire Swash", serif;
+    font-weight: 400;
+    font-size: clamp(3.25rem, 11vw, 10.5rem);
+    /* Positive, never negative: this face has ornamental swash terminals
+       that collide under tight tracking. */
+    letter-spacing: 0.012em;
+}
+
+/* Visible base: legibility layer under the glass, and the complete
+   fallback when the mask can't render. */
+.hero-title-base {
+    fill: #f5f2ee;
+    filter:
+        drop-shadow(0 2px 18px rgba(0, 0, 0, 0.55))
+        drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+}
+
+/* Frosted layer, clipped to the glyph shapes. Hidden by default so
+   browsers without usable mask support show the solid text alone rather
+   than a stray blurred rectangle. */
 .hero-title-glass {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 0.5px solid rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 40px rgba(0, 0, 0, 0.3);
+    display: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+@supports ((mask-image: url(#m)) or (-webkit-mask-image: url(#m))) and
+          ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .hero-title-glass {
+        display: block;
+        backdrop-filter: blur(9px) brightness(1.3) saturate(1.45);
+        -webkit-backdrop-filter: blur(9px) brightness(1.3) saturate(1.45);
+        mask-image: url(#heroGlassMask);
+        -webkit-mask-image: url(#heroGlassMask);
+        mask-repeat: no-repeat;
+        -webkit-mask-repeat: no-repeat;
+    }
 }
 
 /* Gallery filter pills — single segmented-control container */

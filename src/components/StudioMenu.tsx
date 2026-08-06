@@ -55,7 +55,7 @@ export default function StudioMenu({
               <div className="flex items-center justify-between mb-10">
                 <Link
                   href="/"
-                  className="font-title text-headline-md text-on-surface"
+                  className="font-title text-[26px] leading-none tracking-[0.012em] text-on-surface"
                   onClick={() => onOpenChange(false)}
                 >
                   The Shutter Bug
@@ -89,7 +89,7 @@ export default function StudioMenu({
                         onClick={() => onOpenChange(false)}
                         className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-all ${
                           active
-                            ? "bg-secondary-container text-on-secondary-container font-bold"
+                            ? "bg-accent/10 text-accent font-bold"
                             : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
                         }`}
                       >

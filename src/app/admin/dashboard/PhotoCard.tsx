@@ -66,7 +66,7 @@ export default function PhotoCard({
             title={photo.isFeatured ? "Remove from Selected Frames" : "Add to Selected Frames"}
             className={`p-2 rounded-full backdrop-blur-md transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)] ${
               photo.isFeatured
-                ? "bg-primary/90 text-on-primary"
+                ? "bg-accent/90 text-[#1c1b1b]"
                 : "bg-black/60 hover:bg-black/80 text-white"
             }`}
           >
