@@ -55,7 +55,7 @@ export default function StudioMenu({
               <div className="flex items-center justify-between mb-10">
                 <Link
                   href="/"
-                  className="font-title text-[26px] leading-none tracking-[0.012em] text-on-surface"
+                  className="font-title text-[1.4rem] leading-none text-on-surface"
                   onClick={() => onOpenChange(false)}
                 >
                   The Shutter Bug

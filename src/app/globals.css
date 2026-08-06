@@ -64,12 +64,14 @@
   --radius-xl: 3rem;
   --radius-full: 9999px;
 
-  /* Spacing */
-  --spacing-gutter: 24px;
-  --spacing-margin-desktop: 64px;
-  --spacing-section-gap: 120px;
-  --spacing-margin-mobile: 20px;
-  --spacing-element-gap: 16px;
+  /* Spacing — rem, not px, so the 90% root font-size below scales them.
+     Values are the original px / 16, so at a 100% root they render
+     byte-identically to the previous px values. */
+  --spacing-gutter: 1.5rem;        /* 24px */
+  --spacing-margin-desktop: 4rem;  /* 64px */
+  --spacing-section-gap: 7.5rem;   /* 120px */
+  --spacing-margin-mobile: 1.25rem;/* 20px */
+  --spacing-element-gap: 1rem;     /* 16px */
 
   /* Font families */
   --font-family-headline-lg-mobile: "Inter", sans-serif;
@@ -81,41 +83,55 @@
   --font-family-display-lg: "Inter", sans-serif;
 
   /* Font sizes */
-  --font-size-headline-lg-mobile: 32px;
-  --line-height-headline-lg-mobile: 40px;
+  --font-size-headline-lg-mobile: 2rem;      /* 32px */
+  --line-height-headline-lg-mobile: 2.5rem;  /* 40px */
   --letter-spacing-headline-lg-mobile: -0.02em;
   --font-weight-headline-lg-mobile: 600;
 
-  --font-size-body-lg: 18px;
-  --line-height-body-lg: 28px;
+  --font-size-body-lg: 1.125rem;   /* 18px */
+  --line-height-body-lg: 1.75rem;  /* 28px */
   --font-weight-body-lg: 400;
 
-  --font-size-label-sm: 12px;
-  --line-height-label-sm: 16px;
+  --font-size-label-sm: 0.75rem;   /* 12px */
+  --line-height-label-sm: 1rem;    /* 16px */
   --letter-spacing-label-sm: 0.1em;
   --font-weight-label-sm: 500;
 
-  --font-size-body-md: 16px;
-  --line-height-body-md: 24px;
+  --font-size-body-md: 1rem;       /* 16px */
+  --line-height-body-md: 1.5rem;   /* 24px */
   --font-weight-body-md: 400;
 
-  --font-size-headline-md: 24px;
-  --line-height-headline-md: 32px;
+  --font-size-headline-md: 1.5rem; /* 24px */
+  --line-height-headline-md: 2rem; /* 32px */
   --letter-spacing-headline-md: -0.01em;
   --font-weight-headline-md: 500;
 
-  --font-size-headline-lg: 48px;
-  --line-height-headline-lg: 56px;
+  --font-size-headline-lg: 3rem;   /* 48px */
+  --line-height-headline-lg: 3.5rem;/* 56px */
   --letter-spacing-headline-lg: -0.02em;
   --font-weight-headline-lg: 600;
 
-  --font-size-display-lg: 84px;
-  --line-height-display-lg: 92px;
+  --font-size-display-lg: 5.25rem; /* 84px */
+  --line-height-display-lg: 5.75rem;/* 92px */
   --letter-spacing-display-lg: -0.04em;
   --font-weight-display-lg: 700;
 }
 
 /* ─── Base styles ───────────────────────────────────────────────────────── */
+
+/* Renders the whole site at ~90%, the way browser zoom does, by shrinking
+   the rem basis that every size token above resolves against. This only
+   works because those tokens are rem — as px they ignored the root
+   entirely and only Tailwind's built-in utilities would have scaled,
+   giving a half-scaled layout. Deliberately NOT transform: scale(), which
+   blurs text and doesn't reflow.
+   Anything that must track the viewport rather than the type scale (the
+   hero title, sized against the boat in the photo) uses vw/vh and is
+   intentionally unaffected by this. */
+html {
+    font-size: 90%;
+}
+
 body {
     background-color: #0A0A0A;
     color: #e5e2e1;
@@ -318,8 +334,11 @@ body {
 /* Site title / display headings — curved/flowing display face. Used at both
    large (hero) and small (navbar/studio) sizes; see .hero-title-base and
    SiteNav for the per-size legibility tuning this font needs. */
+/* Playwrite VN is a variable calligraphy face, weight 100-400 only (no
+   bold, no italic). 400 is the heaviest available and the only weight
+   with enough stroke mass to hold up as a wordmark. */
 .font-title {
-    font-family: "Berkshire Swash", serif;
+    font-family: "Playwrite VN", cursive;
     font-weight: 400;
 }
 
@@ -337,11 +356,26 @@ body {
    The frosted refraction is clipped to the letterforms themselves via the
    inline SVG <mask> in HeroParallax. No card, no panel, no border. */
 
+/* Sized so the wordmark's rendered width lands ~12% wider than the boat
+   silhouette behind it, at every viewport shape. Derivation:
+     - boat measured in the source photo: 246px of 1376 = 17.9% of image width
+     - the <img> is object-cover + scale-105, so its rendered width is
+       1.05 x max(vw, 1.7917vh)   (1.7917 = the photo's 1376/768 aspect)
+     - therefore boat width = max(18.8vw, 33.7vh)
+     - target = boat x 1.12 = max(21.1vw, 37.7vh)
+     - "The Shutter Bug" in Playwrite VN advances 9.407em, so
+       font-size = target / 9.407 = max(2.24vw, 4.01vh)
+   The outer min() is an overflow guard: it caps the wordmark at ~88vw for
+   very tall/narrow viewports, where the vh term would otherwise run it off
+   the sides. Intentionally viewport-based, not rem — it tracks the photo,
+   not the type scale, so the 90% root font-size must not shrink it. */
 .hero-title {
-    /* Berkshire Swash's full font box is 1.242em (typo asc 0.980 +
-       desc 0.262). 1.32em leaves headroom for the swash flourishes. */
-    font-size: clamp(3.25rem, 11vw, 10.5rem);
-    height: 1.32em;
+    font-size: min(max(2.24vw, 4.01vh), 9.35vw);
+    /* This string's ink spans 1.276em above the baseline to -0.776em below
+       (that deep 'g' loop) = 2.052em. The box must contain all of it: the
+       glass layer only paints inside this box, so anything taller would
+       have its frosted tops and tails clipped. */
+    height: 2.2em;
 }
 
 .hero-title-svg {
@@ -349,15 +383,13 @@ body {
     overflow: visible;
 }
 
-/* Shared by the visible text and the mask text — identical metrics are
-   what keep the frosted glyphs in register with the painted ones. */
+/* Shared by the visible text and the mask text. font-size: inherit rather
+   than a repeated value so the two can never drift out of register. */
 .hero-title-text {
-    font-family: "Berkshire Swash", serif;
+    font-family: "Playwrite VN", cursive;
     font-weight: 400;
-    font-size: clamp(3.25rem, 11vw, 10.5rem);
-    /* Positive, never negative: this face has ornamental swash terminals
-       that collide under tight tracking. */
-    letter-spacing: 0.012em;
+    font-size: inherit;
+    letter-spacing: 0;
 }
 
 /* Visible base: legibility layer under the glass, and the complete

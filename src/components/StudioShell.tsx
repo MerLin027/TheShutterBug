@@ -40,7 +40,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
         <nav className="studio-sidebar hidden md:flex flex-col h-full p-4 gap-element-gap fixed left-0 top-0 w-64 z-40">
           <Link
             href="/"
-            className="font-title text-[26px] leading-none tracking-[0.012em] text-on-surface hover:text-accent transition-colors px-2 mb-2"
+            className="font-title text-[1.4rem] leading-none text-on-surface hover:text-accent transition-colors px-2 mb-2"
           >
             The Shutter Bug
           </Link>

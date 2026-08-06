@@ -17,15 +17,19 @@ export default function SiteNav() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center w-full mt-6 px-margin-mobile md:px-margin-desktop pointer-events-none">
       {/* w-auto + max-w-full so the pill hugs its content rather than
-          stretching to a fixed max-width with dead space in the middle. */}
-      <nav className="nav-pill rounded-full w-auto max-w-full px-7 py-2 flex items-center gap-7 pointer-events-auto">
-        {/* Berkshire Swash has a low x-height (0.507em; x-height/cap 0.559,
-            vs ~0.73 for a UI sans), so at the previous 24px its lowercase
-            rendered ~12px and the swash detail broke down. 28px brings the
-            x-height back to ~14px. Tracking must stay positive — the
-            ornamental terminals collide under the old tracking-tight. */}
+          stretching to a fixed max-width with dead space in the middle.
+          Stacks to two rows below `sm`: the wordmark plus four nav items on
+          one line needs ~504px, which overflows every phone width (by 150px
+          at 390px). Single row from `sm` up, where it fits comfortably. */}
+      <nav className="nav-pill rounded-3xl sm:rounded-full w-auto max-w-full px-5 sm:px-7 py-2 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-7 pointer-events-auto">
+        {/* Playwrite VN has an unusually tall cap height (1.257em) and a deep
+            'g' loop, so this string's ink is 2.052em top-to-bottom — nearly
+            double Berkshire Swash's. Sized in rem (so the 90% root scales it)
+            and kept modest: larger would push the wordmark's ascenders and
+            descenders well past a deliberately thin pill. Nothing clips them,
+            so the small overhang reads as intentional for a script mark. */}
         <Link
-          className="font-title text-[28px] leading-none tracking-[0.012em] text-on-surface hover:text-accent transition-colors whitespace-nowrap"
+          className="font-title text-[1.25rem] sm:text-[1.5rem] leading-none text-on-surface hover:text-accent transition-colors whitespace-nowrap"
           href="/"
         >
           The Shutter Bug
