@@ -34,8 +34,17 @@ function EmptyState() {
 // GalleryClient — receives all photos from the server component parent,
 // owns the filter state locally, and renders the masonry grid.
 // ---------------------------------------------------------------------------
-export default function GalleryClient({ photos }: { photos: Photo[] }) {
-  const [activeFilter, setActiveFilter] = useState<string>("All");
+export default function GalleryClient({
+  photos,
+  initialFilter,
+}: {
+  photos: Photo[];
+  initialFilter?: string;
+}) {
+  const validFilters = FILTERS as readonly string[];
+  const startFilter =
+    initialFilter && validFilters.includes(initialFilter) ? initialFilter : "All";
+  const [activeFilter, setActiveFilter] = useState<string>(startFilter);
 
   const filteredPhotos =
     activeFilter === "All"
@@ -89,7 +98,13 @@ export default function GalleryClient({ photos }: { photos: Photo[] }) {
                 key={photo.id}
                 className="break-inside-avoid relative overflow-hidden group cursor-pointer"
               >
-                <Link href={`/lightbox/${photo.id}`}>
+                <Link
+                  href={
+                    activeFilter === "All"
+                      ? `/lightbox/${photo.id}`
+                      : `/lightbox/${photo.id}?filter=${encodeURIComponent(activeFilter)}`
+                  }
+                >
                   <div className={`${photo.aspect} w-full bg-surface-container-low`}>
                     {/* Keep plain <img> consistent with the Phase 2 port.
                         next/image is reserved for when Cloudinary loader is

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdminNavLink from "@/components/AdminNavLink";
 import { notFound } from "next/navigation";
 import { fetchPhoto, fetchPhotoNeighbours } from "@/lib/data";
 
@@ -6,21 +7,33 @@ export const revalidate = 60;
 
 export default async function Lightbox({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ filter?: string }>;
 }) {
   const { id } = await params;
+  const { filter } = await searchParams;
 
   // Fetch the target photo and its neighbours in parallel.
+  // Pass the active filter so prev/next stay within the filtered set.
   const [photo, { prev, next }] = await Promise.all([
     fetchPhoto(id),
-    fetchPhotoNeighbours(id),
+    fetchPhotoNeighbours(id, filter),
   ]);
 
   // If the photo genuinely doesn't exist, use Next.js notFound().
   if (!photo) {
     notFound();
   }
+
+  // Build helpers for constructing prev/next/close hrefs that preserve the
+  // active filter when one is set.
+  const filterParam = filter && filter !== "All" ? `?filter=${encodeURIComponent(filter)}` : "";
+  const lightboxHref = (photoId: string) =>
+    `/lightbox/${photoId}${filterParam}`;
+  const closeHref = filter && filter !== "All" ? `/work?filter=${encodeURIComponent(filter)}` : "/work";
+
 
   return (
     <div className="bg-primary-container min-h-screen w-full flex items-center justify-center overflow-hidden font-body-md text-on-surface">
@@ -59,7 +72,7 @@ export default async function Lightbox({
         {/* Previous — disabled/hidden when only one photo */}
         {prev ? (
           <Link
-            href={`/lightbox/${prev.id}`}
+            href={lightboxHref(prev.id)}
             aria-label="Previous"
             className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
           >
@@ -103,9 +116,22 @@ export default async function Lightbox({
           </span>
         </button>
 
+        {/* Admin */}
+        <AdminNavLink className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group">
+          <span
+            className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
+            style={{ fontVariationSettings: "'FILL' 0" }}
+          >
+            admin_panel_settings
+          </span>
+          <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
+            Admin
+          </span>
+        </AdminNavLink>
+
         {/* Close (X) */}
         <Link
-          href="/work"
+          href={closeHref}
           aria-label="Close"
           className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
         >
@@ -123,7 +149,7 @@ export default async function Lightbox({
         {/* Next */}
         {next ? (
           <Link
-            href={`/lightbox/${next.id}`}
+            href={lightboxHref(next.id)}
             aria-label="Next"
             className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group"
           >

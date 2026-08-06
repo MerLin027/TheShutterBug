@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdminNavLink from "@/components/AdminNavLink";
 
 export default function About() {
   return (
@@ -11,9 +12,9 @@ export default function About() {
         <nav className="flex gap-8">
           <Link
             className="text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md"
-            href="/"
+            href="/work"
           >
-            Portfolio
+            Gallery
           </Link>
           <Link
             className="text-primary font-medium border-b border-primary pb-1 font-body-md text-body-md scale-95 transition-transform"
@@ -28,7 +29,8 @@ export default function About() {
             Contact
           </Link>
         </nav>
-        <div>
+        <div className="flex items-center gap-2">
+          <AdminNavLink className="text-on-surface hover:text-primary transition-colors flex items-center justify-center hover:bg-white/10 rounded-full p-2 scale-105 active:scale-95 transition-transform" />
           <span
             className="material-symbols-outlined text-on-surface cursor-pointer hover:backdrop-blur-2xl hover:bg-white/10 transition-all duration-300 rounded-full p-2"
             data-icon="menu"

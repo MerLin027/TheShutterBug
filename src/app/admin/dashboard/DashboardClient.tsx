@@ -209,7 +209,7 @@ export default function DashboardClient() {
           <div className="flex-1 flex flex-col gap-2 mt-4">
             <a
               className="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all group"
-              href="#"
+              href="/admin/dashboard"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
                 dashboard
@@ -220,7 +220,7 @@ export default function DashboardClient() {
             </a>
             <a
               className="flex items-center gap-4 px-4 py-3 rounded-lg bg-secondary-container text-on-secondary-container transition-all group"
-              href="#"
+              href="/admin/dashboard"
             >
               <span className="material-symbols-outlined text-[20px]">
                 photo_library
@@ -231,13 +231,13 @@ export default function DashboardClient() {
             </a>
             <a
               className="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all group"
-              href="#"
+              href="/admin/dashboard/messages"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
-                auto_awesome_motion
+                mail
               </span>
               <span className="font-label-sm text-label-sm uppercase">
-                Series
+                Messages
               </span>
             </a>
             <a

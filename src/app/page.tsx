@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdminNavLink from "@/components/AdminNavLink";
 
 export default function Home() {
   return (
@@ -13,8 +14,8 @@ export default function Home() {
             THE SHUTTER BUG
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <Link className="font-label-sm text-label-sm tracking-widest text-primary font-bold" href="/">
-              Work
+            <Link className="font-label-sm text-label-sm tracking-widest text-primary font-bold" href="/work">
+              Gallery
             </Link>
             <Link
               className="font-label-sm text-label-sm tracking-widest text-on-surface/70 hover:text-on-surface hover:bg-white/20 transition-all duration-300 rounded-full px-3 py-1"
@@ -29,14 +30,17 @@ export default function Home() {
               Contact
             </Link>
           </div>
-          <button
-            aria-label="grid_view"
-            className="text-on-surface hover:text-primary transition-colors flex items-center justify-center hover:bg-white/20 rounded-full p-2 scale-105 active:scale-95 transition-transform"
-          >
-            <span className="material-symbols-outlined" data-icon="grid_view">
-              grid_view
-            </span>
-          </button>
+          <div className="flex items-center gap-2">
+            <AdminNavLink className="text-on-surface hover:text-primary transition-colors flex items-center justify-center hover:bg-white/20 rounded-full p-2 scale-105 active:scale-95 transition-transform" />
+            <button
+              aria-label="grid_view"
+              className="text-on-surface hover:text-primary transition-colors flex items-center justify-center hover:bg-white/20 rounded-full p-2 scale-105 active:scale-95 transition-transform"
+            >
+              <span className="material-symbols-outlined" data-icon="grid_view">
+                grid_view
+              </span>
+            </button>
+          </div>
         </div>
       </nav>
 

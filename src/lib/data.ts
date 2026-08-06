@@ -139,21 +139,31 @@ export async function fetchPhoto(id: string): Promise<Photo | null> {
 }
 
 /**
- * Fetch all photos and return the prev/next neighbours for a given photo id.
+ * Fetch photos (optionally filtered by category) and return the prev/next
+ * neighbours for a given photo id within that set.
  * Used by the lightbox to build navigation links.
- * Returns null for both if the list is empty.
+ *
+ * @param currentId   MongoDB _id of the photo currently open in the lightbox.
+ * @param filter      Active gallery filter (e.g. "Nature"). Pass "All" or
+ *                    omit to use the full unfiltered list.
  */
 export async function fetchPhotoNeighbours(
-  currentId: string
+  currentId: string,
+  filter?: string
 ): Promise<{ all: Photo[]; prev: Photo | null; next: Photo | null }> {
-  const all = await fetchPhotos();
-  if (all.length === 0) return { all: [], prev: null, next: null };
+  // Use the same filter the gallery was showing so prev/next stay within the
+  // filtered set rather than jumping to unrelated categories.
+  const pool = await fetchPhotos(filter && filter !== "All" ? filter : undefined);
+  if (pool.length === 0) return { all: [], prev: null, next: null };
 
-  const idx = all.findIndex((p) => p.id === currentId);
-  if (idx === -1) return { all, prev: null, next: null };
+  const idx = pool.findIndex((p) => p.id === currentId);
+  // Photo not found in this filtered pool (shouldn't happen, but fall back
+  // to disabling navigation rather than crashing).
+  if (idx === -1) return { all: pool, prev: null, next: null };
 
-  const prev = idx > 0 ? all[idx - 1] : all[all.length - 1];
-  const next = idx < all.length - 1 ? all[idx + 1] : all[0];
+  // Wrap-around navigation: last photo's "next" is the first, and vice-versa.
+  const prev = idx > 0 ? pool[idx - 1] : pool[pool.length - 1];
+  const next = idx < pool.length - 1 ? pool[idx + 1] : pool[0];
 
-  return { all, prev, next };
+  return { all: pool, prev, next };
 }

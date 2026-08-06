@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { fetchPhotos } from "@/lib/data";
 import GalleryClient from "./GalleryClient";
+import AdminNavLink from "@/components/AdminNavLink";
 
 // Revalidate the page every 60 s (matches the fetch revalidation in data.ts).
 export const revalidate = 60;
 
-export default async function Work() {
+export default async function Work({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
+  const { filter } = await searchParams;
   // Fetches from the live Render API. Returns [] when DB is empty.
   const photos = await fetchPhotos();
 
@@ -21,13 +27,7 @@ export default async function Work() {
             className="font-headline-md text-headline-md text-on-surface border-b border-on-surface pb-1 scale-95 active:scale-90 transition-transform"
             href="/work"
           >
-            Series
-          </Link>
-          <Link
-            className="font-headline-md text-headline-md text-outline hover:text-on-surface transition-colors hover:opacity-80 scale-95 active:scale-90 transition-transform"
-            href="/work"
-          >
-            Archives
+            Gallery
           </Link>
           <Link
             className="font-headline-md text-headline-md text-outline hover:text-on-surface transition-colors hover:opacity-80 scale-95 active:scale-90 transition-transform"
@@ -36,17 +36,20 @@ export default async function Work() {
             About
           </Link>
         </nav>
-        <Link
-          className="font-headline-md text-headline-md text-primary hover:opacity-80 transition-opacity"
-          href="/contact"
-        >
-          Connect
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            className="font-headline-md text-headline-md text-primary hover:opacity-80 transition-opacity"
+            href="/contact"
+          >
+            Connect
+          </Link>
+          <AdminNavLink className="text-on-surface hover:text-primary transition-colors flex items-center justify-center hover:bg-white/20 rounded-full p-2 scale-105 active:scale-95 transition-transform" />
+        </div>
       </header>
 
       <main className="flex-grow pt-40 px-margin-mobile md:px-margin-desktop">
         {/* GalleryClient owns filter state; receives all photos from the server. */}
-        <GalleryClient photos={photos} />
+        <GalleryClient photos={photos} initialFilter={filter} />
       </main>
 
       {/* Footer */}
