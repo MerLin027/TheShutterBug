@@ -26,6 +26,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
   const [tags, setTags] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** Client-side file validation (addition #4). */
@@ -60,6 +61,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
+    setDragActive(false);
     setError("");
     const f = e.dataTransfer.files?.[0];
     if (!f) return;
@@ -127,7 +129,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-headline-md text-headline-md text-on-surface">
-            Upload New Photo
+            Upload new photo
           </h2>
           <button
             onClick={onClose}
@@ -138,10 +140,18 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
         </div>
 
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-          {/* Drop zone / file picker */}
+          {/* Drop zone / file picker — Drive-style, visual only */}
           <div
-            className="relative border-2 border-dashed border-white/15 rounded-lg p-6 text-center cursor-pointer hover:border-white/30 transition-colors"
-            onDragOver={(e) => e.preventDefault()}
+            className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+              dragActive
+                ? "studio-dropzone-active"
+                : "border-white/15 hover:border-white/30"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragLeave={() => setDragActive(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -153,14 +163,14 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
                 className="max-h-48 mx-auto rounded-lg object-contain"
               />
             ) : (
-              <div className="flex flex-col items-center gap-2 py-4">
-                <span className="material-symbols-outlined text-[40px] text-on-surface-variant">
+              <div className="flex flex-col items-center gap-3 py-6">
+                <span className="material-symbols-outlined text-[44px] text-on-surface-variant">
                   cloud_upload
                 </span>
-                <p className="font-label-sm text-label-sm text-on-surface-variant uppercase">
-                  Drop image here or click to browse
+                <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
+                  Drop an image here, or click to browse
                 </p>
-                <p className="text-xs text-outline">Max 10 MB • JPEG, PNG, WebP</p>
+                <p className="text-xs text-outline">Images only · max 10MB</p>
               </div>
             )}
             <input
@@ -172,63 +182,68 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
             />
           </div>
 
-          {/* Category */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
-              Category
+          {/* Title — writes to the `caption` field, which the frontend
+              already surfaces as each photo's display title */}
+          <div className="studio-field px-4 py-3">
+            <label className="sr-only" htmlFor="upload-title">
+              Title
+            </label>
+            <input
+              id="upload-title"
+              type="text"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Title"
+              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
+            />
+          </div>
+
+          {/* Genre */}
+          <div className="studio-field px-4 py-3">
+            <label className="sr-only" htmlFor="upload-genre">
+              Genre
             </label>
             <select
+              id="upload-genre"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-surface-container-high border border-white/10 rounded-lg px-3 py-2 text-on-surface font-body-md focus:border-tertiary focus:ring-0 transition-colors"
+              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 cursor-pointer"
             >
               {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
+                <option key={c} value={c} className="bg-surface-container-high">
                   {c.charAt(0).toUpperCase() + c.slice(1)}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Caption */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
-              Caption
-            </label>
-            <input
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="A brief description…"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
-            />
-          </div>
-
           {/* Location */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
+          <div className="studio-field px-4 py-3">
+            <label className="sr-only" htmlFor="upload-location">
               Location
             </label>
             <input
+              id="upload-location"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Mumbai, India"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+              placeholder="Location"
+              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
             />
           </div>
 
           {/* Tags */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
-              Tags (comma-separated)
+          <div className="studio-field px-4 py-3">
+            <label className="sr-only" htmlFor="upload-tags">
+              Tags, comma separated
             </label>
             <input
+              id="upload-tags"
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="landscape, golden hour, coast"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-tertiary focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
+              placeholder="Tags, comma separated"
+              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
             />
           </div>
 
@@ -241,7 +256,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
           <button
             type="submit"
             disabled={uploading || !file}
-            className="mt-2 liquid-glass rounded-full py-4 px-6 font-label-sm text-label-sm text-on-surface hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="mt-2 liquid-glass rounded-full py-4 px-6 font-label-sm text-label-sm uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {uploading ? (
               <>
@@ -253,7 +268,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
                 <span className="material-symbols-outlined text-[16px]">
                   cloud_upload
                 </span>
-                Upload Photo
+                Add to Archive
               </>
             )}
           </button>

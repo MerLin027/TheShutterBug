@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -48,6 +49,7 @@ export default function AdminLoginPage() {
       }
 
       localStorage.setItem("admin_token", data.token);
+      localStorage.setItem("admin_email", data.email ?? "");
       router.replace("/admin/dashboard");
     } catch {
       setError("Network error — is the backend running?");
@@ -93,7 +95,7 @@ export default function AdminLoginPage() {
         <div className="liquid-glass rounded-xl w-full max-w-sm p-8 flex flex-col gap-8 transform transition-transform hover:scale-[1.01] duration-500">
           <div className="text-center space-y-2">
             <h2 className="font-headline-md text-headline-md text-on-surface">
-              Admin Access
+              Studio Access
             </h2>
             <p className="font-label-sm text-label-sm text-on-surface-variant">
               SECURE PORTAL
@@ -153,6 +155,16 @@ export default function AdminLoginPage() {
               )}
             </button>
           </form>
+
+          <Link
+            href="/"
+            className="flex items-center justify-center gap-2 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              arrow_back
+            </span>
+            Back to Site
+          </Link>
         </div>
       </main>
     </div>

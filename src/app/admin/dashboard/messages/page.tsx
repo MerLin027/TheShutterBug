@@ -1,7 +1,7 @@
 import MessagesClient from "./MessagesClient";
 
 export const metadata = {
-  title: "Messages – The Shutter Bug Admin",
+  title: "Messages — Studio",
 };
 
 export default function MessagesPage() {

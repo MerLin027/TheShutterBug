@@ -8,9 +8,15 @@ type Props = {
   photo: ApiPhoto;
   onEdit: (photo: ApiPhoto) => void;
   onDelete: (photo: ApiPhoto) => void;
+  onToggleFeatured: (photo: ApiPhoto) => void;
 };
 
-export default function PhotoCard({ photo, onEdit, onDelete }: Props) {
+export default function PhotoCard({
+  photo,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
+}: Props) {
   const {
     attributes,
     listeners,
@@ -27,19 +33,16 @@ export default function PhotoCard({ photo, onEdit, onDelete }: Props) {
     zIndex: isDragging ? 50 : "auto" as const,
   };
 
-  /** Format file size hint from the category (decorative, per reference). */
-  const categoryCode = photo.category.toUpperCase().slice(0, 4);
-
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group rounded-lg overflow-hidden break-inside-avoid bg-surface-container liquid-hover image-scale-hover border border-white/5"
+      className="relative group rounded-lg overflow-hidden break-inside-avoid bg-surface-container liquid-hover border border-white/5"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt={photo.caption || "Portfolio Image"}
-        className="w-full h-auto object-cover"
+        className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-[1.03] group-hover:blur-[2px] group-hover:brightness-75"
         src={photo.imageUrl}
       />
 
@@ -54,31 +57,53 @@ export default function PhotoCard({ photo, onEdit, onDelete }: Props) {
         </span>
       </div>
 
-      {/* Liquid Glass Overlay (Hover) — from reference */}
+      {/* Liquid Glass Overlay (Hover) — three actions: Edit, Delete, Featured */}
       <div className="glass-overlay absolute inset-0 flex flex-col justify-between p-4 z-20 pointer-events-none group-hover:pointer-events-auto">
+        {/* Secondary actions — top right */}
         <div className="flex justify-end gap-2">
           <button
+            onClick={() => onToggleFeatured(photo)}
+            title={photo.isFeatured ? "Remove from Selected Frames" : "Add to Selected Frames"}
+            className={`p-2 rounded-full backdrop-blur-md transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)] ${
+              photo.isFeatured
+                ? "bg-primary/90 text-on-primary"
+                : "bg-black/60 hover:bg-black/80 text-white"
+            }`}
+          >
+            <span
+              className="material-symbols-outlined text-[18px]"
+              style={{ fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}` }}
+            >
+              star
+            </span>
+          </button>
+          <button
             onClick={() => onEdit(photo)}
+            title="Edit"
             className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)]"
           >
             <span className="material-symbols-outlined text-[18px]">edit</span>
           </button>
-          <button
-            onClick={() => onDelete(photo)}
-            className="p-2 rounded-full bg-error/20 hover:bg-error/40 text-error backdrop-blur-md transition-colors border border-error/30"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              delete
-            </span>
-          </button>
         </div>
+
+        {/* Prominent Delete — centered, matching the reference */}
+        <button
+          onClick={() => onDelete(photo)}
+          className="mx-auto flex items-center gap-2 px-5 py-2.5 rounded-full bg-error-container/90 hover:bg-error-container text-on-error-container backdrop-blur-md transition-colors font-label-sm text-label-sm uppercase tracking-widest"
+        >
+          <span className="material-symbols-outlined text-[16px]">
+            delete
+          </span>
+          Delete
+        </button>
+
         <div className="flex items-center justify-between mt-auto">
           <div className="flex flex-col">
-            <span className="font-label-sm text-label-sm text-white uppercase tracking-widest">
+            <span className="font-body-md text-body-md font-bold text-white">
               {photo.caption || photo.category}
             </span>
-            <span className="text-xs text-white/60 font-mono mt-1">
-              {categoryCode}_{String(photo.position).padStart(2, "0")}
+            <span className="font-label-sm text-label-sm text-white/70 uppercase tracking-widest mt-0.5">
+              {photo.category}
             </span>
           </div>
           <div

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Photo } from "@/lib/data";
+import Reveal from "@/components/Reveal";
 
 const FILTERS = ["All", "Nature", "Objects", "Monochrome", "Urban"] as const;
 
@@ -55,17 +56,17 @@ export default function GalleryClient({
 
   return (
     <>
-      {/* Filter pills */}
-      <section className="mb-section-gap">
-        <div className="flex items-center justify-center gap-element-gap overflow-x-auto no-scrollbar py-4">
+      {/* Filter pills — single segmented-control container */}
+      <section className="mb-section-gap flex justify-center">
+        <div className="filter-group rounded-full flex items-center gap-1 overflow-x-auto no-scrollbar p-1.5">
           {FILTERS.map((filter) => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-6 py-2 rounded-full font-label-sm text-label-sm backdrop-blur-xl border-[0.5px] border-white/15 transition-all uppercase tracking-[0.1em] ${
+              className={`px-6 py-2 rounded-full font-label-sm text-label-sm transition-all uppercase tracking-[0.1em] whitespace-nowrap ${
                 activeFilter === filter
                   ? "text-on-surface glass-pill-active"
-                  : "bg-white/5 text-outline hover:text-on-surface hover:bg-white/10"
+                  : "text-outline hover:text-on-surface hover:bg-white/10"
               }`}
             >
               {filter}
@@ -93,30 +94,41 @@ export default function GalleryClient({
           </div>
         ) : (
           <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-gutter space-y-gutter">
-            {filteredPhotos.map((photo) => (
-              <div
+            {filteredPhotos.map((photo, i) => (
+              <Reveal
                 key={photo.id}
-                className="break-inside-avoid relative overflow-hidden group cursor-pointer"
+                delay={Math.min((i % 8) * 0.06, 0.36)}
+                className="break-inside-avoid"
               >
-                <Link
-                  href={
-                    activeFilter === "All"
-                      ? `/lightbox/${photo.id}`
-                      : `/lightbox/${photo.id}?filter=${encodeURIComponent(activeFilter)}`
-                  }
-                >
-                  <div className={`${photo.aspect} w-full bg-surface-container-low`}>
-                    {/* Keep plain <img> consistent with the Phase 2 port.
-                        next/image is reserved for when Cloudinary loader is
-                        wired up in a future pass. */}
-                    <img
-                      className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
-                      alt={photo.alt}
-                      src={photo.src}
-                    />
-                  </div>
-                </Link>
-              </div>
+                <div className="relative overflow-hidden group cursor-pointer">
+                  <Link
+                    href={
+                      activeFilter === "All"
+                        ? `/lightbox/${photo.id}`
+                        : `/lightbox/${photo.id}?filter=${encodeURIComponent(activeFilter)}`
+                    }
+                  >
+                    <div className={`${photo.aspect} w-full bg-surface-container-low`}>
+                      {/* Keep plain <img> consistent with the Phase 2 port.
+                          next/image is reserved for when Cloudinary loader is
+                          wired up in a future pass. */}
+                      <img
+                        className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        alt={photo.alt}
+                        src={photo.src}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="font-body-md text-body-md font-bold text-on-surface">
+                        {photo.title}
+                      </span>
+                      <span className="font-label-sm text-label-sm tracking-widest uppercase text-on-surface-variant">
+                        {photo.category}
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+              </Reveal>
             ))}
           </div>
         )}

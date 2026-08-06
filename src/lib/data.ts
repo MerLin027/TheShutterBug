@@ -40,6 +40,7 @@ export type Photo = {
   location: string;
   year: string;
   category: "Nature" | "Objects" | "Monochrome" | "Urban";
+  isFeatured: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -84,6 +85,7 @@ function toPhoto(raw: ApiPhoto): Photo {
     location: raw.location || "",
     year: raw.createdAt ? new Date(raw.createdAt).getFullYear().toString() : "",
     category: categoryMap[raw.category] ?? "Nature",
+    isFeatured: raw.isFeatured,
   };
 }
 
@@ -116,6 +118,17 @@ export async function fetchPhotos(category?: string): Promise<Photo[]> {
 
   const raw: ApiPhoto[] = await res.json();
   return raw.map(toPhoto);
+}
+
+/**
+ * Fetch photos flagged `isFeatured`, for Home's "Selected Frames" section.
+ * The backend's GET /api/photos only accepts a `category` filter, so
+ * featured-filtering happens here rather than as a new query param.
+ */
+export async function fetchFeaturedPhotos(limit?: number): Promise<Photo[]> {
+  const all = await fetchPhotos();
+  const featured = all.filter((p) => p.isFeatured);
+  return limit ? featured.slice(0, limit) : featured;
 }
 
 /**

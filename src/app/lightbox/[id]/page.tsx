@@ -1,5 +1,4 @@
 import Link from "next/link";
-import AdminNavLink from "@/components/AdminNavLink";
 import { notFound } from "next/navigation";
 import { fetchPhoto, fetchPhotoNeighbours } from "@/lib/data";
 
@@ -115,19 +114,6 @@ export default async function Lightbox({
             Info
           </span>
         </button>
-
-        {/* Admin */}
-        <AdminNavLink className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:opacity-100 transition-opacity hover:text-on-surface group">
-          <span
-            className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-            style={{ fontVariationSettings: "'FILL' 0" }}
-          >
-            admin_panel_settings
-          </span>
-          <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-            Admin
-          </span>
-        </AdminNavLink>
 
         {/* Close (X) */}
         <Link
