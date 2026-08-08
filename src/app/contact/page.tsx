@@ -49,13 +49,11 @@ export default function Contact() {
   const isLoading = status === "loading";
 
   return (
-    <div className="bg-primary-container text-on-surface min-h-screen flex flex-col relative overflow-x-hidden selection:bg-tertiary selection:text-on-tertiary">
-      <div className="noise-overlay"></div>
-
+    <div className="bg-primary-container text-on-surface min-h-[100dvh] flex flex-col relative overflow-x-hidden selection:bg-tertiary selection:text-on-tertiary">
       <SiteNav />
 
       {/* Main Content */}
-      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop pt-40 pb-section-gap relative z-10 w-full max-w-2xl mx-auto">
+      <main id="main" className="flex-grow flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop pt-32 md:pt-40 pb-section-gap relative z-10 w-full max-w-2xl mx-auto">
         <Reveal className="text-center mb-14 space-y-4">
           <span className="font-label-sm text-label-sm uppercase tracking-widest text-accent">
             Contact
@@ -71,7 +69,7 @@ export default function Contact() {
 
         {/* Success Banner */}
         {status === "success" && (
-          <div className="w-full mb-8 flex items-center gap-3 px-5 py-4 rounded-xl bg-white/5 border border-white/15 text-on-surface animate-[fadeInUp_0.4s_ease-out]">
+          <div className="w-full mb-8 flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/5 border border-white/15 text-on-surface animate-[fadeInUp_0.4s_ease-out]">
             <span
               className="material-symbols-outlined text-[20px] text-accent shrink-0"
               style={{ fontVariationSettings: "'FILL' 1" }}
@@ -145,7 +143,7 @@ export default function Contact() {
 
             <div className="pt-6 flex justify-center">
               <button
-                className="liquid-glass rounded-full px-10 py-4 font-label-sm text-label-sm tracking-widest uppercase text-on-surface hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all duration-500 ease-out active:scale-95 group flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                className="btn-glass px-8 py-3.5 font-label-sm text-label-sm tracking-widest uppercase text-on-surface group flex items-center gap-3"
                 type="submit"
                 disabled={isLoading}
               >

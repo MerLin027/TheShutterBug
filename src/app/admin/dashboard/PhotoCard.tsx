@@ -37,12 +37,12 @@ export default function PhotoCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group rounded-lg overflow-hidden break-inside-avoid bg-surface-container liquid-hover border border-white/5"
+      className="relative group rounded-2xl overflow-hidden break-inside-avoid bg-surface-container liquid-hover border border-white/5"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt={photo.caption || "Portfolio Image"}
-        className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-[1.03] group-hover:blur-[2px] group-hover:brightness-75"
+        className="w-full h-auto object-cover transition-all duration-700 group-hover:scale-[1.03] group-hover:blur-[2px] group-hover:brightness-75"
         src={photo.imageUrl}
       />
 

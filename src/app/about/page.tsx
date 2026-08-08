@@ -4,11 +4,11 @@ import Reveal from "@/components/Reveal";
 
 export default function About() {
   return (
-    <div className="bg-primary-container text-on-surface antialiased min-h-screen flex flex-col">
+    <div className="bg-primary-container text-on-surface antialiased min-h-[100dvh] flex flex-col">
       <SiteNav />
 
       {/* Main Content: Split Screen */}
-      <main className="flex-1 flex flex-col md:flex-row w-full relative pt-32 md:pt-40 px-margin-mobile md:px-margin-desktop gap-12 md:gap-16 pb-section-gap">
+      <main id="main" className="site-container flex-1 flex flex-col md:flex-row relative pt-32 md:pt-40 px-margin-mobile md:px-margin-desktop gap-12 md:gap-16 pb-section-gap">
         {/* Left: Portrait Image */}
         <Reveal className="w-full md:w-1/2" y={0}>
           <div className="rounded-2xl overflow-hidden h-[60vh] md:h-[75vh]">

@@ -38,7 +38,7 @@ export default function AccountClient() {
 
   if (!token) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-primary-container">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
         <div className="admin-spinner" />
       </div>
     );
@@ -109,7 +109,7 @@ export default function AccountClient() {
             type="button"
             disabled
             title="Not yet connected — lands in Stage 2 once a site-content endpoint exists on the backend"
-            className="mt-2 w-fit liquid-glass rounded-full py-3 px-6 font-label-sm text-label-sm uppercase tracking-widest text-on-surface opacity-50 cursor-not-allowed flex items-center gap-2"
+            className="btn-glass mt-2 w-fit px-8 py-3.5 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center gap-3"
           >
             Save Changes
           </button>

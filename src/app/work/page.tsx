@@ -17,15 +17,15 @@ export default async function Work({
   const photos = await fetchPhotos();
 
   return (
-    <div className="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+    <div className="bg-primary-container text-on-surface font-body-md antialiased min-h-[100dvh] flex flex-col">
       <SiteNav />
 
-      <main className="flex-grow pt-40 px-margin-mobile md:px-margin-desktop">
-        <Reveal className="mb-12 text-center">
+      <main id="main" className="flex-grow pt-32 md:pt-40 px-margin-mobile md:px-margin-desktop">
+        <Reveal className="site-container mb-12 text-center">
           <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-3">
             Gallery
           </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant">
+          <p className="font-body-lg text-body-lg text-on-surface-variant">
             {photos.length} {photos.length === 1 ? "frame" : "frames"} — click any photograph to open it full screen.
           </p>
         </Reveal>

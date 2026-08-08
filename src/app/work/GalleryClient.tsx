@@ -15,7 +15,7 @@ function EmptyState() {
     <div className="flex flex-col items-center justify-center py-32 px-8 text-center">
       {/* Camera icon using Material Symbols (already loaded globally) */}
       <span
-        className="material-symbols-outlined text-[64px] text-outline/40 mb-6"
+        className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6"
         data-icon="camera_alt"
       >
         camera_alt
@@ -23,7 +23,7 @@ function EmptyState() {
       <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
         No photos yet
       </h2>
-      <p className="font-body-md text-body-md text-outline max-w-xs leading-relaxed">
+      <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed">
         The collection is empty for now. Photos will appear here once they are
         uploaded through the admin panel.
       </p>
@@ -56,9 +56,12 @@ export default function GalleryClient({
 
   return (
     <>
-      {/* Filter pills — single segmented-control container */}
-      <section className="mb-section-gap flex justify-center">
-        <div className="filter-group rounded-full flex items-center gap-1 overflow-x-auto no-scrollbar p-1.5">
+      {/* Filter pills — single segmented-control container. mb-16 rather than
+          the old mb-section-gap (120px): section-gap is the gap *between*
+          sections, and using it inside one left a hole three times bigger
+          than the 48px heading-to-content gap used everywhere else. */}
+      <section className="mb-16 flex justify-center">
+        <div className="filter-group rounded-full flex items-center gap-1 overflow-x-auto p-1.5">
           {FILTERS.map((filter) => (
             <button
               key={filter}
@@ -66,7 +69,7 @@ export default function GalleryClient({
               className={`px-6 py-2 rounded-full font-label-sm text-label-sm transition-all uppercase tracking-[0.1em] whitespace-nowrap ${
                 activeFilter === filter
                   ? "text-accent glass-pill-active"
-                  : "text-outline hover:text-accent hover:bg-white/10"
+                  : "text-on-surface-variant/70 hover:text-accent hover:bg-white/10"
               }`}
             >
               {filter}
@@ -83,12 +86,12 @@ export default function GalleryClient({
           /* Category filter is active but nothing matches — still a subset empty state */
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <span
-              className="material-symbols-outlined text-[48px] text-outline/40 mb-4"
+              className="material-symbols-outlined text-[48px] text-on-surface-variant/30 mb-4"
               data-icon="filter_list_off"
             >
               filter_list_off
             </span>
-            <p className="font-body-md text-body-md text-outline">
+            <p className="font-body-md text-body-md text-on-surface-variant/70">
               No photos in this category yet.
             </p>
           </div>
@@ -108,7 +111,12 @@ export default function GalleryClient({
                         : `/lightbox/${photo.id}?filter=${encodeURIComponent(activeFilter)}`
                     }
                   >
-                    <div className={`${photo.aspect} w-full bg-surface-container-low`}>
+                    {/* rounded-2xl to match Selected Frames and the About
+                        portrait — gallery media was the only photo surface on
+                        the site with square corners. */}
+                    <div
+                      className={`${photo.aspect} w-full bg-surface-container-low rounded-2xl overflow-hidden`}
+                    >
                       {/* Keep plain <img> consistent with the Phase 2 port.
                           next/image is reserved for when Cloudinary loader is
                           wired up in a future pass. */}

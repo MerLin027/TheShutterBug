@@ -70,7 +70,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="admin-modal-enter liquid-glass rounded-xl w-full max-w-lg mx-4 p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+      <div className="admin-modal-enter liquid-glass rounded-2xl w-full max-w-lg mx-4 p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-headline-md text-headline-md text-on-surface">
@@ -85,7 +85,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
         </div>
 
         {/* Preview */}
-        <div className="rounded-lg overflow-hidden bg-surface-container max-h-40 flex items-center justify-center">
+        <div className="rounded-2xl overflow-hidden bg-surface-container max-h-40 flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo.imageUrl}
@@ -94,65 +94,94 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
           />
         </div>
 
+        {/* All four controls use .studio-field, the same filled treatment as
+            the Contact form, the Account page and the Studio login. This
+            modal previously carried two more field styles of its own — a
+            bordered select and underlined inputs — and placeholder text at
+            white/10, which was effectively invisible. */}
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
           {/* Category */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
+          <div className="space-y-2">
+            <label
+              htmlFor="edit-category"
+              className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
+            >
               Category
             </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-surface-container-high border border-white/10 rounded-lg px-3 py-2 text-on-surface font-body-md focus:border-accent focus:ring-0 transition-colors"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </option>
-              ))}
-            </select>
+            <div className="studio-field px-4 py-3">
+              <select
+                id="edit-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c} className="bg-surface-container">
+                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Caption */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
+          <div className="space-y-2">
+            <label
+              htmlFor="edit-caption"
+              className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
+            >
               Caption
             </label>
-            <input
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="A brief description…"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
-            />
+            <div className="studio-field px-4 py-3">
+              <input
+                id="edit-caption"
+                type="text"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="A brief description…"
+                className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-on-surface-variant/40"
+              />
+            </div>
           </div>
 
           {/* Location */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
+          <div className="space-y-2">
+            <label
+              htmlFor="edit-location"
+              className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
+            >
               Location
             </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Mumbai, India"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
-            />
+            <div className="studio-field px-4 py-3">
+              <input
+                id="edit-location"
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Mumbai, India"
+                className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-on-surface-variant/40"
+              />
+            </div>
           </div>
 
           {/* Tags */}
-          <div className="space-y-1">
-            <label className="font-label-sm text-label-sm text-outline-variant px-1">
+          <div className="space-y-2">
+            <label
+              htmlFor="edit-tags"
+              className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
+            >
               Tags (comma-separated)
             </label>
-            <input
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="landscape, golden hour, coast"
-              className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
-            />
+            <div className="studio-field px-4 py-3">
+              <input
+                id="edit-tags"
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="landscape, golden hour, coast"
+                className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-on-surface-variant/40"
+              />
+            </div>
           </div>
 
           {/* Featured toggle */}
@@ -161,7 +190,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
               type="checkbox"
               checked={isFeatured}
               onChange={(e) => setIsFeatured(e.target.checked)}
-              className="rounded border-white/20 bg-surface-container-high text-tertiary focus:ring-0 focus:ring-offset-0"
+              className="rounded border-white/20 bg-surface-container-high text-accent focus:ring-0 focus:ring-offset-0"
             />
             <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">
               Featured Photo
@@ -177,7 +206,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="mt-2 liquid-glass rounded-full py-4 px-6 font-label-sm text-label-sm text-on-surface hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="btn-glass mt-2 px-8 py-3.5 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
           >
             {saving ? (
               <>

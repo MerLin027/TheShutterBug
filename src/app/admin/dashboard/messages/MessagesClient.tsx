@@ -79,7 +79,7 @@ export default function MessagesClient() {
 
   if (!token) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-primary-container">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
         <div className="admin-spinner" />
       </div>
     );
@@ -111,7 +111,7 @@ export default function MessagesClient() {
             <p className="font-label-sm text-label-sm text-on-surface-variant uppercase mb-2">
               Inbox
             </p>
-            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
+            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">
               All Submissions
             </h2>
           </div>
@@ -151,13 +151,13 @@ export default function MessagesClient() {
         {/* Empty State */}
         {!loading && !error && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <span className="material-symbols-outlined text-[64px] text-outline/40 mb-6">
+            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6">
               mail_outline
             </span>
             <h3 className="font-headline-md text-headline-md text-on-surface mb-3">
               No messages yet
             </h3>
-            <p className="font-body-md text-body-md text-outline max-w-xs leading-relaxed">
+            <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed">
               When visitors submit the contact form their messages will
               appear here.
             </p>
@@ -172,7 +172,7 @@ export default function MessagesClient() {
               return (
                 <div
                   key={msg._id}
-                  className="liquid-glass rounded-xl overflow-hidden transition-all duration-300"
+                  className="liquid-glass rounded-2xl overflow-hidden transition-all duration-300"
                 >
                   {/* Row header — always visible */}
                   <button

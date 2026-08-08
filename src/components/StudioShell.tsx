@@ -34,8 +34,8 @@ export default function StudioShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="bg-primary-container text-on-surface font-body-md min-h-screen antialiased selection:bg-surface-variant selection:text-on-surface">
-      <div className="flex h-screen overflow-hidden">
+    <div className="bg-primary-container text-on-surface font-body-md min-h-[100dvh] antialiased selection:bg-surface-variant selection:text-on-surface">
+      <div className="flex h-[100dvh] overflow-hidden">
         {/* ─── Sidebar (desktop) ──────────────────────────────────────────── */}
         <nav className="studio-sidebar hidden md:flex flex-col h-full p-4 gap-element-gap fixed left-0 top-0 w-64 z-40">
           <Link
@@ -55,7 +55,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all group ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all group ${
                     active
                       ? "bg-accent/10 text-accent font-bold"
                       : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
@@ -75,7 +75,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
           <div className="flex flex-col gap-2 mt-auto border-t border-white/5 pt-4">
             <Link
               href="/"
-              className="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all group"
+              className="flex items-center gap-4 px-4 py-3 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all group"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
                 arrow_back
@@ -86,7 +86,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-4 px-4 py-3 rounded-lg text-error hover:text-error/80 hover:bg-surface-container-high transition-all group w-full text-left"
+              className="flex items-center gap-4 px-4 py-3 rounded-xl text-error hover:text-error/80 hover:bg-surface-container-high transition-all group w-full text-left"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
                 logout

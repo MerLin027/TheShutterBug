@@ -125,7 +125,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="admin-modal-enter liquid-glass rounded-xl w-full max-w-lg mx-4 p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+      <div className="admin-modal-enter liquid-glass rounded-2xl w-full max-w-lg mx-4 p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-headline-md text-headline-md text-on-surface">
@@ -160,7 +160,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
               <img
                 src={preview}
                 alt="Preview"
-                className="max-h-48 mx-auto rounded-lg object-contain"
+                className="max-h-48 mx-auto rounded-xl object-contain"
               />
             ) : (
               <div className="flex flex-col items-center gap-3 py-6">
@@ -170,7 +170,9 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
                 <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
                   Drop an image here, or click to browse
                 </p>
-                <p className="text-xs text-outline">Images only · max 10MB</p>
+                <p className="font-body-md text-xs text-on-surface-variant/70">
+                  Images only · max 10MB
+                </p>
               </div>
             )}
             <input
@@ -256,7 +258,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
           <button
             type="submit"
             disabled={uploading || !file}
-            className="mt-2 liquid-glass rounded-full py-4 px-6 font-label-sm text-label-sm uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="btn-glass mt-2 px-8 py-3.5 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
           >
             {uploading ? (
               <>

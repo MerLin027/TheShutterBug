@@ -204,7 +204,7 @@ export default function DashboardClient() {
   // ── Loading state (addition #3) — show spinner if no token ──────────────
   if (!token) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-primary-container">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
         <div className="admin-spinner" />
       </div>
     );
@@ -259,7 +259,10 @@ export default function DashboardClient() {
             <p className="font-label-sm text-label-sm text-on-surface-variant uppercase mb-2">
               Portfolio Management
             </p>
-            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
+            {/* headline-lg-mobile, not headline-lg: this sits under the top
+                bar's headline-md <h1>, so the old size made the section
+                heading larger than the page heading above it. */}
+            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">
               Gallery
             </h2>
           </div>
@@ -275,13 +278,13 @@ export default function DashboardClient() {
           </div>
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <span className="material-symbols-outlined text-[64px] text-outline/40 mb-6">
+            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6">
               photo_library
             </span>
             <h3 className="font-headline-md text-headline-md text-on-surface mb-3">
               No photos yet
             </h3>
-            <p className="font-body-md text-body-md text-outline max-w-xs leading-relaxed mb-6">
+            <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed mb-6">
               Upload your first photo to start building your curated
               gallery.
             </p>
@@ -361,7 +364,7 @@ export default function DashboardClient() {
               setDeletingPhoto(null);
           }}
         >
-          <div className="admin-modal-enter liquid-glass rounded-xl w-full max-w-sm mx-4 p-8 flex flex-col gap-6 text-center">
+          <div className="admin-modal-enter liquid-glass rounded-2xl w-full max-w-sm mx-4 p-8 flex flex-col gap-6 text-center">
             <span className="material-symbols-outlined text-[48px] text-error mx-auto">
               delete_forever
             </span>

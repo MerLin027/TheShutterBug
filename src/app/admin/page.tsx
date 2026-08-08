@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
   // Show spinner while redirecting (addition #3 — no flash)
   if (checking) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-background">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
         <div className="admin-spinner" />
       </div>
     );
@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
      Literal port of design-reference/admin-login.html
      ------------------------------------------------------------------- */
   return (
-    <div className="bg-background text-on-surface h-screen w-screen overflow-hidden relative font-body-md antialiased">
+    <div className="bg-primary-container text-on-surface h-[100dvh] w-full overflow-hidden relative font-body-md antialiased">
       {/* Background Image with Heavy Blur */}
       <div className="absolute inset-0 w-full h-full z-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -84,50 +84,65 @@ export default function AdminLoginPage() {
 
       {/* Main Content Container */}
       <main className="relative z-10 w-full h-full flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop">
-        {/* Brand Header (Subtle) */}
+        {/* Brand Header (Subtle) — the site name in the same face it carries
+            in the navbar and the Studio sidebar, rather than uppercase
+            tightly-tracked Jost, which matched nothing else on the site. */}
         <div className="absolute top-8 left-0 w-full flex justify-center opacity-70">
-          <h1 className="font-display-lg text-headline-md tracking-tighter text-on-surface">
-            THE SHUTTER BUG
+          <h1 className="font-title text-[1.5rem] leading-none text-on-surface">
+            The Shutter Bug
           </h1>
         </div>
 
         {/* Floating Login Card */}
-        <div className="liquid-glass rounded-xl w-full max-w-sm p-8 flex flex-col gap-8 transform transition-transform hover:scale-[1.01] duration-500">
-          <div className="text-center space-y-2">
-            <h2 className="font-headline-md text-headline-md text-on-surface">
+        <div className="liquid-glass rounded-2xl w-full max-w-sm p-8 flex flex-col gap-8 transform transition-transform hover:scale-[1.01] duration-300">
+          <div className="text-center">
+            <h2 className="font-title text-[1.5rem] leading-tight text-on-surface">
               Studio Access
             </h2>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">
-              SECURE PORTAL
-            </p>
           </div>
 
-          <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-            <div className="space-y-1 group">
-              <label className="font-label-sm text-label-sm text-outline-variant px-1 group-focus-within:text-tertiary transition-colors">
+          {/* Placeholders removed per the brief. With no placeholder text the
+              visible <label> is the only thing naming each field, so both are
+              now properly associated by htmlFor/id — previously neither label
+              pointed at its input. Fields use .studio-field, the same filled
+              treatment as the Contact form and the Account page, instead of
+              this page's own one-off underline style. */}
+          <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label
+                htmlFor="admin-email"
+                className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
+              >
                 Email
               </label>
-              <input
-                className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
-                placeholder="admin@obsidian.com"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <div className="studio-field px-4 py-3">
+                <input
+                  id="admin-email"
+                  className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-            <div className="space-y-1 group">
-              <label className="font-label-sm text-label-sm text-outline-variant px-1 group-focus-within:text-tertiary transition-colors">
+            <div className="space-y-2">
+              <label
+                htmlFor="admin-password"
+                className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
+              >
                 Password
               </label>
-              <input
-                className="w-full bg-transparent border-0 border-b border-white/10 focus:border-accent focus:ring-0 text-on-surface font-body-md px-1 py-2 transition-colors placeholder:text-white/10"
-                placeholder="••••••••"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="studio-field px-4 py-3">
+                <input
+                  id="admin-password"
+                  className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             {/* Error message */}
@@ -136,7 +151,7 @@ export default function AdminLoginPage() {
             )}
 
             <button
-              className="mt-4 liquid-glass rounded-full py-4 px-6 font-label-sm text-label-sm text-on-surface hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="btn-glass mt-2 px-8 py-3.5 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center justify-center gap-3 group"
               type="submit"
               disabled={loading}
             >

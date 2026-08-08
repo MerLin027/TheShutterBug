@@ -11,10 +11,15 @@ export default async function Home() {
   const featured = await fetchFeaturedPhotos();
 
   return (
-    <div className="text-on-surface antialiased bg-[#0A0A0A]">
+    <div className="bg-primary-container text-on-surface font-body-md antialiased">
       <SiteNav />
-      <HeroParallax />
-      <SelectedFrames photos={featured} />
+      {/* Home had no <main> at all — the hero is a <header> and Selected
+          Frames a bare <section>, which left the page with no primary
+          landmark for screen readers or the skip-link to target. */}
+      <main id="main">
+        <HeroParallax />
+        <SelectedFrames photos={featured} />
+      </main>
       <SiteFooter />
     </div>
   );

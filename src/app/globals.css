@@ -73,14 +73,18 @@
   --spacing-margin-mobile: 1.25rem;/* 20px */
   --spacing-element-gap: 1rem;     /* 16px */
 
-  /* Font families */
-  --font-family-headline-lg-mobile: "Inter", sans-serif;
-  --font-family-body-lg: "Inter", sans-serif;
-  --font-family-label-sm: "Space Grotesk", sans-serif;
-  --font-family-body-md: "Inter", sans-serif;
-  --font-family-headline-md: "Inter", sans-serif;
-  --font-family-headline-lg: "Inter", sans-serif;
-  --font-family-display-lg: "Inter", sans-serif;
+  /* Font families — Jost everywhere except .font-title (Playwrite VN).
+     Jost is a variable geometric sans, wght 100-900, x-height 0.460em and
+     cap 0.700em (ratio 0.657), so it stays readable at the 0.75rem label
+     size the site uses heavily. It replaces Inter (body/headings) and
+     Space Grotesk (labels), neither of which is referenced anywhere else. */
+  --font-family-headline-lg-mobile: "Jost", sans-serif;
+  --font-family-body-lg: "Jost", sans-serif;
+  --font-family-label-sm: "Jost", sans-serif;
+  --font-family-body-md: "Jost", sans-serif;
+  --font-family-headline-md: "Jost", sans-serif;
+  --font-family-headline-lg: "Jost", sans-serif;
+  --font-family-display-lg: "Jost", sans-serif;
 
   /* Font sizes */
   --font-size-headline-lg-mobile: 2rem;      /* 32px */
@@ -115,6 +119,25 @@
   --line-height-display-lg: 5.75rem;/* 92px */
   --letter-spacing-display-lg: -0.04em;
   --font-weight-display-lg: 700;
+
+  /* Motion tokens.
+
+     Tailwind's own default timing function is cubic-bezier(0.4, 0, 0.2, 1) —
+     an ease-in-out. Every bare `transition-colors` / `transition-all` on this
+     site was silently inheriting it, so the site had two motion languages: the
+     considered expo-out curve on anything Framer Motion drove, and a generic
+     ease-in-out on every hover. Overriding the default here fixes all ~20 of
+     them at once, without touching a single component.
+
+     One curve, four durations — the audit's ceiling is 3-5. */
+  --default-transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  --default-transition-duration: 300ms;
+
+  --ease-brand: cubic-bezier(0.25, 1, 0.5, 1);
+  --duration-micro: 200ms;   /* icon nudges, small state flips */
+  --duration-base: 300ms;    /* hovers, colour changes, menus */
+  --duration-reveal: 600ms;  /* scroll-in reveals */
+  --duration-slow: 700ms;    /* image scale on hover */
 }
 
 /* ─── Base styles ───────────────────────────────────────────────────────── */
@@ -135,6 +158,88 @@ html {
 body {
     background-color: #0A0A0A;
     color: #e5e2e1;
+    /* Base body face. Every `font-*` utility resolves to Jost too (tokens
+       above); this covers anything that carries no font utility at all. */
+    font-family: "Jost", sans-serif;
+    font-weight: 400;
+}
+
+/* Scrollbar hidden site-wide — purely visual. No overflow value changes,
+   so wheel, trackpad, touch and keyboard scrolling (arrows, space, PgUp/
+   PgDn, Home/End) all behave exactly as before; the bar just isn't
+   painted. Applied with `*` rather than only html/body because the Studio
+   shell scrolls in its own `overflow-y-auto` <main>, not on the document. */
+* {
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none;   /* legacy Edge / IE */
+}
+
+*::-webkit-scrollbar {          /* Chrome, Safari, Edge */
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* Keyboard focus, site-wide, in the site accent. Hiding the scrollbar makes
+   a visible focus ring more important, not less — it's often the only cue
+   left that keyboard navigation has moved. */
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Orphan control. Headings were breaking with a single word stranded on the
+   last line ("Selected / frames"), which is one of the tells that separates a
+   typeset page from a generated one. `balance` evens the line lengths of short
+   headings; `pretty` only prevents the last-line orphan, which is the right
+   trade for body copy where balancing every paragraph is expensive. */
+h1, h2, h3 {
+    text-wrap: balance;
+}
+
+p {
+    text-wrap: pretty;
+}
+
+/* Reduced motion, site-wide. This covers everything CSS drives; the Framer
+   Motion layers (hero parallax, scroll reveals, page fade) are gated
+   separately in JS via useReducedMotion, because inline transforms are not
+   CSS transitions and this block cannot reach them.
+   The hero parallax is the reason this matters — a large image tracking the
+   scroll position is the single most vestibular-triggering thing here. */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Film grain, site-wide. It was previously on the Contact page alone, which
+   made that one page read as a different surface from the rest — the exact
+   page-to-page inconsistency this pass is about. Fixed + pointer-events-none
+   so it never joins a scrolling container (a scrolling noise layer forces a
+   repaint every frame). Sits just under the navbar's layer rather than at an
+   arbitrary z-9999, so modals and the nav still stack above it. */
+.noise-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 40;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 /* ─── Utility classes (verbatim from Stitch exports) ────────────────────── */
@@ -145,82 +250,21 @@ body {
 }
 
 /* Home page — photo grid */
-.glass-edge {
-    box-shadow: inset 1px 1px 0px 0px rgba(255, 255, 255, 0.15), inset -1px -1px 0px 0px rgba(255, 255, 255, 0.05);
-}
 
-.masonry-grid {
-    column-count: 1;
-    column-gap: 24px;
-}
+/* Contact page — liquid glass form styles.
 
-@media (min-width: 768px) {
-    .masonry-grid {
-        column-count: 2;
-    }
-}
-
-@media (min-width: 1024px) {
-    .masonry-grid {
-        column-count: 3;
-    }
-}
-
-.masonry-item {
-    break-inside: avoid;
-    margin-bottom: 24px;
-}
-
-.photo-card:hover img {
-    transform: scale(1.02);
-}
-
-.photo-card img {
-    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.photo-overlay {
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.photo-card:hover .photo-overlay {
-    opacity: 1;
-}
-
-/* Contact page — liquid glass form styles */
+   NOTE, and it applies to every glass rule in this file: do NOT hand-write
+   the -webkit- prefixed backdrop-filter next to the standard one. Lightning
+   CSS (Tailwind v4's minifier) auto-prefixes from the project's browser
+   targets, but when both are already present it collapses the pair and keeps
+   only the -webkit- form — which silently drops the blur in Firefox, where
+   only the unprefixed property exists. Authoring the standard property alone
+   emits both, correctly. */
 .liquid-glass {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.liquid-glass-input {
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-}
-
-.liquid-glass-input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-bottom-color: var(--color-accent);
-    box-shadow: 0 4px 20px -5px rgba(212, 175, 55, 0.15);
-    outline: none;
-}
-
-/* Contact page — noise texture overlay */
-.noise-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 /* Contact page — fade-in animation */
@@ -236,13 +280,6 @@ body {
 }
 
 /* Work page — horizontal scroll hiding */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
 
 /* Work page — active filter pill. Uses the site accent so the active
    state reads the same as every other active state on the site. */
@@ -277,19 +314,11 @@ body {
 }
 
 /* Admin dashboard — image scale on card hover */
-.image-scale-hover img {
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.image-scale-hover:hover img {
-    transform: scale(1.02);
-}
 
 /* Admin — modal backdrop */
 .admin-modal-backdrop {
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
 }
 
 /* Admin — modal enter animation */
@@ -323,16 +352,50 @@ body {
 }
 
 /* Admin — drag overlay styles */
-.admin-drag-overlay {
-    opacity: 0.85;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    transform: scale(1.03);
-}
 
 /* ─── Stage 1 — Shared restructure additions ────────────────────────────── */
 
+/* Shared content column. The footer and every page heading/body block sit
+   inside this so text measures line up page to page instead of running the
+   full viewport width on wide screens. Photo grids stay full-bleed on
+   purpose — the imagery is the subject, the copy is not. */
+.site-container {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+/* One primary pill button for the whole site. Before this the hero CTA used
+   .nav-pill, the contact submit and the Studio submits used .liquid-glass,
+   and between them they had four different padding pairs and three different
+   hover treatments — two of which didn't use the accent at all. */
+.btn-glass {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    transition: color 0.3s ease, background-color 0.3s ease,
+                border-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-glass:hover:not(:disabled) {
+    color: var(--color-accent);
+    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.btn-glass:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn-glass:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Site title / display headings — curved/flowing display face. Used at both
-   large (hero) and small (navbar/studio) sizes; see .hero-title-base and
+   large (hero) and small (navbar/studio) sizes; see .hero-title-line and
    SiteNav for the per-size legibility tuning this font needs. */
 /* Playwrite VN is a variable calligraphy face, weight 100-400 only (no
    bold, no italic). 400 is the heaviest available and the only weight
@@ -347,88 +410,88 @@ body {
 .nav-pill {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
     border: 0.5px solid rgba(255, 255, 255, 0.15);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* ── Home hero — glass TEXT (not a glass box) ───────────────────────────
-   The frosted refraction is clipped to the letterforms themselves via the
-   inline SVG <mask> in HeroParallax. No card, no panel, no border. */
+   The letterforms are filled with the hero photograph itself, frosted: an
+   SVG <pattern> holding a blurred, lifted copy of the same image, in the
+   hero's own coordinate space. So what shows inside a letter is the part of
+   the photo that letter is actually sitting on — genuinely translucent, no
+   box, no panel, no flat glow.
 
-/* Sized so the wordmark's rendered width lands ~12% wider than the boat
-   silhouette behind it, at every viewport shape. Derivation:
-     - boat measured in the source photo: 246px of 1376 = 17.9% of image width
-     - the <img> is object-cover + scale-105, so its rendered width is
-       1.05 x max(vw, 1.7917vh)   (1.7917 = the photo's 1376/768 aspect)
-     - therefore boat width = max(18.8vw, 33.7vh)
-     - target = boat x 1.12 = max(21.1vw, 37.7vh)
-     - "The Shutter Bug" in Playwrite VN advances 9.407em, so
-       font-size = target / 9.407 = max(2.24vw, 4.01vh)
-   The outer min() is an overflow guard: it caps the wordmark at ~88vw for
-   very tall/narrow viewports, where the vh term would otherwise run it off
-   the sides. Intentionally viewport-based, not rem — it tracks the photo,
-   not the type scale, so the 90% root font-size must not shrink it. */
-.hero-title {
-    font-size: min(max(2.24vw, 4.01vh), 9.35vw);
-    /* This string's ink spans 1.276em above the baseline to -0.776em below
-       (that deep 'g' loop) = 2.052em. The box must contain all of it: the
-       glass layer only paints inside this box, so anything taller would
-       have its frosted tops and tails clipped. */
-    height: 2.2em;
-}
+   Why a patterned copy of the photo rather than backdrop-filter over a
+   masked layer: the title rides a Framer Motion element whose opacity
+   animates on scroll, and an ancestor with opacity < 1 forms a Backdrop
+   Root — which would cut backdrop-filter off from the photograph the moment
+   the page started scrolling, collapsing the effect to a flat wash. A
+   pattern fill has no such dependency, needs no CSS mask support, and stays
+   registered with the photo at every scroll position because the title
+   layer rides the photo's parallax rather than the content's. */
 
 .hero-title-svg {
     display: block;
-    overflow: visible;
+    width: 100%;
+    height: 100%;
 }
 
-/* Shared by the visible text and the mask text. font-size: inherit rather
-   than a repeated value so the two can never drift out of register. */
-.hero-title-text {
+/* Shared by all three text layers (shade, glass, sheen) so they can never
+   drift out of register — same class, same coordinates, one font-size.
+
+   Sized against the boat in the photograph rather than the type scale:
+     - boat measured in the source photo (connected-component analysis):
+       x 569..823 of 1376 = 18.5% of image width, centred at 50.6%
+     - the <img> is object-cover + scale-105, so its rendered width is
+       1.05 x max(vw, 1.7917vh)   (1.7917 = the photo's 1376/768 aspect)
+     - "The Shutter Bug" advances 9.407em in Playwrite VN
+   which lands the wordmark at a steady 1.09x the boat's rendered width from
+   320x568 up to 4K. The outer min() is an overflow guard for very tall,
+   narrow viewports, where the boat is wider than the screen and matching it
+   exactly is impossible. Deliberately viewport-based, not rem: it tracks the
+   photograph, so the 90% root font-size must not shrink it.
+
+   dvh rather than vh on the height term: the hero box is 100dvh, so the two
+   have to agree or the wordmark would be sized against a taller viewport
+   than the one it is actually sitting in on iOS Safari. The x/y placement is
+   expressed as a percentage of the SVG viewport, so it follows the box for
+   free and needs no equivalent change. */
+.hero-title-line {
     font-family: "Playwrite VN", cursive;
     font-weight: 400;
-    font-size: inherit;
+    font-size: min(max(2.24vw, 4.01dvh), 9.35vw);
     letter-spacing: 0;
 }
 
-/* Visible base: legibility layer under the glass, and the complete
-   fallback when the mask can't render. */
-.hero-title-base {
-    fill: #f5f2ee;
-    filter:
-        drop-shadow(0 2px 18px rgba(0, 0, 0, 0.55))
-        drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+/* Soft dark aura behind the glyphs. Translucent glass over a bright sunset
+   sky has almost no contrast on its own; this is what separates the
+   letterform from the sky, and it is also the text-shadow half of the
+   plain-text fallback, so it renders unconditionally. */
+.hero-title-shade {
+    fill: rgba(0, 0, 0, 0.55);
+    stroke: rgba(0, 0, 0, 0.55);
+    stroke-width: 0.07em;
+    paint-order: stroke;
 }
 
-/* Frosted layer, clipped to the glyph shapes. Hidden by default so
-   browsers without usable mask support show the solid text alone rather
-   than a stray blurred rectangle. */
-.hero-title-glass {
-    display: none;
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-}
+/* Glass body — filled with the frosted photograph. The `fill` attribute in
+   HeroParallax carries an SVG paint fallback (`url(#…) #f5f2ee`), so if the
+   pattern reference can't resolve the glyphs fall back to solid warm
+   off-white, which with .hero-title-shade behind it is the plain-text
+   fallback. No @supports gate needed: pattern fills are SVG 1.1. */
 
-@supports ((mask-image: url(#m)) or (-webkit-mask-image: url(#m))) and
-          ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .hero-title-glass {
-        display: block;
-        backdrop-filter: blur(9px) brightness(1.3) saturate(1.45);
-        -webkit-backdrop-filter: blur(9px) brightness(1.3) saturate(1.45);
-        mask-image: url(#heroGlassMask);
-        -webkit-mask-image: url(#heroGlassMask);
-        mask-repeat: no-repeat;
-        -webkit-mask-repeat: no-repeat;
-    }
+/* Specular top edge and hairline rim — the cue that reads as "glass" rather
+   than "photo poking through a hole". */
+.hero-title-sheen {
+    fill: url(#heroTitleSheen);
+    stroke: rgba(255, 255, 255, 0.5);
+    stroke-width: 0.02em;
 }
 
 /* Gallery filter pills — single segmented-control container */
 .filter-group {
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 0.5px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -446,9 +509,12 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Focus lands on the accent, matching the :focus-visible ring above, so a
+   focused field reads the same as every other focused/active thing on the
+   site instead of an unrelated white. */
 .studio-field:focus-within {
     background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(212, 175, 55, 0.5);
 }
 
 /* Studio — drive-style drop zone active/dragging state */

@@ -87,7 +87,7 @@ export default function StudioMenu({
                       <Link
                         href={item.href}
                         onClick={() => onOpenChange(false)}
-                        className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-all ${
+                        className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${
                           active
                             ? "bg-accent/10 text-accent font-bold"
                             : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
@@ -115,7 +115,7 @@ export default function StudioMenu({
                     onOpenChange(false);
                     onSignOut();
                   }}
-                  className="flex items-center gap-4 px-4 py-4 rounded-lg text-error hover:bg-surface-container-high transition-all text-left"
+                  className="flex items-center gap-4 px-4 py-4 rounded-xl text-error hover:bg-surface-container-high transition-all text-left"
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     logout
