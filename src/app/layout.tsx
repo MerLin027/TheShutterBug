@@ -45,7 +45,7 @@ export default function RootLayout({
             every page before reaching content. */}
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-5 focus:py-2.5 focus:font-label-sm focus:text-label-sm focus:uppercase focus:tracking-widest focus:text-[#1c1b1b]"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-5 focus:py-2.5 focus:font-label-sm focus:text-label-sm focus:uppercase focus:tracking-widest focus:text-on-accent"
         >
           Skip to content
         </a>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchPhoto, fetchPhotoNeighbours } from "@/lib/data";
+import LightboxKeys from "@/components/LightboxKeys";
 
 export const revalidate = 60;
 
@@ -36,8 +37,20 @@ export default async function Lightbox({
 
   return (
     <div className="bg-primary-container min-h-[100dvh] w-full flex items-center justify-center overflow-hidden font-body-md text-on-surface">
-      {/* Main Lightbox Image Container */}
-      <div className="relative w-full h-[100dvh] flex items-center justify-center p-4 md:p-12 lg:p-24">
+      {/* Escape closes, arrows page. Renders nothing. */}
+      <LightboxKeys
+        prevHref={prev ? lightboxHref(prev.id) : undefined}
+        nextHref={next ? lightboxHref(next.id) : undefined}
+        closeHref={closeHref}
+      />
+
+      {/* Main Lightbox Image Container. <main id="main"> because the root
+          layout renders the skip link on every route including this one, and
+          it had no target here. */}
+      <main
+        id="main"
+        className="relative w-full h-[100dvh] flex items-center justify-center p-4 md:p-12 lg:p-24"
+      >
         {/* The Image */}
         <img
           alt={photo.alt}
@@ -47,15 +60,17 @@ export default async function Lightbox({
         {/* Subtle Caption Overlay */}
         <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 max-w-sm">
           <div className="nav-pill rounded-2xl p-4 transition-opacity duration-300">
-            <h2 className="font-headline-md text-headline-md text-on-surface mb-1">
+            {/* <h1>, not <h2> — this is the page's only heading, and it was
+                starting the document outline at level 2. */}
+            <h1 className="font-headline-md text-headline-md text-on-surface mb-1">
               {photo.title}
-            </h2>
+            </h1>
             {photo.location && (
               <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
                 <span
                   className="material-symbols-outlined text-[16px]"
                   data-icon="location_on"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
+                  style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
                 >
                   location_on
                 </span>
@@ -64,7 +79,7 @@ export default async function Lightbox({
             )}
           </div>
         </div>
-      </div>
+      </main>
 
       {/* BottomNavBar (Lightbox Controls) */}
       {/* .nav-pill rather than this page's own inline glass recipe, so the
@@ -101,21 +116,11 @@ export default async function Lightbox({
           </span>
         )}
 
-        {/* Info */}
-        <button
-          aria-label="Info"
-          className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 transition-colors hover:text-accent group"
-        >
-          <span
-            className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-            data-icon="info"
-          >
-            info
-          </span>
-          <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-            Info
-          </span>
-        </button>
+        {/* The "Info" button that used to sit here is gone. It had no
+            onClick — it hovered, it labelled itself, it did nothing — and the
+            only thing it could plausibly have toggled (title + location) is
+            already permanently visible in the caption pill above. Prev /
+            Close / Next is the complete set of actions this view has. */}
 
         {/* Close (X) */}
         <Link

@@ -96,7 +96,7 @@ export default function HeroParallax() {
           className="w-full h-full object-cover opacity-80 scale-105"
           src={HERO_IMAGE}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/30 to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-container/30 to-primary-container" />
       </motion.div>
 
       {/* The accessible, machine-readable heading. The painted title is the
@@ -224,11 +224,13 @@ export default function HeroParallax() {
 
         <Link
           href="/work"
-          className="btn-glass px-8 py-3.5 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center gap-3"
+          className="btn-glass group pl-8 pr-2 py-2 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center gap-4"
         >
           Enter the Gallery
-          <span className="material-symbols-outlined text-[18px]">
-            arrow_forward
+          <span className="btn-icon-nest">
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_forward
+            </span>
           </span>
         </Link>
       </motion.div>

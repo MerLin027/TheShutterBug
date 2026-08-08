@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import StudioShell from "@/components/StudioShell";
+import StudioTopBar from "@/components/StudioTopBar";
+import { MessageListSkeleton, StudioBoot } from "@/components/StudioSkeletons";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
@@ -78,56 +80,35 @@ export default function MessagesClient() {
   }, [fetchMessages]);
 
   if (!token) {
-    return (
-      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
-        <div className="admin-spinner" />
-      </div>
-    );
+    return <StudioBoot />;
   }
 
   return (
     <StudioShell>
-      {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-surface/10 backdrop-blur-3xl border-b border-white/15">
-        <div className="flex justify-between items-center gap-4 px-gutter py-4 w-full h-20 pl-20 md:pl-gutter">
-          <h1 className="font-headline-md text-headline-md font-semibold text-on-surface truncate">
-            Messages
-          </h1>
-          <button
-            onClick={fetchMessages}
-            className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-all"
-            title="Refresh"
-          >
-            <span className="material-symbols-outlined">refresh</span>
-          </button>
-        </div>
-      </header>
+      {/* One heading, in the bar — this page used to print "Messages" here
+          and "Inbox / All Submissions" again directly below it. */}
+      <StudioTopBar
+        title="Messages"
+        count={
+          loading
+            ? undefined
+            : `${messages.length} ${messages.length === 1 ? "message" : "messages"}`
+        }
+      >
+        <button
+          onClick={fetchMessages}
+          className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-all"
+          title="Refresh"
+          aria-label="Refresh messages"
+        >
+          <span className="material-symbols-outlined">refresh</span>
+        </button>
+      </StudioTopBar>
 
       {/* Content Area */}
       <div className="px-margin-mobile md:px-margin-desktop py-10 min-h-full">
-        {/* Section Header */}
-        <div className="mb-10 flex justify-between items-end">
-          <div>
-            <p className="font-label-sm text-label-sm text-on-surface-variant uppercase mb-2">
-              Inbox
-            </p>
-            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">
-              All Submissions
-            </h2>
-          </div>
-          {!loading && (
-            <span className="px-3 py-1 rounded-full bg-surface-container border border-outline-variant font-label-sm text-label-sm uppercase">
-              {messages.length} {messages.length === 1 ? "Message" : "Messages"}
-            </span>
-          )}
-        </div>
-
         {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-32">
-            <div className="admin-spinner" />
-          </div>
-        )}
+        {loading && <MessageListSkeleton />}
 
         {/* Error */}
         {!loading && error && (
@@ -140,7 +121,7 @@ export default function MessagesClient() {
             </p>
             <button
               onClick={fetchMessages}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-on-surface font-label-sm text-label-sm uppercase transition-colors"
+              className="btn-outline flex items-center gap-2 px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase"
             >
               <span className="material-symbols-outlined text-[16px]">refresh</span>
               Retry
@@ -170,9 +151,12 @@ export default function MessagesClient() {
             {messages.map((msg) => {
               const isOpen = expanded === msg._id;
               return (
+                /* .studio-card, not .liquid-glass: one blur layer per row
+                   inside a scrolling container is the exact per-card glass
+                   the design philosophy rules out. */
                 <div
                   key={msg._id}
-                  className="liquid-glass rounded-2xl overflow-hidden transition-all duration-300"
+                  className="studio-card rounded-2xl overflow-hidden"
                 >
                   {/* Row header — always visible */}
                   <button
@@ -254,7 +238,7 @@ export default function MessagesClient() {
                         <div>
                           <a
                             href={`mailto:${msg.email}?subject=Re: Your inquiry`}
-                            className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-on-surface font-label-sm text-label-sm uppercase transition-colors"
+                            className="btn-outline inline-flex items-center gap-2 px-5 py-2 text-on-surface font-label-sm text-label-sm uppercase"
                           >
                             <span className="material-symbols-outlined text-[16px]">
                               reply

@@ -12,7 +12,7 @@ export default function SelectedFrames({ photos }: { photos: Photo[] }) {
 
   return (
     <section className="w-full px-margin-mobile md:px-margin-desktop py-section-gap">
-      <Reveal className="flex items-end justify-between mb-12">
+      <Reveal className="flex items-end justify-between mb-12" blur>
         {/* One step below a page <h1> (headline-lg): section headings sit at
             headline-lg-mobile at every width, so the type scale reads as a
             hierarchy rather than two things at the same size. */}
@@ -45,7 +45,7 @@ export default function SelectedFrames({ photos }: { photos: Photo[] }) {
               className="group block"
             >
               <div
-                className={`${photo.aspect} w-full rounded-2xl overflow-hidden bg-surface-container-low`}
+                className={`photo-surface ${photo.aspect} w-full rounded-2xl overflow-hidden bg-surface-container-low`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

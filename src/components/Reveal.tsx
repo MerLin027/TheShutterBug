@@ -25,18 +25,31 @@ export default function Reveal({
   delay = 0,
   className,
   y = 24,
+  blur = false,
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
   y?: number;
+  /**
+   * Resolve from a soft blur as well as fading up — content arriving into
+   * focus rather than sliding in. Opt-in, and deliberately so: `filter` is
+   * the one property here that isn't free, and blurring a masonry column of
+   * full-size photographs mid-scroll is a measurable frame cost for an
+   * effect nobody sees on an image that's still moving. Use it on text
+   * blocks and headings; leave photo grids on opacity + transform.
+   *
+   * Safe for SSR — this is a prop, not a client-detected value, so the
+   * initial style is identical on both passes.
+   */
+  blur?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y, filter: blur ? "blur(6px)" : "blur(0px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{
         duration: reduceMotion ? 0 : 0.6,

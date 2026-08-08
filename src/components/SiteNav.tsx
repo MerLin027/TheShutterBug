@@ -4,12 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
- * Shared navbar for every public page (§1.1). Order: title, Gallery (icon
- * button, not text), About, Contact. No Home item — the title serves that
- * role. No Admin link — Studio access lives in the footer only (§1.4).
+ * Shared navbar for every public page (§1.1). Order: Home, Gallery (icon
+ * button, not text), About, Contact — four peers in one type treatment.
+ * No Admin link — Studio access lives in the footer only (§1.4).
+ *
+ * The first slot was the Playwrite VN wordmark through Stage 1; it now
+ * carries the same Jost label as its siblings, so the script face appears
+ * on exactly one public surface (the hero title) instead of two.
  */
 export default function SiteNav() {
   const pathname = usePathname();
+  const isHome = pathname === "/";
   const isGallery = pathname === "/work";
   const isAbout = pathname === "/about";
   const isContact = pathname === "/contact";
@@ -18,25 +23,40 @@ export default function SiteNav() {
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center w-full mt-6 px-margin-mobile md:px-margin-desktop pointer-events-none">
       {/* w-auto + max-w-full so the pill hugs its content rather than
           stretching to a fixed max-width with dead space in the middle.
-          Shortening the first item from the 15-character wordmark to "Home"
-          cut ~110px, which is what lets the pill hold one row on real phone
-          widths: measured against Playwrite VN's and Jost's actual advances
-          it needs ~295px, and a 360px viewport leaves 324px. It still
-          overflows at 320px, so it stacks to two rows only below that. */}
-      <nav className="nav-pill rounded-3xl min-[360px]:rounded-full w-auto max-w-full px-5 sm:px-7 py-2 flex flex-col min-[360px]:flex-row items-center gap-1.5 min-[360px]:gap-4 sm:gap-6 pointer-events-auto">
-        {/* Playwrite VN has an unusually tall cap height (1.257em) and a deep
-            'g' loop, so its ink runs 2.052em top-to-bottom. Sized in rem (so
-            the 90% root scales it) and kept modest: larger would push the
-            ascenders and descenders well past a deliberately thin pill.
-            Nothing clips them, so the small overhang reads as intentional for
-            a script mark. This is the only Playwrite VN on the page besides
-            the hero title — everything else is Jost. */}
+
+          Length vs. thickness: px-6/sm:px-10 and the wider inter-group gap
+          are what make the pill longer horizontally; py-2 is deliberately
+          unchanged, so it gains no thickness. Budget at the narrow end —
+          measured against Jost's actual advances at the 90% root, the row
+          needs ~300px and a 360px viewport leaves 324px, so it holds one
+          row down to 360px and stacks below that. Dropping the script
+          wordmark for a label-sized "Home" freed most of that headroom. */}
+      <nav className="nav-pill rounded-3xl min-[360px]:rounded-full w-auto max-w-full px-6 sm:px-10 py-2 flex flex-col min-[360px]:flex-row items-center gap-1.5 min-[360px]:gap-4 sm:gap-8 pointer-events-auto">
+        {/* Home carries the same label treatment as About/Contact rather than
+            the Playwrite VN wordmark it used to. It reads as a peer nav item
+            now, so it gets the same active/hover pill the others do — before
+            this it was the one nav item with no active state at all, even
+            though `/` is a page you can be on. */}
         <Link
-          className="font-title text-[1.25rem] sm:text-[1.5rem] leading-none text-on-surface hover:text-accent transition-colors whitespace-nowrap"
+          aria-current={isHome ? "page" : undefined}
+          className={`font-label-sm text-label-sm tracking-widest uppercase transition-all duration-300 px-3 py-1.5 rounded-full whitespace-nowrap ${
+            isHome
+              ? "text-accent font-bold bg-accent/10"
+              : "text-on-surface/70 hover:text-accent hover:bg-white/10"
+          }`}
           href="/"
         >
           Home
         </Link>
+
+        {/* Hairline separator — keeps "Home" reading as the anchor rather
+            than just the first of four identical labels, now that it shares
+            their type treatment. Hidden in the stacked sub-360px layout,
+            where a vertical rule between rows would be meaningless. */}
+        <span
+          aria-hidden="true"
+          className="hidden min-[360px]:block w-px h-4 bg-white/15"
+        />
 
         <div className="flex items-center gap-1.5">
           <Link
@@ -55,7 +75,9 @@ export default function SiteNav() {
                 sidebar's icons, so icons are one size site-wide. */}
             <span
               className="material-symbols-outlined text-[20px]"
-              style={{ fontVariationSettings: `'FILL' ${isGallery ? 1 : 0}` }}
+              style={{
+                fontVariationSettings: `'FILL' ${isGallery ? 1 : 0}, 'wght' 250`,
+              }}
             >
               grid_view
             </span>

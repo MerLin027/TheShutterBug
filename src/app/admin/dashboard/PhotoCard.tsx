@@ -41,7 +41,7 @@ export default function PhotoCard({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        alt={photo.caption || "Portfolio Image"}
+        alt={photo.caption || `Untitled ${photo.category} photograph`}
         className="w-full h-auto object-cover transition-all duration-700 group-hover:scale-[1.03] group-hover:blur-[2px] group-hover:brightness-75"
         src={photo.imageUrl}
       />
@@ -66,13 +66,15 @@ export default function PhotoCard({
             title={photo.isFeatured ? "Remove from Selected Frames" : "Add to Selected Frames"}
             className={`p-2 rounded-full backdrop-blur-md transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)] ${
               photo.isFeatured
-                ? "bg-accent/90 text-[#1c1b1b]"
+                ? "bg-accent/90 text-on-accent"
                 : "bg-black/60 hover:bg-black/80 text-white"
             }`}
           >
             <span
               className="material-symbols-outlined text-[18px]"
-              style={{ fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}` }}
+              style={{
+                fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}, 'wght' 250`,
+              }}
             >
               star
             </span>
@@ -89,7 +91,7 @@ export default function PhotoCard({
         {/* Prominent Delete — centered, matching the reference */}
         <button
           onClick={() => onDelete(photo)}
-          className="mx-auto flex items-center gap-2 px-5 py-2.5 rounded-full bg-error-container/90 hover:bg-error-container text-on-error-container backdrop-blur-md transition-colors font-label-sm text-label-sm uppercase tracking-widest"
+          className="btn-danger mx-auto flex items-center gap-2 px-5 py-2.5 font-label-sm text-label-sm uppercase tracking-widest"
         >
           <span className="material-symbols-outlined text-[16px]">
             delete

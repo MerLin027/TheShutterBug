@@ -74,7 +74,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-headline-md text-headline-md text-on-surface">
-            Edit Photo
+            Edit photo
           </h2>
           <button
             onClick={onClose}

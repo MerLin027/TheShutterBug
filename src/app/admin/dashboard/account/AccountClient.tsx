@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import StudioShell from "@/components/StudioShell";
+import StudioTopBar from "@/components/StudioTopBar";
+import { StudioBoot } from "@/components/StudioSkeletons";
 
 const SEED_QUOTE = "Chasing light, quietly.";
 const SEED_BIO = `I am a photographer working mostly at the edges of the day — the hour before the sun clears the horizon, and the long blue minutes after it drops behind it.
@@ -37,23 +39,12 @@ export default function AccountClient() {
   }, [token, router]);
 
   if (!token) {
-    return (
-      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
-        <div className="admin-spinner" />
-      </div>
-    );
+    return <StudioBoot />;
   }
 
   return (
     <StudioShell>
-      {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-surface/10 backdrop-blur-3xl border-b border-white/15">
-        <div className="flex items-center gap-4 px-gutter py-4 w-full h-20 pl-20 md:pl-gutter">
-          <h1 className="font-headline-md text-headline-md font-semibold text-on-surface truncate">
-            Account
-          </h1>
-        </div>
-      </header>
+      <StudioTopBar title="Account" />
 
       {/* Content Area */}
       <div className="px-margin-mobile md:px-margin-desktop py-10 min-h-full max-w-2xl">

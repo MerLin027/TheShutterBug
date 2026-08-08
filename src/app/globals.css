@@ -58,6 +58,14 @@
      `hover:text-accent` etc. all generate with full variant support. */
   --color-accent: #d4af37;
 
+  /* Foreground for anything sitting ON the accent (the Studio's solid
+     upload button, the skip link). This value was previously written as a
+     bare `text-[#1c1b1b]` in four files. It happens to equal
+     --color-surface-container-low and --color-on-primary-fixed, but reusing
+     either of those would name the wrong relationship — this is the
+     accent's on-color, and it should say so. Same hex, no palette change. */
+  --color-on-accent: #1c1b1b;
+
   /* Border radius.
 
      The Stitch export overrode only `lg` (2rem) and `xl` (3rem) and left the
@@ -95,7 +103,6 @@
   --font-family-body-md: "Jost", sans-serif;
   --font-family-headline-md: "Jost", sans-serif;
   --font-family-headline-lg: "Jost", sans-serif;
-  --font-family-display-lg: "Jost", sans-serif;
 
   /* Font sizes */
   --font-size-headline-lg-mobile: 2rem;      /* 32px */
@@ -126,10 +133,10 @@
   --letter-spacing-headline-lg: -0.02em;
   --font-weight-headline-lg: 600;
 
-  --font-size-display-lg: 5.25rem; /* 84px */
-  --line-height-display-lg: 5.75rem;/* 92px */
-  --letter-spacing-display-lg: -0.04em;
-  --font-weight-display-lg: 700;
+  /* (The display-lg scale that used to sit here — family, size, line-height,
+     tracking, weight — is gone. It came over in the Stitch export and was
+     referenced by exactly zero files; the largest type on the site is the
+     hero wordmark, which is SVG sized against the photograph, not a token.) */
 
   /* Motion tokens.
 
@@ -149,6 +156,23 @@
   --duration-base: 300ms;    /* hovers, colour changes, menus */
   --duration-reveal: 600ms;  /* scroll-in reveals */
   --duration-slow: 700ms;    /* image scale on hover */
+
+  /* Elevation.
+
+     Two shadows, both tinted rather than black. A pure rgba(0,0,0,x) shadow
+     on a #0a0a0a ground is invisible — there's nothing darker to cast onto —
+     which is why every surface on this site read as flat regardless of how
+     much box-shadow it carried. These carry the background's own warm-neutral
+     hue and lean on a wide, low-opacity ambient term plus a tight contact
+     term, which is what actually separates an object from its ground on a
+     dark surface.
+
+     Light direction is top-down and consistent: every y-offset is positive,
+     matching the inset top highlights the glass surfaces already use. */
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4),
+                 0 12px 32px -12px rgba(20, 16, 10, 0.85);
+  --shadow-lift-hover: 0 2px 4px rgba(0, 0, 0, 0.45),
+                       0 24px 56px -16px rgba(20, 16, 10, 0.95);
 }
 
 /* ─── Base styles ───────────────────────────────────────────────────────── */
@@ -255,9 +279,23 @@ p {
 
 /* ─── Utility classes (verbatim from Stitch exports) ────────────────────── */
 
-/* Material Symbols */
+/* Material Symbols.
+
+   wght 250, not the 400 default. Material's stock stroke is the single
+   loudest "component library" tell on an otherwise restrained page — it sits
+   at the same optical weight as the 500-weight labels beside it and pulls the
+   eye off the photographs. 250 is a hairline that reads as drawn rather than
+   installed, and it costs nothing: the font is loaded as a variable axis
+   (wght 100..700 in the layout <link>), so this is an axis setting, not
+   another file.
+
+   IMPORTANT for anyone adding an icon: `font-variation-settings` is a single
+   declaration, not a set of independent properties. An inline
+   style={{ fontVariationSettings: "'FILL' 1" }} REPLACES this whole line and
+   silently drops the weight back to the font's 400 default. Every filled icon
+   in the codebase therefore restates 'wght' 250 alongside its 'FILL'. */
 .material-symbols-outlined {
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-variation-settings: 'FILL' 0, 'wght' 250, 'GRAD' 0, 'opsz' 24;
 }
 
 /* Home page — photo grid */
@@ -275,7 +313,12 @@ p {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    /* Inner highlight plus the shared tinted elevation. These are all
+       floating surfaces — the four modals and the Studio login card — and
+       they previously sat on their backdrop with no cast shadow at all,
+       which on a near-black ground left them looking pasted rather than
+       lifted. */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-lift);
 }
 
 /* Contact page — fade-in animation */
@@ -405,6 +448,118 @@ p {
     cursor: not-allowed;
 }
 
+/* Trailing-icon nest. An arrow sitting naked beside the label is the single
+   most generic CTA shape there is; seating it in its own circle, flush with
+   the button's right inner edge, is what makes the button read as machined
+   rather than typed. Shared by all four glass CTAs (hero, 404, contact
+   submit, Studio login) so they stay one button.
+
+   It also solves the loading-state jump those buttons had: the spinner now
+   swaps into this circle instead of replacing the arrow with a differently
+   sized element, so the button's box never changes.
+
+   Use on a parent carrying Tailwind's `group` marker class. */
+.btn-icon-nest {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.group:hover .btn-icon-nest {
+    transform: translateX(2px);
+    background: rgba(212, 175, 55, 0.16);
+}
+
+/* ── The other three button roles ───────────────────────────────────────────
+   .btn-glass above is the default (form submits, the hero CTA). These three
+   cover the rest. Before this the outline treatment was inline-duplicated
+   four times at three different paddings (px-6 py-3, px-6 py-2.5, px-5 py-2)
+   and the destructive one existed in two opacities, so "the same button"
+   was measurably not the same button from page to page.
+
+   Padding deliberately stays on the element rather than in these classes —
+   a 12px icon button and a 32px CTA share the surface treatment but not the
+   box, and baking one padding in here would just force overrides. */
+
+/* Solid accent — the ONE primary action on a page, and only in the Studio.
+   Nothing on the public site uses it: a filled accent block would compete
+   with the photographs, which is the whole reason the public CTAs are glass.
+   The Studio is an app surface, so the hierarchy is allowed to be louder. */
+.btn-accent {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-accent:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-accent) 88%, #ffffff);
+}
+
+.btn-accent:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn-accent:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Secondary / dismissive — cancel, retry, reply. Deliberately NOT glass:
+   these sit inside modals and cards that are already glass, and stacking a
+   blur inside a blur reads as mud. Flat surface, hairline, accent on hover
+   so it belongs to the same family as everything else. */
+.btn-outline {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-full);
+    transition: color 0.3s ease, background-color 0.3s ease,
+                border-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-outline:hover:not(:disabled) {
+    color: var(--color-accent);
+    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.btn-outline:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Destructive. One opacity, not two. */
+.btn-danger {
+    background: var(--color-error-container);
+    color: var(--color-on-error-container);
+    border-radius: var(--radius-full);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-error-container) 82%, #ffffff);
+}
+
+.btn-danger:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Site title / display headings — curved/flowing display face. Used at both
    large (hero) and small (navbar/studio) sizes; see .hero-title-line and
    SiteNav for the per-size legibility tuning this font needs. */
@@ -512,6 +667,31 @@ p {
     border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Studio — page header bar (StudioTopBar). Same white-tint glass family as
+   .nav-pill and .filter-group rather than the dark `bg-surface/10` tint the
+   three copies of this bar each carried. It's sticky, so backdrop-filter is
+   legitimate here — the cost is one composited layer that never reflows. */
+.studio-topbar {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(30px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Studio — content card (message rows, and anything else that repeats down
+   a scrolling list).
+
+   This exists specifically so those things stop using .liquid-glass. A real
+   backdrop-filter on every row of a list means N composited blur layers all
+   re-rasterising on each scroll frame, inside a container that scrolls — the
+   one case both context.md's design philosophy ("not per-card") and the
+   perf guidance rule out. An opaque surface one step up from the background
+   is visually near-identical at rest and costs nothing to scroll. */
+.studio-card {
+    background: var(--color-surface-container);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
 /* Studio — rounded filled inputs (upload modal, account page) */
 .studio-field {
     background: rgba(255, 255, 255, 0.04);
@@ -528,6 +708,68 @@ p {
 .studio-field:focus-within {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* Invalid field. Border only — no red fill, no icon: the message underneath
+   already says what's wrong, and a filled error state on a dark surface
+   turns into a second accent colour competing with the gold. */
+.studio-field-error {
+    border-color: rgba(255, 180, 171, 0.55);
+}
+
+/* Focus still wins over the error border, so a field being corrected reads
+   as active rather than as still-broken. */
+.studio-field-error:focus-within {
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* ─── Depth ─────────────────────────────────────────────────────────────────
+   Photo media surface. Applied to the frame around a photograph, never to the
+   photograph's own <img>, so the shadow tracks the rounded corner rather than
+   the image box.
+
+   The lift on hover is 2px and the shadow deepens with it — small enough that
+   it reads as the print being picked up rather than as a card animating.
+   transform + box-shadow only; nothing here triggers layout. */
+.photo-surface {
+    box-shadow: var(--shadow-lift);
+    transition: box-shadow 0.3s var(--ease-brand),
+                transform 0.3s var(--ease-brand);
+}
+
+/* The lift is scoped to `.group:hover` deliberately, with no bare
+   `.photo-surface:hover` companion: the About portrait carries this class but
+   is not a link, and a non-interactive image that rises under the cursor is
+   a promise the page doesn't keep. Only media wrapped in an interactive
+   `group` (the two photo grids) moves. */
+.group:hover .photo-surface {
+    box-shadow: var(--shadow-lift-hover);
+    transform: translateY(-2px);
+}
+
+/* ─── Skeletons ─────────────────────────────────────────────────────────────
+   Loading placeholders shaped like the content that's coming, replacing the
+   bare centred spinners the Studio used. A spinner says "something is
+   happening"; a skeleton says "a grid of photographs is arriving here",
+   which is the difference between a page that looks stalled and one that
+   looks composed. The sheen is a background-position animation, so it never
+   touches layout — and the global prefers-reduced-motion block already
+   collapses its duration. */
+@keyframes skeletonSheen {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+}
+
+.skeleton {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonSheen 1.6s ease-in-out infinite;
+    border-radius: var(--radius-2xl);
 }
 
 /* Studio — drive-style drop zone active/dragging state */

@@ -19,7 +19,7 @@ export default function NotFound() {
         id="main"
         className="site-container flex-grow flex flex-col items-center justify-center text-center px-margin-mobile md:px-margin-desktop pt-32 md:pt-40 pb-section-gap"
       >
-        <Reveal className="space-y-6 max-w-md">
+        <Reveal className="space-y-6 max-w-md" blur>
           <span className="block font-label-sm text-label-sm uppercase tracking-widest text-accent">
             404
           </span>
@@ -33,11 +33,13 @@ export default function NotFound() {
           <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/work"
-              className="btn-glass px-8 py-3.5 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center gap-3"
+              className="btn-glass group pl-8 pr-2 py-2 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center gap-4"
             >
               Browse the Gallery
-              <span className="material-symbols-outlined text-[18px]">
-                arrow_forward
+              <span className="btn-icon-nest">
+                <span className="material-symbols-outlined text-[18px]">
+                  arrow_forward
+                </span>
               </span>
             </Link>
             <Link

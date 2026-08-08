@@ -18,6 +18,8 @@ import {
 import type { ApiPhoto } from "@/lib/data";
 import { revalidatePublicPages } from "../actions";
 import StudioShell from "@/components/StudioShell";
+import StudioTopBar from "@/components/StudioTopBar";
+import { PhotoGridSkeleton, StudioBoot } from "@/components/StudioSkeletons";
 import PhotoCard from "./PhotoCard";
 import UploadModal from "./UploadModal";
 import EditModal from "./EditModal";
@@ -201,81 +203,57 @@ export default function DashboardClient() {
     }
   }
 
-  // ── Loading state (addition #3) — show spinner if no token ──────────────
+  // ── Pre-auth: token check hasn't resolved into a redirect yet ───────────
   if (!token) {
-    return (
-      <div className="h-[100dvh] w-full flex items-center justify-center bg-primary-container">
-        <div className="admin-spinner" />
-      </div>
-    );
+    return <StudioBoot />;
   }
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <StudioShell>
-      {/* TopAppBar */}
-      <header className="sticky top-0 z-30 bg-surface/10 backdrop-blur-3xl border-b border-white/15">
-        <div className="flex justify-between items-center gap-4 px-gutter py-4 w-full h-20 pl-20 md:pl-gutter">
-          <h1 className="font-headline-md text-headline-md font-semibold text-on-surface truncate">
-            Curated Gallery
-          </h1>
-
-          <div className="flex items-center gap-3">
-            {/* Category filter — working functionality, kept alongside the restyle */}
-            <div className="hidden sm:flex relative group">
-              <select
-                value={activeCategory}
-                onChange={(e) => setActiveCategory(e.target.value)}
-                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-on-surface font-label-sm text-label-sm uppercase transition-colors cursor-pointer focus:ring-0 focus:border-white/30"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c === "all" ? "All Categories" : c.charAt(0).toUpperCase() + c.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-[#1c1b1b] hover:bg-accent/90 scale-95 active:scale-90 transition-all"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                add
-              </span>
-              <span className="hidden sm:inline font-label-sm text-label-sm uppercase font-bold">
-                Upload New Photo
-              </span>
-            </button>
-          </div>
+      {/* One page heading, in the bar. This page used to print "Curated
+          Gallery" here and "Portfolio Management / Gallery" again 80px
+          below it, with the item count as a third element off to the side. */}
+      <StudioTopBar
+        title="Gallery"
+        count={
+          loading
+            ? undefined
+            : `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`
+        }
+      >
+        {/* Category filter — working functionality, kept alongside the restyle */}
+        <div className="hidden sm:flex relative group">
+          <select
+            value={activeCategory}
+            onChange={(e) => setActiveCategory(e.target.value)}
+            aria-label="Filter by category"
+            className="btn-outline appearance-none flex items-center gap-2 px-4 py-2 pr-8 text-on-surface font-label-sm text-label-sm uppercase cursor-pointer focus:ring-0"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c === "all" ? "All categories" : c.charAt(0).toUpperCase() + c.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
-      </header>
+
+        <button
+          onClick={() => setShowUpload(true)}
+          className="btn-accent flex items-center gap-2 px-5 py-2.5"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span className="hidden sm:inline font-label-sm text-label-sm uppercase">
+            Upload photo
+          </span>
+        </button>
+      </StudioTopBar>
 
       {/* Content Area */}
       <div className="px-margin-mobile md:px-margin-desktop py-10 min-h-full">
-        {/* Section Header */}
-        <div className="mb-10 flex justify-between items-end">
-          <div>
-            <p className="font-label-sm text-label-sm text-on-surface-variant uppercase mb-2">
-              Portfolio Management
-            </p>
-            {/* headline-lg-mobile, not headline-lg: this sits under the top
-                bar's headline-md <h1>, so the old size made the section
-                heading larger than the page heading above it. */}
-            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">
-              Gallery
-            </h2>
-          </div>
-          <span className="hidden md:inline-flex px-3 py-1 rounded-full bg-surface-container border border-outline-variant font-label-sm text-label-sm uppercase">
-            {photos.length} Items
-          </span>
-        </div>
-
         {/* ── Photo Grid / Empty state ──────────────────────────────── */}
         {loading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="admin-spinner" />
-          </div>
+          <PhotoGridSkeleton />
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6">
@@ -290,7 +268,7 @@ export default function DashboardClient() {
             </p>
             <button
               onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-[#1c1b1b] hover:bg-accent/90 transition-all"
+              className="btn-accent flex items-center gap-2 px-6 py-3"
             >
               <span className="material-symbols-outlined text-[18px]">
                 add
@@ -369,7 +347,7 @@ export default function DashboardClient() {
               delete_forever
             </span>
             <h3 className="font-headline-md text-headline-md text-on-surface">
-              Delete Photo?
+              Delete photo?
             </h3>
             <p className="font-body-md text-body-md text-on-surface-variant">
               This will permanently remove the image from Cloudinary and the
@@ -379,14 +357,14 @@ export default function DashboardClient() {
               <button
                 onClick={() => setDeletingPhoto(null)}
                 disabled={deleting}
-                className="px-6 py-3 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-on-surface font-label-sm text-label-sm uppercase transition-colors disabled:opacity-50"
+                className="btn-outline px-6 py-3 text-on-surface font-label-sm text-label-sm uppercase"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-6 py-3 rounded-full bg-error-container text-on-error-container hover:bg-error-container/80 font-label-sm text-label-sm uppercase transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="btn-danger px-6 py-3 font-label-sm text-label-sm uppercase flex items-center gap-2"
               >
                 {deleting ? (
                   <div className="admin-spinner !w-4 !h-4 !border-[1.5px]" />

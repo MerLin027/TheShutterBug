@@ -21,7 +21,7 @@ export default async function Work({
       <SiteNav />
 
       <main id="main" className="flex-grow pt-32 md:pt-40 px-margin-mobile md:px-margin-desktop">
-        <Reveal className="site-container mb-12 text-center">
+        <Reveal className="site-container mb-12 text-center" blur>
           <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-3">
             Gallery
           </h1>

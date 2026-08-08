@@ -56,11 +56,12 @@ export default function GalleryClient({
 
   return (
     <>
-      {/* Filter pills — single segmented-control container. mb-16 rather than
-          the old mb-section-gap (120px): section-gap is the gap *between*
-          sections, and using it inside one left a hole three times bigger
-          than the 48px heading-to-content gap used everywhere else. */}
-      <section className="mb-16 flex justify-center">
+      {/* Filter pills — single segmented-control container.
+          mb-12 is the site's one heading-to-content gap (48px). This block
+          was mb-16 while the heading above it was mb-12 and Contact's was
+          mb-14, so a visitor moving between pages met three different gaps
+          in the same structural position. */}
+      <section className="mb-12 flex justify-center">
         <div className="filter-group rounded-full flex items-center gap-1 overflow-x-auto p-1.5">
           {FILTERS.map((filter) => (
             <button
@@ -115,7 +116,7 @@ export default function GalleryClient({
                         portrait — gallery media was the only photo surface on
                         the site with square corners. */}
                     <div
-                      className={`${photo.aspect} w-full bg-surface-container-low rounded-2xl overflow-hidden`}
+                      className={`photo-surface ${photo.aspect} w-full bg-surface-container-low rounded-2xl overflow-hidden`}
                     >
                       {/* Keep plain <img> consistent with the Phase 2 port.
                           next/image is reserved for when Cloudinary loader is
