@@ -21,7 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    // data-scroll-behavior is required alongside `scroll-behavior: smooth`:
+    // Next 16 only suppresses smooth scrolling during a route transition when
+    // it finds this attribute. Without it every navigation animates a long
+    // smooth scroll to the top underneath PageTransition's fade.
+    <html lang="en" className="dark" data-scroll-behavior="smooth">
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"

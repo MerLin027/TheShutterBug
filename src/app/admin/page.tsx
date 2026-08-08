@@ -83,7 +83,10 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Main Content Container */}
-      <main className="relative z-10 w-full h-full flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop">
+      <main
+        id="main"
+        className="relative z-10 w-full h-full flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop"
+      >
         {/* Brand Header (Subtle) — the site name in the same face it carries
             in the navbar and the Studio sidebar, rather than uppercase
             tightly-tracked Jost, which matched nothing else on the site. */}

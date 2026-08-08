@@ -114,7 +114,10 @@ export default function StudioShell({ children }: { children: ReactNode }) {
         />
 
         {/* ─── Main content ───────────────────────────────────────────────── */}
-        <main className="flex-1 md:ml-64 relative h-full overflow-y-auto overflow-x-hidden">
+        <main
+          id="main"
+          className="flex-1 md:ml-64 relative h-full overflow-y-auto overflow-x-hidden"
+        >
           {children}
         </main>
       </div>

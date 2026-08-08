@@ -58,10 +58,21 @@
      `hover:text-accent` etc. all generate with full variant support. */
   --color-accent: #d4af37;
 
-  /* Border radius */
-  --radius-DEFAULT: 1rem;
-  --radius-lg: 2rem;
-  --radius-xl: 3rem;
+  /* Border radius.
+
+     The Stitch export overrode only `lg` (2rem) and `xl` (3rem) and left the
+     rest of Tailwind's ladder alone, which made the scale non-monotonic:
+     lg 32px -> xl 48px -> 2xl 16px -> 3xl 24px. So `rounded-2xl` was *less*
+     round than `rounded-lg`, and every "use a bigger step" choice made
+     things smaller. Defined as a full ascending ladder now, so the class
+     name and the visual weight finally agree:
+       sm 4 · md 6 · lg 12 · xl 16 · 2xl 24 · 3xl 32 · full
+     (`--radius-DEFAULT` is dropped — v4 reads `--radius` for the bare
+     `rounded` utility, so that token was never doing anything.) */
+  --radius-lg: 0.75rem;   /* 12px — fields, small controls */
+  --radius-xl: 1rem;      /* 16px — nav rows, image previews */
+  --radius-2xl: 1.5rem;   /* 24px — cards, photo media, modals */
+  --radius-3xl: 2rem;     /* 32px — large containers */
   --radius-full: 9999px;
 
   /* Spacing — rem, not px, so the 90% root font-size below scales them.
@@ -505,7 +516,9 @@ p {
 .studio-field {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 0.75rem;
+    /* Same 12px as rounded-lg, via the token rather than a loose literal, so
+       fields track the ladder if it ever moves. */
+    border-radius: var(--radius-lg);
     transition: all 0.3s ease;
 }
 

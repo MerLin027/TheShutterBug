@@ -28,15 +28,20 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
 
-  if (reduceMotion) return <>{children}</>;
-
+  // Reduced motion collapses the duration; it does not change what renders.
+  // useReducedMotion resolves to `null` on the server and `true` on the
+  // client's first pass, so branching either the element tree (returning bare
+  // children) or `initial` would emit different HTML at hydration than at
+  // SSR — around the whole page, in this component's case. `initial` is the
+  // only one of these props serialised into the markup, so it stays constant
+  // and the fade simply completes in a single frame instead.
   return (
     <AnimatePresence initial={false}>
       <motion.div
         key={pathname}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
+        transition={{ duration: reduceMotion ? 0 : 0.3, ease: [0.25, 1, 0.5, 1] }}
       >
         {children}
       </motion.div>
