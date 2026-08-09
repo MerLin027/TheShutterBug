@@ -11,6 +11,14 @@ import { usePathname } from "next/navigation";
  * The first slot was the Playwrite VN wordmark through Stage 1; it now
  * carries the same Jost label as its siblings, so the script face appears
  * on exactly one public surface (the hero title) instead of two.
+ *
+ * ACCENT MEANS EXACTLY ONE THING HERE: "this is the page you're on."
+ * Hover brightens the label to full-strength on-surface instead. Both
+ * states used to paint the same accent gold, differing only in a 10%-alpha
+ * pill wash over blurred glass — so clicking a link and moving the cursor
+ * away left the item gold, which read as a hover state stuck on. It wasn't
+ * stuck (`:hover` releases correctly, and focus never lingers), the two
+ * states were simply the same colour. Don't give hover the accent back.
  */
 export default function SiteNav() {
   const pathname = usePathname();
@@ -42,7 +50,7 @@ export default function SiteNav() {
           className={`font-label-sm text-label-sm tracking-widest uppercase transition-all duration-300 px-3 py-1.5 rounded-full whitespace-nowrap ${
             isHome
               ? "text-accent font-bold bg-accent/10"
-              : "text-on-surface/70 hover:text-accent hover:bg-white/10"
+              : "text-on-surface/70 hover:text-on-surface hover:bg-white/10"
           }`}
           href="/"
         >
@@ -66,7 +74,7 @@ export default function SiteNav() {
             className={`flex items-center justify-center rounded-full p-2 transition-all duration-300 active:scale-95 ${
               isGallery
                 ? "text-accent bg-accent/10"
-                : "text-on-surface/80 hover:text-accent hover:bg-white/10"
+                : "text-on-surface/80 hover:text-on-surface hover:bg-white/10"
             }`}
           >
             {/* Explicit size: with no font-size of its own this icon
@@ -87,7 +95,7 @@ export default function SiteNav() {
             className={`font-label-sm text-label-sm tracking-widest uppercase transition-all duration-300 px-3 py-1.5 rounded-full whitespace-nowrap ${
               isAbout
                 ? "text-accent font-bold bg-accent/10"
-                : "text-on-surface/70 hover:text-accent hover:bg-white/10"
+                : "text-on-surface/70 hover:text-on-surface hover:bg-white/10"
             }`}
             href="/about"
           >
@@ -98,7 +106,7 @@ export default function SiteNav() {
             className={`font-label-sm text-label-sm tracking-widest uppercase transition-all duration-300 px-3 py-1.5 rounded-full whitespace-nowrap ${
               isContact
                 ? "text-accent font-bold bg-accent/10"
-                : "text-on-surface/70 hover:text-accent hover:bg-white/10"
+                : "text-on-surface/70 hover:text-on-surface hover:bg-white/10"
             }`}
             href="/contact"
           >

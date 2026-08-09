@@ -89,21 +89,17 @@ export default function AdminLoginPage() {
         id="main"
         className="relative z-10 w-full h-full flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop"
       >
-        {/* Brand Header (Subtle) — the site name in the same face it carries
-            in the navbar and the Studio sidebar, rather than uppercase
-            tightly-tracked Jost, which matched nothing else on the site. */}
-        <div className="absolute top-8 left-0 w-full flex justify-center opacity-70">
-          <h1 className="font-title text-[1.5rem] leading-none text-on-surface">
-            The Shutter Bug
-          </h1>
-        </div>
+        {/* The site title that used to float above the card is gone by
+            request. "Studio Access" is therefore the page's top-level
+            heading now and carries <h1> — same classes, so it renders
+            identically; this only keeps the document from having no h1. */}
 
         {/* Floating Login Card */}
         <div className="liquid-glass rounded-2xl w-full max-w-sm p-8 flex flex-col gap-8 transform transition-transform hover:scale-[1.01] duration-300">
           <div className="text-center">
-            <h2 className="font-title text-[1.5rem] leading-tight text-on-surface">
+            <h1 className="font-title text-[1.5rem] leading-tight text-on-surface">
               Studio Access
-            </h2>
+            </h1>
           </div>
 
           {/* Placeholders removed per the brief. With no placeholder text the
