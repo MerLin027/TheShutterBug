@@ -230,9 +230,10 @@ Final state includes:
 - **Home hero rebuilt.** Parallax on the photograph, "Enter the Gallery"
   CTA, and the glass wordmark (see the resolved open question above).
   "Selected Frames" sits below the hero and is wired to `isFeatured`.
-  It renders nothing today by design — the live API returns `[]` because
-  the database is empty, so the section appears as soon as a photo is
-  uploaded and flagged Featured. That is not a bug to chase in Stage 2.
+  It rendered nothing at the time by design — the live API returned `[]`
+  because the database was empty. (Stage 2 found the cause of that empty
+  database: broken Cloudinary credentials, so no upload had ever
+  succeeded. Fixed — see the Stage 2 entry.)
 - **Studio rebrand.** The admin area is labelled "Studio" throughout
   (page titles, tab title, headers) with `/admin` kept as the route.
   "Back to Site" button, Studio-only hamburger with the directional slide
@@ -326,6 +327,49 @@ What landed:
   Vercel origin only, which meant every client-side Studio call (upload,
   edit, featured toggle, account save) was blocked on `npm run dev` and
   could only be tested against a deployed build.
+- **Cloudinary credentials fixed — this was the real reason the photo
+  database had always been empty.** `CLOUDINARY_API_KEY` and
+  `CLOUDINARY_API_SECRET` were malformed (they looked swapped: the key
+  was a 27-char alphanumeric string where Cloudinary expects ~15 digits),
+  so every `POST /api/photos` died with `Invalid api_key`. Not a code
+  defect — an environment problem, corrected by the user in
+  `backend/.env` and in Render's dashboard. **Render's env vars are set
+  through its dashboard, not from any file in the repo**, so they must be
+  changed in both places; a git push cannot carry them. The upload path
+  is now verified end to end: real uploads return ascending positions
+  with valid Cloudinary URLs, the Featured toggle persists on and off,
+  and DELETE removes both the Mongo document and the Cloudinary asset.
+  Selected Frames on Home now has real data behind it.
+
+### Studio + gallery UI/UX pass: **COMPLETE** (2026-08-09)
+A separate 8-task polish pass run after Stage 2's functional work, driven
+by review captures in `design-reference/studio-ux-review/` (`a4dffc74`).
+Landed as `6a04a70f` (WIP) then `1de43304` (verified). Covered the Studio
+hamburger menu, the Studio gallery header, button sizing/consistency
+site-wide, the lightbox chrome, the Edit modal, and the public gallery
+header. Verified with a measurement harness that walks every button on
+the public pages, the Studio, both modals, the mobile menu and the
+lightbox.
+
+Two more traps from that pass, in the same class as the two above:
+3. **`.btn-icon-glass` lives in `@layer components` and must stay there.**
+   Every other custom class in `globals.css` is unlayered, which outranks
+   everything Tailwind emits — unlayered, its `display: inline-flex` beat
+   `md:hidden` and the Studio hamburger rendered on desktop. The same
+   latent conflict exists for every other unlayered class in that file
+   (`.btn-accent` vs `bg-*`, etc.); it simply hasn't bitten yet.
+4. **Icon buttons must set explicit width and height, not padding.**
+   `p-2 rounded-full` on a block element is not a circle — the glyph is
+   1em wide but the line box adds the strut's descent below it, so boxes
+   came out 38.4 x 45. Every icon-only control on the site had this. They
+   are 36 x 36 (Studio) and 43.2 x 43.2 (lightbox) now.
+
+Found in passing and deliberately **not** fixed, as it belongs to Stage 3:
+`/admin/dashboard` throws a hydration mismatch whenever a token exists —
+`DashboardClient`'s `useState(() => localStorage.getItem("admin_token"))`
+makes the server render `StudioBoot` and the client render the dashboard.
+Confirmed pre-existing, not introduced by this pass. The same pattern is
+in `MessagesClient`, `AccountClient` and the admin login page.
 
 ### Stages 3–6: not started
 Each stage is gated on its own planning prompt. Do not open Stage 3 off
