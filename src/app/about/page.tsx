@@ -1,8 +1,16 @@
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Reveal from "@/components/Reveal";
+import { fetchSiteContent, splitBio } from "@/lib/data";
 
-export default function About() {
+// Match / and /work — a Save in Studio calls revalidatePath("/about"), so this
+// is only the ceiling on how stale the page can get if that action is missed.
+export const revalidate = 60;
+
+export default async function About() {
+  const { quote, bio, aboutImageUrl } = await fetchSiteContent();
+  const paragraphs = splitBio(bio);
+
   return (
     <div className="bg-primary-container text-on-surface antialiased min-h-[100dvh] flex flex-col">
       <SiteNav />
@@ -31,7 +39,7 @@ export default function About() {
               <img
                 alt="Atmospheric portrait of the photographer at dusk, holding a camera, looking out over the water."
                 className="w-full h-full object-cover object-[70%_30%]"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFd3kHx3f7TeKHtxF_JbbMOx1gcgGN2yJwun0sRZTvkpH0C5Os9LO4SOCnp3UlHBkmbBdbD9r7C6ScpOSyILvBtEOoSi0flavIB50fRf7kmqOL86vKVCMADob9KFsiurnit21aw1Oq79dX5bfimo8ulSvwskvjA7fhD8eVHmylQFGnnJfLDtoxMj4pehyK71qvCKTeclW6BetKTFL02lrphZAeuRvfWazNDSz6sSrgd0PZuCEQBN_D"
+                src={aboutImageUrl}
               />
             </div>
           </div>
@@ -44,24 +52,14 @@ export default function About() {
               About
             </span>
             <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface leading-tight">
-              Chasing light, quietly.
+              {quote}
             </h1>
+            {/* Paragraph count is whatever the admin saved — space-y-5 keeps
+                the vertical rhythm regardless of how many there are. */}
             <div className="space-y-5 font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-              <p>
-                I am a photographer working mostly at the edges of the day —
-                the hour before the sun clears the horizon, and the long blue
-                minutes after it drops behind it.
-              </p>
-              <p>
-                My work is about absence as much as presence: an empty
-                platform, a road with nobody on it, one boat holding the
-                centre of an enormous stretch of water. When people appear in
-                a frame, they are weather, not subject.
-              </p>
-              <p>
-                I shoot on a mix of digital and film, print small, and travel
-                light. The Shutter Bug is where the work collects.
-              </p>
+              {paragraphs.map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
             </div>
           </div>
         </Reveal>

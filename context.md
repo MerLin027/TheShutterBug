@@ -93,9 +93,15 @@ redeploy, category values normalized lowercase matching the fixed enum
   superseded — see Lovable redesign reference below, admin access moves
   to the footer instead**).
 - 6.3 Part A — Backend Contact model + `POST /api/contact` (public) +
-  `GET /api/contact` (admin, JWT) built and deployed. **Part B (wiring
+  `GET /api/contact` (admin, JWT) built and deployed. ~~**Part B (wiring
   the public form + building an admin messages page) was NOT completed**
-  — this is a real gap, not just an assumption to verify.
+  — this is a real gap, not just an assumption to verify.~~
+  **Corrected 2026-08-09 by the Stage 2 audit: Part B *is* complete.**
+  `src/app/contact/page.tsx` POSTs to `/api/contact` with validation,
+  per-field errors, disable-while-submitting and reset-on-success, and
+  `src/app/admin/dashboard/messages/MessagesClient.tsx` GETs it with a
+  Bearer token and handles 401. Both predate Stage 1 and Stage 1 did not
+  disturb them. Do not rebuild them.
 - 6.4 through 6.14 (admin hover-card cleanup, unified navbar component,
   admin sidebar cleanup, hamburger animation, hero polish, scroll
   animations, page transitions, About-content editor) were **planned but
@@ -263,23 +269,67 @@ Two traps that came out of that pass and will silently reappear:
    Lightning CSS auto-prefixes it, but when both forms are already present
    it collapses the pair and emits only the `-webkit-` one — dropping the
    blur in Firefox. After any `globals.css` change, confirm
-   `count(backdrop-filter) - count(-webkit-backdrop-filter)` is ~19.
+   `count(-webkit-backdrop-filter)` is **0** — that is the load-bearing
+   invariant, not the delta. (This note previously said the delta should
+   be "~19"; the real figure is 12 as of `b3151139`, changed by Stage 1's
+   consolidation of the glass recipes into shared classes. The count moves
+   whenever recipes are merged or split, so don't treat it as fixed.)
 2. **`font-variation-settings` is one declaration, not several.** An
    inline `'FILL' 1` replaces the whole line and reverts the icon to
    weight 400, so every filled icon restates `'wght' 250` alongside it.
 
-**Git state as of this update:** `HEAD` is `1f23f0dd`, level with
-`origin/main` — everything through the P1–P5 aesthetic pass is committed
-and pushed. Still outside that: the hero glass-text rework
-(`src/app/globals.css`, `src/components/HeroParallax.tsx`) is complete and
-verified but **uncommitted**, and `context.md`, `plan.md`,
-`design-reference/` and `.claude/` are **untracked — never committed at
-all**. Clear both before Stage 2 opens, per the commit-per-stage rule
-above.
+**Git state:** the backlog described here is cleared. `b3151139` commits
+the hero glass-text rework plus `context.md` and `design-reference/`
+(which includes `plan.md` — it lives at
+`design-reference/lovable-redesign/plan.md`, not the repo root).
+`.claude/` is now gitignored: ~12 MB of vendored third-party skill packs,
+not project code.
 
-### Stages 2–6: not started
-Stage 2 execution is gated on its own planning prompt. Do not open it off
-the back of Stage 1 being closed.
+### Stage 2 — Functional Completion: **COMPLETE** (2026-08-09)
+Opened with the §2.1 audit. Headline: far less was missing than this
+document predicted — see the 6.3 correction above, and note the Featured
+toggle was traced end to end (star → optimistic update with rollback →
+`PUT /api/photos/:id` → `revalidatePublicPages()` → Home's
+`fetchFeaturedPhotos`) and needed no changes. Selected Frames rendering
+empty is the deliberate `photos.length === 0` guard against an empty DB,
+not a bug.
+
+What landed:
+- **Site content is editable.** New `SiteContent` singleton model +
+  `GET /api/site-content` (public) and `PUT /api/site-content` (admin).
+  `/about` is now an async server component reading `fetchSiteContent()`
+  with `revalidate = 60`, and the Account page's Save Changes button —
+  the only dead control in all of `src/` — is wired to the PUT with
+  loading/saving/saved/error states and 401 handling.
+  `revalidatePublicPages()` gained `/about`.
+- **Defaults, not blanks.** `DEFAULTS` in `backend/models/SiteContent.js`
+  holds the copy that used to be hardcoded in About. `GET` returns it
+  when no document exists, and `fetchSiteContent` falls back to a mirror
+  of it on any network/HTTP failure, so a fresh DB or a sleeping Render
+  instance renders the original page rather than an empty one. Keep the
+  two copies in sync.
+- **The About image is a full URL, not a path.** `public/` is empty; the
+  old `/photos/portrait.jpg` seed pointed at a file that never existed.
+  The Account field is a free-text URL box (deliberate — no upload
+  plumbing in Stage 2).
+- **New uploads append.** `POST /api/photos` now assigns max(position)+1
+  when no position is sent, instead of 0. Previously every upload got 0
+  and `sort({ position: 1 })` tie-broke arbitrarily, so gallery order was
+  undefined until the first manual drag. max+1 rather than a count, so
+  deletes leaving gaps can't cause a collision.
+- **`POST /api/auth/register` removed.** It was public and ungated —
+  anyone could mint an admin account and a 30-day JWT against the live
+  API. Confirmed by grep that nothing in `src/` ever called it. Admin
+  creation is `node scripts/seedAdmin.js` (idempotent, reads
+  `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+- **CORS allows localhost outside production.** It was pinned to the
+  Vercel origin only, which meant every client-side Studio call (upload,
+  edit, featured toggle, account save) was blocked on `npm run dev` and
+  could only be tested against a deployed build.
+
+### Stages 3–6: not started
+Each stage is gated on its own planning prompt. Do not open Stage 3 off
+the back of Stage 2 being closed.
 
 ## The six-stage plan (see plan.md for the actual task breakdown)
 1. Visual/structural restructure (Lovable reference) — layout,

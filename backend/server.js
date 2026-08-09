@@ -9,6 +9,7 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import photoRoutes from './routes/photos.js';
 import contactRoutes from './routes/contact.js';
+import siteContentRoutes from './routes/siteContent.js';
 
 // Connect to database
 connectDB();
@@ -16,7 +17,21 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors({ origin: 'https://the-shutter-bug.vercel.app' }));
+//
+// CORS allowlist. The deployed frontend is always allowed; localhost is added
+// only outside production so `npm run dev` can talk to this API directly.
+// Without the dev entry every client-side Studio call (upload, edit, featured
+// toggle, account save) is blocked by the browser and can only be tested
+// against a deployed build.
+//
+// No `credentials` flag — auth travels as an Authorization: Bearer header,
+// not a cookie.
+const allowedOrigins = ['https://the-shutter-bug.vercel.app'];
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:3000');
+}
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.status(200).send('ok'));
@@ -25,6 +40,7 @@ app.get('/api/health', (req, res) => res.status(200).send('ok'));
 app.use('/api/auth', authRoutes);
 app.use('/api/photos', photoRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/site-content', siteContentRoutes);
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {

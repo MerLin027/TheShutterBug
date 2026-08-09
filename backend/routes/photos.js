@@ -85,6 +85,20 @@ router.post('/', protect, upload.single('image'), async (req, res) => {
 
     const { category, tags, caption, location, position, isFeatured, aspectRatio } = req.body;
 
+    // UploadModal doesn't send a position. Without this every new photo got 0,
+    // so GET /'s sort({ position: 1 }) tie-broke arbitrarily and gallery order
+    // was undefined until the first manual drag. Append to the end instead.
+    //
+    // max + 1 rather than countDocuments() — deleting a photo leaves a gap in
+    // the sequence, and a count would then collide with an existing position.
+    let resolvedPosition;
+    if (position !== undefined) {
+      resolvedPosition = parseInt(position, 10);
+    } else {
+      const last = await Photo.findOne({}).sort({ position: -1 }).select('position');
+      resolvedPosition = last ? last.position + 1 : 0;
+    }
+
     const photo = await Photo.create({
       // multer-storage-cloudinary sets req.file.path = secure_url
       // and req.file.filename = public_id (confirmed from source)
@@ -94,7 +108,7 @@ router.post('/', protect, upload.single('image'), async (req, res) => {
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((t) => t.trim())) : [],
       caption: caption || '',
       location: location || '',
-      position: position !== undefined ? parseInt(position, 10) : 0,
+      position: resolvedPosition,
       isFeatured: isFeatured === 'true' || isFeatured === true,
       aspectRatio: aspectRatio !== undefined ? parseFloat(aspectRatio) : 1,
     });

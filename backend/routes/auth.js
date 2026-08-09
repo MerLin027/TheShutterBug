@@ -35,38 +35,16 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/register (For initial setup only, you might want to disable/remove this later)
-// @desc    Register a new admin user
-// @access  Public
-router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
-  
-  try {
-    const userExists = await AdminUser.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-    
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-    
-    const user = await AdminUser.create({
-      email,
-      passwordHash
-    });
-    
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        email: user.email,
-        token: generateToken(user._id)
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// There is deliberately no POST /register route.
+//
+// It existed as an ungated public endpoint, which meant anyone could mint an
+// admin account and a valid 30-day token against the live API. Nothing in the
+// frontend ever called it. Admin accounts are created out-of-band instead:
+//
+//   cd backend && node scripts/seedAdmin.js
+//
+// That script is idempotent and reads ADMIN_EMAIL / ADMIN_PASSWORD from the
+// environment. If a self-serve route is ever needed again it must sit behind
+// `protect` (or a one-time setup token), not be open to the internet.
 
 export default router;

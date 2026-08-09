@@ -29,6 +29,16 @@ export type ApiPhoto = {
   updatedAt: string;
 };
 
+/**
+ * Editable About-page copy, served by GET /api/site-content.
+ * `bio` holds paragraphs separated by a blank line.
+ */
+export type SiteContent = {
+  quote: string;
+  bio: string;
+  aboutImageUrl: string;
+};
+
 /** Normalised shape used by all frontend components. */
 export type Photo = {
   id: string;
@@ -179,4 +189,66 @@ export async function fetchPhotoNeighbours(
   const next = idx < pool.length - 1 ? pool[idx + 1] : pool[0];
 
   return { all: pool, prev, next };
+}
+
+// ---------------------------------------------------------------------------
+// Site content
+// ---------------------------------------------------------------------------
+
+/**
+ * Last-resort copy for the About page, used only when the API is unreachable.
+ * Mirrors DEFAULTS in backend/models/SiteContent.js — keep the two in sync.
+ * The backend already substitutes its own defaults when no document exists,
+ * so this only fires on a network error or a non-2xx response.
+ */
+export const DEFAULT_SITE_CONTENT: SiteContent = {
+  quote: "Chasing light, quietly.",
+  bio: [
+    "I am a photographer working mostly at the edges of the day — the hour before the sun clears the horizon, and the long blue minutes after it drops behind it.",
+    "My work is about absence as much as presence: an empty platform, a road with nobody on it, one boat holding the centre of an enormous stretch of water. When people appear in a frame, they are weather, not subject.",
+    "I shoot on a mix of digital and film, print small, and travel light. The Shutter Bug is where the work collects.",
+  ].join("\n\n"),
+  aboutImageUrl:
+    "https://lh3.googleusercontent.com/aida-public/AB6AXuCFd3kHx3f7TeKHtxF_JbbMOx1gcgGN2yJwun0sRZTvkpH0C5Os9LO4SOCnp3UlHBkmbBdbD9r7C6ScpOSyILvBtEOoSi0flavIB50fRf7kmqOL86vKVCMADob9KFsiurnit21aw1Oq79dX5bfimo8ulSvwskvjA7fhD8eVHmylQFGnnJfLDtoxMj4pehyK71qvCKTeclW6BetKTFL02lrphZAeuRvfWazNDSz6sSrgd0PZuCEQBN_D",
+};
+
+/**
+ * Fetch the editable About-page copy.
+ * Never returns null — falls back to DEFAULT_SITE_CONTENT so About degrades
+ * to its original copy rather than rendering blanks.
+ */
+export async function fetchSiteContent(): Promise<SiteContent> {
+  try {
+    const res = await fetch(`${API_URL}/api/site-content`, {
+      next: { revalidate: 60 },
+    });
+
+    if (!res.ok) {
+      console.error(
+        `[data] GET /api/site-content failed — ${res.status} ${res.statusText}`
+      );
+      return DEFAULT_SITE_CONTENT;
+    }
+
+    const raw: Partial<SiteContent> = await res.json();
+
+    // Field-level fallback: an older document written before a field existed
+    // would otherwise render as an empty string.
+    return {
+      quote: raw.quote || DEFAULT_SITE_CONTENT.quote,
+      bio: raw.bio || DEFAULT_SITE_CONTENT.bio,
+      aboutImageUrl: raw.aboutImageUrl || DEFAULT_SITE_CONTENT.aboutImageUrl,
+    };
+  } catch (err) {
+    console.error("[data] GET /api/site-content threw —", err);
+    return DEFAULT_SITE_CONTENT;
+  }
+}
+
+/** Split a stored bio into paragraphs on blank lines. */
+export function splitBio(bio: string): string[] {
+  return bio
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
 }
