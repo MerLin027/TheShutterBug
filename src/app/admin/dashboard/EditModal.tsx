@@ -99,7 +99,13 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
             image; `max-h-64` and `object-contain` keep a tall portrait from
             pushing the form off the screen, and letterbox it rather than
             crop it if it hits that ceiling. */}
-        <div className="rounded-2xl overflow-hidden bg-surface-container">
+        {/* shrink-0 because this sits in a `flex flex-col max-h-[90vh]`
+            column: without it the preview is the thing that gives when the
+            form is taller than the viewport, and `overflow-hidden` then crops
+            the bottom off the photo. Measured at 1440x900: the image wanted
+            225.7px and the frame had been squeezed to 208.8px. The modal
+            already scrolls (`overflow-y-auto`) — let it. */}
+        <div className="shrink-0 rounded-2xl overflow-hidden bg-surface-container">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo.imageUrl}

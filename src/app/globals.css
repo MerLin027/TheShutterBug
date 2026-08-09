@@ -595,7 +595,18 @@ p {
    fixed box and centred content can.
 
    Surface is the same recipe as .btn-glass so an icon button and a labelled
-   button read as the same object at two sizes. */
+   button read as the same object at two sizes.
+
+   IN `@layer components`, unlike every other custom class in this file, and
+   it has to be. Unlayered CSS beats everything Tailwind emits, layers
+   included — so with these rules at the top level, `display: inline-flex`
+   here outranked `md:hidden` on the Studio hamburger and the mobile menu
+   button appeared on desktop. Measured: a 43.2px button visible at a
+   1440px viewport where it had never rendered before. Putting the class in
+   the components layer restores the normal order (utilities win), which is
+   also what lets `w-11 h-11` or `hidden` override it at a call site without
+   `!important`. */
+@layer components {
 .btn-icon-glass,
 .btn-icon-glass-lg {
     display: inline-flex;
@@ -671,6 +682,7 @@ p {
     padding: 0.25rem 0.75rem;
     white-space: nowrap;
 }
+} /* end @layer components */
 
 /* Site title / display headings — curved/flowing display face. Used at both
    large (hero) and small (navbar/studio) sizes; see .hero-title-line and
