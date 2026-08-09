@@ -46,46 +46,62 @@ export default function PhotoCard({
         src={photo.imageUrl}
       />
 
-      {/* Permanent Drag Handle — top-left (from reference) */}
-      <div
-        className="absolute top-3 left-3 p-1.5 rounded-md bg-black/40 backdrop-blur-md text-white/70 border border-white/10 z-10 cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <span className="material-symbols-outlined text-[18px]">
-          drag_indicator
-        </span>
-      </div>
+      {/* Liquid Glass Overlay (Hover) — four controls: Reorder, Featured,
+          Edit, Delete.
 
-      {/* Liquid Glass Overlay (Hover) — three actions: Edit, Delete, Featured */}
-      <div className="glass-overlay absolute inset-0 flex flex-col justify-between p-4 z-20 pointer-events-none group-hover:pointer-events-auto">
-        {/* Secondary actions — top right */}
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={() => onToggleFeatured(photo)}
-            title={photo.isFeatured ? "Remove from Selected Frames" : "Add to Selected Frames"}
-            className={`p-2 rounded-full backdrop-blur-md transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)] ${
-              photo.isFeatured
-                ? "bg-accent/90 text-on-accent"
-                : "bg-black/60 hover:bg-black/80 text-white"
-            }`}
+          The reorder handle used to be a fifth element outside this overlay:
+          a dark square pinned top-left of the card, painted at all times
+          while every other control waited for hover, so a grid at rest was a
+          grid of photographs each with a widget stuck on it. It is the same
+          handle with the same dnd-kit listeners, moved inside the overlay and
+          into the same circular glass shape as its neighbours. Reordering is
+          untouched — drag still starts from the handle, at the same corner.
+
+          There were also *two* handles bound to one sortable: this one and a
+          second `drag_pan` circle in the bottom-right of the overlay. They
+          were never visible at the same time (the overlay covered the square
+          one on hover), and spreading dnd-kit's `attributes` across two
+          elements gave one sortable item two focusable roles. One handle
+          now. */}
+      <div className="glass-overlay absolute inset-0 flex flex-col justify-between p-4 z-20 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
+        {/* Reorder handle left, secondary actions right */}
+        <div className="flex justify-between gap-2">
+          <div
+            className="btn-icon-glass text-white cursor-grab active:cursor-grabbing"
+            title="Drag to reorder"
+            {...attributes}
+            {...listeners}
           >
-            <span
-              className="material-symbols-outlined text-[18px]"
-              style={{
-                fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}, 'wght' 250`,
-              }}
-            >
-              star
+            <span className="material-symbols-outlined text-[18px]">
+              drag_indicator
             </span>
-          </button>
-          <button
-            onClick={() => onEdit(photo)}
-            title="Edit"
-            className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)]"
-          >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
-          </button>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => onToggleFeatured(photo)}
+              title={photo.isFeatured ? "Remove from Selected Frames" : "Add to Selected Frames"}
+              className={`btn-icon-glass ${
+                photo.isFeatured ? "btn-icon-glass-on" : "text-white"
+              }`}
+            >
+              <span
+                className="material-symbols-outlined text-[18px]"
+                style={{
+                  fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}, 'wght' 250`,
+                }}
+              >
+                star
+              </span>
+            </button>
+            <button
+              onClick={() => onEdit(photo)}
+              title="Edit"
+              className="btn-icon-glass text-white"
+            >
+              <span className="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+          </div>
         </div>
 
         {/* Prominent Delete — centered, matching the reference */}
@@ -107,13 +123,6 @@ export default function PhotoCard({
             <span className="font-label-sm text-label-sm text-white/70 uppercase tracking-widest mt-0.5">
               {photo.category}
             </span>
-          </div>
-          <div
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-lg cursor-grab active:cursor-grabbing transition-colors"
-            {...attributes}
-            {...listeners}
-          >
-            <span className="material-symbols-outlined">drag_pan</span>
           </div>
         </div>
       </div>

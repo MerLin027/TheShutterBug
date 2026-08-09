@@ -81,37 +81,40 @@ export default async function Lightbox({
         </div>
       </main>
 
-      {/* BottomNavBar (Lightbox Controls) */}
-      {/* .nav-pill rather than this page's own inline glass recipe, so the
-          lightbox chrome matches the navbar and the hero CTA exactly. */}
-      <nav className="nav-pill fixed bottom-10 left-1/2 -translate-x-1/2 w-fit rounded-full flex gap-4 p-2 z-50">
-        {/* Previous — disabled/hidden when only one photo */}
+      {/* Lightbox controls.
+
+          Three equal glass circles, the same button the Studio's card
+          overlays and modal closes use, one size up. What they replaced was
+          three square-cornered rectangles of three different widths (96.6,
+          78.6 and 72.6px measured), each carrying a caption that was clipped
+          to zero height until hover and then expanded — so the row changed
+          size under the cursor, and the "matching set" of prev/close/next
+          never actually matched.
+
+          No pill around them: a blurred bar behind three blurred buttons is
+          the glass-inside-glass this site deliberately avoids elsewhere.
+
+          Navigation is unchanged — same hrefs, same filter preservation, same
+          keyboard handling in LightboxKeys. chevron rather than
+          arrow_back_ios: the `_ios` glyphs carry asymmetric side bearings and
+          sit visibly off-centre once the box around them is a fixed circle. */}
+      <nav className="fixed bottom-10 left-1/2 -translate-x-1/2 w-fit flex items-center gap-3 z-50">
+        {/* Previous — inert placeholder when there's nothing before this */}
         {prev ? (
           <Link
             href={lightboxHref(prev.id)}
             aria-label="Previous"
-            className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 transition-colors hover:text-accent group"
+            title="Previous"
+            className="btn-icon-glass-lg text-on-surface"
           >
-            <span
-              className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-              data-icon="arrow_back_ios"
-            >
-              arrow_back_ios
-            </span>
-            <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-              Previous
+            <span className="material-symbols-outlined" data-icon="chevron_left">
+              chevron_left
             </span>
           </Link>
         ) : (
-          <span
-            aria-hidden
-            className="flex flex-col items-center justify-center text-on-surface-variant/20 px-6 py-2 cursor-not-allowed"
-          >
-            <span
-              className="material-symbols-outlined"
-              data-icon="arrow_back_ios"
-            >
-              arrow_back_ios
+          <span aria-hidden data-inactive className="btn-icon-glass-lg text-on-surface">
+            <span className="material-symbols-outlined" data-icon="chevron_left">
+              chevron_left
             </span>
           </span>
         )}
@@ -126,16 +129,11 @@ export default async function Lightbox({
         <Link
           href={closeHref}
           aria-label="Close"
-          className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 transition-colors hover:text-accent group"
+          title="Close"
+          className="btn-icon-glass-lg text-on-surface"
         >
-          <span
-            className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-            data-icon="close"
-          >
+          <span className="material-symbols-outlined" data-icon="close">
             close
-          </span>
-          <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-            Close
           </span>
         </Link>
 
@@ -144,28 +142,17 @@ export default async function Lightbox({
           <Link
             href={lightboxHref(next.id)}
             aria-label="Next"
-            className="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 transition-colors hover:text-accent group"
+            title="Next"
+            className="btn-icon-glass-lg text-on-surface"
           >
-            <span
-              className="material-symbols-outlined group-active:scale-95 transition-transform duration-200"
-              data-icon="arrow_forward_ios"
-            >
-              arrow_forward_ios
-            </span>
-            <span className="font-label-sm text-label-sm mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden">
-              Next
+            <span className="material-symbols-outlined" data-icon="chevron_right">
+              chevron_right
             </span>
           </Link>
         ) : (
-          <span
-            aria-hidden
-            className="flex flex-col items-center justify-center text-on-surface-variant/20 px-6 py-2 cursor-not-allowed"
-          >
-            <span
-              className="material-symbols-outlined"
-              data-icon="arrow_forward_ios"
-            >
-              arrow_forward_ios
+          <span aria-hidden data-inactive className="btn-icon-glass-lg text-on-surface">
+            <span className="material-symbols-outlined" data-icon="chevron_right">
+              chevron_right
             </span>
           </span>
         )}

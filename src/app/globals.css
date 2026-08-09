@@ -104,7 +104,24 @@
   --font-family-headline-md: "Jost", sans-serif;
   --font-family-headline-lg: "Jost", sans-serif;
 
-  /* Font sizes */
+  /* Font sizes.
+
+     KNOWN, MEASURED, AND NOT FIXED IN THIS PASS: none of these generate a
+     utility. Tailwind v4's font-size namespace is `--text-*`, not
+     `--font-size-*` (and its family namespace is `--font-*`, not
+     `--font-family-*`), so `text-headline-lg` and friends are unknown
+     utilities and get dropped. What survives is `--font-weight-*`, which IS a
+     v4 namespace — which is why `font-headline-lg` still applies weight 600
+     and the headings look like headings while measuring 14.4px, the same size
+     as body copy. Verified in the browser: `main h1` on /work computed to
+     font-size 14.4px before this pass.
+
+     Renaming these to `--text-*` turns the whole scale on at once and resizes
+     every page on the site — headings to 32-48px, labels down to 12px. That
+     is the design as it was authored, but it is a site-wide visual change and
+     needs its own pass with the reference screenshots open, not a side effect
+     of a header tweak. Until then, anything that genuinely needs a size uses
+     a built-in utility (`text-2xl`, `text-4xl`) and says so. */
   --font-size-headline-lg-mobile: 2rem;      /* 32px */
   --line-height-headline-lg-mobile: 2.5rem;  /* 40px */
   --letter-spacing-headline-lg-mobile: -0.02em;
@@ -363,7 +380,12 @@ p {
     transition: opacity 0.3s ease;
 }
 
-.liquid-hover:hover .glass-overlay {
+.liquid-hover:hover .glass-overlay,
+/* Keyboard parity. Every control on a photo card — star, edit, delete and
+   (since the drag handle moved inside the overlay) reorder — lives in a layer
+   that only hover reveals. Without this, tabbing to any of them moves focus
+   onto something the user cannot see. */
+.liquid-hover:focus-within .glass-overlay {
     opacity: 1;
 }
 
@@ -558,6 +580,96 @@ p {
 .btn-danger:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ── Circular icon buttons ──────────────────────────────────────────────────
+   The one treatment for every icon-only control: card hover overlays, modal
+   closes, the Studio hamburger, the lightbox chrome.
+
+   Width and height are set explicitly and equally. That is the whole point of
+   this class. Every icon button on the site was previously `p-2 rounded-full`
+   on a *block* element, which is not a circle: the glyph is 1em wide but the
+   line box it sits in is taller than 1em (the strut's descent is added below
+   the inline-block), so the box came out 38.4 x 45 — a visible oval under a
+   `rounded-full` that promised otherwise. Padding alone cannot fix that; a
+   fixed box and centred content can.
+
+   Surface is the same recipe as .btn-glass so an icon button and a labelled
+   button read as the same object at two sizes. */
+.btn-icon-glass,
+.btn-icon-glass-lg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: color 0.3s ease, background-color 0.3s ease,
+                border-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-icon-glass {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* Lightbox chrome — the same button one step up, because it is the only
+   control on a full-bleed image and has to survive at arm's length. */
+.btn-icon-glass-lg {
+    width: 3rem;
+    height: 3rem;
+}
+
+.btn-icon-glass:hover:not(:disabled):not([data-inactive]),
+.btn-icon-glass-lg:hover:not(:disabled):not([data-inactive]) {
+    color: var(--color-accent);
+    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.btn-icon-glass:active:not(:disabled),
+.btn-icon-glass-lg:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.btn-icon-glass:disabled,
+.btn-icon-glass-lg:disabled,
+.btn-icon-glass[data-inactive],
+.btn-icon-glass-lg[data-inactive] {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* On/selected state — the featured star. Solid accent, same box. */
+.btn-icon-glass-on {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-on-accent);
+}
+
+.btn-icon-glass-on:hover:not(:disabled) {
+    color: var(--color-on-accent);
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 88%, #ffffff);
+}
+
+/* Studio — the count beside a page title ("12 frames"). A quiet chip rather
+   than loose text, so the title reads as a title and the count as metadata
+   without needing to be shrunk into illegibility to say so. */
+.studio-count-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--color-on-surface);
+    padding: 0.25rem 0.75rem;
+    white-space: nowrap;
 }
 
 /* Site title / display headings — curved/flowing display face. Used at both

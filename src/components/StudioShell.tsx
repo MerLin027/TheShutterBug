@@ -19,12 +19,6 @@ const NAV_ITEMS: StudioNavItem[] = [
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  // Lazy initializer reads localStorage synchronously on first render,
-  // matching the pattern used for the token elsewhere in the admin area.
-  const [email] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("admin_email") || "";
-  });
   const [menuOpen, setMenuOpen] = useState(false);
 
   function handleSignOut() {
@@ -38,13 +32,16 @@ export default function StudioShell({ children }: { children: ReactNode }) {
       <div className="flex h-[100dvh] overflow-hidden">
         {/* ─── Sidebar (desktop) ──────────────────────────────────────────── */}
         <nav className="studio-sidebar hidden md:flex flex-col h-full p-4 gap-element-gap fixed left-0 top-0 w-64 z-40">
+          {/* Wordmark + "Studio" read as one stacked lockup: both centred on
+              the sidebar's axis, with the wordmark dropped off the very top
+              edge so it sits in the panel rather than against its corner. */}
           <Link
             href="/"
-            className="font-title text-[1.4rem] leading-none text-on-surface hover:text-accent transition-colors px-2 mb-2"
+            className="font-title text-[1.4rem] leading-none text-on-surface hover:text-accent transition-colors block text-center px-2 mt-4 mb-2"
           >
             The Shutter Bug
           </Link>
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase px-2 mb-8">
+          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-center px-2 mb-8">
             Studio
           </p>
 
@@ -95,11 +92,11 @@ export default function StudioShell({ children }: { children: ReactNode }) {
                 Sign Out
               </span>
             </button>
-            {email && (
-              <p className="px-4 pt-2 font-label-sm text-label-sm text-on-surface-variant/60 truncate">
-                {email}
-              </p>
-            )}
+            {/* The logged-in address used to print here (and at the foot of
+                the mobile menu). Removed by request: this is a single-admin
+                Studio, so it identified nothing the person reading it didn't
+                already know, and it put an email address on screen in every
+                screenshot and screen-share of the dashboard. */}
           </div>
         </nav>
 
@@ -107,7 +104,6 @@ export default function StudioShell({ children }: { children: ReactNode }) {
         <StudioMenu
           navItems={NAV_ITEMS}
           pathname={pathname}
-          email={email}
           open={menuOpen}
           onOpenChange={setMenuOpen}
           onSignOut={handleSignOut}

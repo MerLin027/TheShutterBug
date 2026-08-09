@@ -222,13 +222,21 @@ export default function DashboardClient() {
             : `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`
         }
       >
-        {/* Category filter — working functionality, kept alongside the restyle */}
-        <div className="hidden sm:flex relative group">
+        {/* Category filter — working functionality, kept alongside the restyle.
+            The label used to sit visibly off-centre in its pill: `px-4 pr-8`
+            reserved 32px on the right for a dropdown arrow, but
+            `appearance-none` had removed the native arrow and nothing was
+            drawn in its place, so the reserved space read as 16px of padding
+            on one side and 32px on the other. Both sides are equal now and
+            the chevron is drawn explicitly, outside the text's box, so the
+            text is centred against the whole pill. py-2.5 to match the Upload
+            button beside it (both 42px tall; this was 38px). */}
+        <div className="hidden sm:block relative">
           <select
             value={activeCategory}
             onChange={(e) => setActiveCategory(e.target.value)}
             aria-label="Filter by category"
-            className="btn-outline appearance-none flex items-center gap-2 px-4 py-2 pr-8 text-on-surface font-label-sm text-label-sm uppercase cursor-pointer focus:ring-0"
+            className="btn-outline appearance-none w-full px-9 py-2.5 text-center text-on-surface font-label-sm text-label-sm uppercase cursor-pointer focus:ring-0"
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -236,6 +244,12 @@ export default function DashboardClient() {
               </option>
             ))}
           </select>
+          <span
+            aria-hidden="true"
+            className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] leading-none text-on-surface-variant"
+          >
+            expand_more
+          </span>
         </div>
 
         <button

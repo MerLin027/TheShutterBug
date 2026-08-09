@@ -133,7 +133,8 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-colors"
+            aria-label="Close"
+            className="btn-icon-glass text-on-surface"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -258,7 +259,7 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
           <button
             type="submit"
             disabled={uploading || !file}
-            className="btn-glass mt-2 px-8 py-3.5 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
+            className="btn-glass mt-2 px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
           >
             {uploading ? (
               <>

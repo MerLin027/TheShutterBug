@@ -15,14 +15,12 @@ export type StudioNavItem = { href: string; label: string; icon: string };
 export default function StudioMenu({
   navItems,
   pathname,
-  email,
   open,
   onOpenChange,
   onSignOut,
 }: {
   navItems: StudioNavItem[];
   pathname: string;
-  email: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSignOut: () => void;
@@ -33,7 +31,7 @@ export default function StudioMenu({
     <>
       <button
         onClick={() => onOpenChange(true)}
-        className="md:hidden fixed top-6 left-6 z-40 p-3 rounded-full nav-pill text-on-surface"
+        className="btn-icon-glass-lg md:hidden fixed top-6 left-6 z-40 text-on-surface"
         aria-label="Open menu"
       >
         <span className="material-symbols-outlined">menu</span>
@@ -62,7 +60,7 @@ export default function StudioMenu({
                 </Link>
                 <button
                   onClick={() => onOpenChange(false)}
-                  className="p-2 rounded-full text-on-surface hover:bg-white/10 transition-colors"
+                  className="btn-icon-glass text-on-surface"
                   aria-label="Close menu"
                 >
                   <span className="material-symbols-outlined">close</span>
@@ -125,12 +123,8 @@ export default function StudioMenu({
                   </span>
                 </motion.button>
               </div>
-
-              {email && (
-                <p className="font-label-sm text-label-sm text-on-surface-variant/70 pt-4 border-t border-white/5 truncate">
-                  {email}
-                </p>
-              )}
+              {/* No logged-in address at the foot of the menu — see the note
+                  in StudioShell's sidebar. */}
             </div>
           </motion.div>
         )}

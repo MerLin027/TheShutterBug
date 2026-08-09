@@ -31,24 +31,30 @@ export default function StudioTopBar({
 }) {
   return (
     <header className="studio-topbar sticky top-0 z-30">
-      <div className="flex justify-between items-center gap-4 px-gutter py-4 w-full h-20 pl-20 md:pl-gutter">
-        <div className="flex items-baseline gap-3 min-w-0">
-          {/* No font-semibold override — the headline-md token already
-              carries weight 500, and the override was the only reason the
-              Studio's headings sat heavier than the public site's. */}
-          <h1 className="font-headline-md text-headline-md text-on-surface truncate">
+      {/* Three columns, not a two-way flex: the empty first column is what
+          puts the title on the bar's true centre line rather than on the
+          centre of whatever space the action buttons happen to leave. The
+          actions stay in their own column, so centring can never overlap
+          them — the grid reserves the space either way. */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-gutter py-4 w-full min-h-20 pl-20 md:pl-gutter">
+        <div aria-hidden="true" />
+
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 min-w-0">
+          {/* Sized with a working utility rather than `text-headline-md`.
+              The Studio's page title is the top of this screen's hierarchy
+              and was rendering at body size — see the note on the type scale
+              in globals.css. */}
+          <h1 className="font-headline-md text-2xl md:text-3xl leading-tight text-on-surface truncate">
             {title}
           </h1>
           {count && (
-            <span className="hidden sm:inline font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant whitespace-nowrap">
+            <span className="studio-count-pill font-label-sm text-xs uppercase tracking-widest">
               {count}
             </span>
           )}
         </div>
 
-        {children && (
-          <div className="flex items-center gap-3 shrink-0">{children}</div>
-        )}
+        <div className="flex items-center justify-end gap-3">{children}</div>
       </div>
     </header>
   );

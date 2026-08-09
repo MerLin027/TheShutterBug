@@ -224,7 +224,7 @@ export default function AccountClient() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="btn-glass mt-2 w-fit px-8 py-3.5 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center gap-3"
+            className="btn-glass mt-2 w-fit px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center gap-3"
           >
             {saving ? (
               <>

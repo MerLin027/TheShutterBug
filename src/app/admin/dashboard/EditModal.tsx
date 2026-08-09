@@ -78,19 +78,33 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-colors"
+            aria-label="Close"
+            className="btn-icon-glass text-on-surface"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        {/* Preview */}
-        <div className="rounded-2xl overflow-hidden bg-surface-container max-h-40 flex items-center justify-center">
+        {/* Preview.
+
+            The photo now fills the width it's given and the frame follows the
+            photo, instead of the photo being pinned to 144px tall inside a
+            401px-wide box. That box was doing exactly what it was told —
+            `object-contain` was working, the image measured 256x144 at its
+            true 16:9 — but a picture floating in the middle of a grey slab
+            with 72px of dead space on each side reads as a broken thumbnail,
+            not as a preview.
+
+            `w-full` with `h-auto` is how the gallery card renders the same
+            image; `max-h-64` and `object-contain` keep a tall portrait from
+            pushing the form off the screen, and letterbox it rather than
+            crop it if it hits that ceiling. */}
+        <div className="rounded-2xl overflow-hidden bg-surface-container">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo.imageUrl}
             alt={photo.caption || "Photo"}
-            className="max-h-40 w-auto object-contain"
+            className="block w-full h-auto max-h-64 object-contain"
           />
         </div>
 
@@ -206,7 +220,7 @@ export default function EditModal({ photo, onClose, onSuccess, token }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="btn-glass mt-2 px-8 py-3.5 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
+            className="btn-glass mt-2 px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
           >
             {saving ? (
               <>

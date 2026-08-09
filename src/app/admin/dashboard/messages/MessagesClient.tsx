@@ -97,7 +97,7 @@ export default function MessagesClient() {
       >
         <button
           onClick={fetchMessages}
-          className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-all"
+          className="btn-icon-glass text-on-surface"
           title="Refresh"
           aria-label="Refresh messages"
         >
@@ -238,7 +238,7 @@ export default function MessagesClient() {
                         <div>
                           <a
                             href={`mailto:${msg.email}?subject=Re: Your inquiry`}
-                            className="btn-outline inline-flex items-center gap-2 px-5 py-2 text-on-surface font-label-sm text-label-sm uppercase"
+                            className="btn-outline inline-flex items-center gap-2 px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase"
                           >
                             <span className="material-symbols-outlined text-[16px]">
                               reply
