@@ -134,8 +134,14 @@ export default function AccountClient() {
       }
 
       // Purge the cached /about (and / and /work) so the change is visible
-      // immediately rather than after the 60 s ISR window.
-      await revalidatePublicPages();
+      // immediately rather than after the 60 s ISR window. Caught separately:
+      // the save already succeeded, so a failure here must not be reported as
+      // "save failed" — worst case the page updates 60 s later on its own.
+      try {
+        await revalidatePublicPages();
+      } catch {
+        console.error("[account] revalidate failed after a successful save");
+      }
 
       setSaving(false);
       setSaved(true);
