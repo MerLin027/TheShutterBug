@@ -25,6 +25,9 @@ backend/node_modules
 .DS_Store
 *.pem
 
+# vendored Claude skill packs — third-party, ~12 MB, not project code
+.claude/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

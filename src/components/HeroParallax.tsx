@@ -38,19 +38,38 @@ const TITLE_Y = "48%";
  * Home hero: parallax background, glass-text title, subtitle, and the
  * "Enter the Gallery" CTA.
  *
- * The title is genuine glass text — the letterforms are filled with the hero
- * photograph itself, frosted, via an SVG <pattern> laid out in the hero's own
- * coordinate space. The pattern's <image> repeats the <img> below it exactly
- * (x/-2.5% + 105% reproduces object-cover + scale-105), so what shows inside
- * a letter is the part of the photo that letter is actually sitting on. No
- * box, no panel, no flat glow.
+ * ── Why the title is built the way it is ─────────────────────────────────
+ * The previous version filled the glyphs *with* the photograph (an SVG
+ * <pattern> sampling the hero image at the letters' own position) and put a
+ * white hairline rim on top. That can never be legible: by construction the
+ * fill matches the pixels immediately around it, so the letterforms were
+ * invisible and the only ink left was the rim — the wordmark rendered as a
+ * hollow wire outline. The frosted photograph is a *texture*, not a fill.
  *
- * Three text layers, all sharing .hero-title-line and identical coordinates
- * so they cannot drift out of register:
- *   1. shade  — soft dark aura, the contrast floor against a bright sky
- *   2. glass  — the frosted photograph, with an SVG paint fallback to solid
- *               #f5f2ee if the pattern can't resolve
- *   3. sheen  — specular gradient + hairline rim, the "this is glass" cue
+ * So the order is now: opaque legible letters first, frost on top.
+ *
+ * Four layers, all sharing .hero-title-line and identical coordinates so
+ * they cannot drift out of register:
+ *   1. shade — soft dark aura, the contrast floor against a bright sky
+ *   2. fill  — SOLID warm off-white (#f5f2ee), fully opaque. This layer
+ *              alone is a complete, legible wordmark; everything above it is
+ *              decoration and can fail without hurting readability.
+ *   3. frost — a separate copy of the hero photograph, blurred and lifted
+ *              into the upper tonal range, masked down to the glyph shapes
+ *              so it only ever tints the inside of the letters. Never
+ *              darkens the fill past legibility (see #heroTitleFrost).
+ *   4. sheen — top-edge specular gradient, also glyph-masked. No stroke:
+ *              a rim is what made the old version read as an outline.
+ *
+ * Layers 3 and 4 are clipped by CSS `mask`/`-webkit-mask` pointing at one
+ * shared SVG <mask> whose source is a <text> element using the same class
+ * and coordinates as the visible text — so the frost lands on exactly the
+ * glyph shapes, at any viewport size, with anti-aliased edges for free.
+ *
+ * Why an SVG <mask> rather than a CSS mask-image data-URI: an SVG loaded as
+ * an image can't reach the document's webfonts, so a data-URI mask would be
+ * shaped in a fallback face and mismatch the letters it is masking. Inline
+ * SVG uses Playwrite VN like everything else.
  *
  * The title layer rides the *image's* parallax rather than the content's.
  * That's deliberate: the refraction has to stay registered with the photo it
@@ -111,9 +130,26 @@ export default function HeroParallax() {
       >
         <svg className="hero-title-svg" focusable="false" aria-hidden="true">
           <defs>
-            {/* Frost: blur, then lift and saturate. The lift matters — with
-                a plain blur the glyphs average out to the same luminance as
-                the sky around them and vanish. */}
+            {/* Frost: blur the photograph, push its saturation up so the
+                sunset hue survives, then compress the whole tonal range into
+                the TOP of the scale (slope 0.68 / intercept 0.42 maps 0..1
+                onto 0.42..1). That compression is the important part — it
+                means even the darkest pixel of the photo can only ever tint
+                the off-white fill beneath, never black it out.
+
+                stdDeviation 4, not 10: Playwrite VN's strokes are hairlines,
+                so a wide blur hands every letter an identical flat average
+                and the frost reads as a uniform dimming rather than as
+                refraction. At 4 the horizon band and the water's tonal
+                banding still resolve *across* the wordmark, which is what
+                actually looks like light bending through glass.
+
+                The per-channel offset (R above G above B) is a warm bias.
+                Without it the frost samples a mauve sky where R ≈ B, which
+                neutralises the fill's warmth and lands the letters on a cool
+                grey — measured at #d4d1d3, R-B of +1. The bias keeps the
+                rendered fill a warm off-white in the palette's family
+                regardless of which part of the photograph it crosses. */}
             <filter
               id="heroTitleFrost"
               x="-10%"
@@ -122,12 +158,12 @@ export default function HeroParallax() {
               height="120%"
               colorInterpolationFilters="sRGB"
             >
-              <feGaussianBlur stdDeviation="8" />
-              <feColorMatrix type="saturate" values="1.4" />
+              <feGaussianBlur stdDeviation="4" />
+              <feColorMatrix type="saturate" values="1.9" />
               <feComponentTransfer>
-                <feFuncR type="linear" slope="1.12" intercept="0.06" />
-                <feFuncG type="linear" slope="1.12" intercept="0.06" />
-                <feFuncB type="linear" slope="1.12" intercept="0.06" />
+                <feFuncR type="linear" slope="0.70" intercept="0.44" />
+                <feFuncG type="linear" slope="0.68" intercept="0.42" />
+                <feFuncB type="linear" slope="0.64" intercept="0.38" />
               </feComponentTransfer>
             </filter>
 
@@ -142,36 +178,38 @@ export default function HeroParallax() {
               <feGaussianBlur stdDeviation="9" />
             </filter>
 
-            {/* The photograph, frosted, in the hero's coordinate space. The
-                tile is the full viewport so nothing visibly repeats, and
-                x=-2.5%/width=105% reproduces the <img>'s object-cover +
-                scale-105 exactly. */}
-            <pattern
-              id="heroGlassFill"
-              patternUnits="userSpaceOnUse"
+            {/* The glyph shapes, as a luminance mask. Same class and same
+                x/y as every visible text layer, so the mask is the letters —
+                not an approximation of them. White = keep. */}
+            <mask
+              id="heroTitleGlyphs"
+              maskUnits="userSpaceOnUse"
               x="0"
               y="0"
               width="100%"
               height="100%"
             >
-              <image
-                href={HERO_IMAGE}
-                x="-2.5%"
-                y="-2.5%"
-                width="105%"
-                height="105%"
-                preserveAspectRatio="xMidYMid slice"
-                filter="url(#heroTitleFrost)"
-              />
-            </pattern>
+              <text
+                x={TITLE_X}
+                y={TITLE_Y}
+                textAnchor="middle"
+                className="hero-title-line"
+                fill="#ffffff"
+              >
+                {TITLE}
+              </text>
+            </mask>
 
+            {/* Specular falloff, top-lit — the highlight sits in the upper
+                third of the wordmark and fades out below it. */}
             <linearGradient id="heroTitleSheen" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#ffffff" stopOpacity="0.34" />
-              <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.08" />
-              <stop offset="1" stopColor="#ffffff" stopOpacity="0.2" />
+              <stop offset="0" stopColor="#ffffff" stopOpacity="0.5" />
+              <stop offset="0.45" stopColor="#ffffff" stopOpacity="0.1" />
+              <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
             </linearGradient>
           </defs>
 
+          {/* 1 — dark aura */}
           <text
             x={TITLE_X}
             y={TITLE_Y}
@@ -182,20 +220,49 @@ export default function HeroParallax() {
             {TITLE}
           </text>
 
-          {/* The SVG paint fallback after the reference is the plain-text
-              fallback: if the pattern can't resolve, the glyphs fill solid
-              warm off-white, which with the shade layer behind them stays
-              perfectly legible. */}
+          {/* 2 — the wordmark itself: solid, opaque, self-sufficient. */}
           <text
             x={TITLE_X}
             y={TITLE_Y}
             textAnchor="middle"
-            className="hero-title-line"
-            fill="url(#heroGlassFill) #f5f2ee"
+            className="hero-title-line hero-title-fill"
           >
             {TITLE}
           </text>
 
+          {/* 3 — frosted photograph, glyph-masked. x=-2.5%/width=105%
+                  reproduces the <img>'s object-cover + scale-105 exactly, so
+                  the haze inside a letter comes from the part of the photo
+                  that letter is actually sitting on.
+
+                  The mask is applied twice on purpose, and only ever takes
+                  effect once: .hero-title-frost sets the CSS `mask` (the
+                  modern path, with the -webkit- alias for older Safari),
+                  while the `mask` presentation attribute here is SVG 1.1 and
+                  universally supported. Author CSS outranks a presentation
+                  attribute in the cascade, so wherever CSS masking works the
+                  attribute is simply overridden — no double-multiplied
+                  alpha. Wherever it doesn't, the attribute still clips the
+                  frost to the letters. Without that floor the failure mode is
+                  ugly: an unmasked full-bleed frosted image would blanket
+                  the entire hero. */}
+          <image
+            href={HERO_IMAGE}
+            x="-2.5%"
+            y="-2.5%"
+            width="105%"
+            height="105%"
+            preserveAspectRatio="xMidYMid slice"
+            filter="url(#heroTitleFrost)"
+            mask="url(#heroTitleGlyphs)"
+            className="hero-title-frost"
+          />
+
+          {/* 4 — sheen. Fill only, no stroke: a rim is what made the old
+                  version read hollow. The gradient uses the default
+                  objectBoundingBox units, so it spans this text element's own
+                  bbox — the highlight tracks the wordmark at every viewport
+                  size without needing the glyph mask or a hardcoded band. */}
           <text
             x={TITLE_X}
             y={TITLE_Y}

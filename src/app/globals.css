@@ -581,20 +581,25 @@ p {
 }
 
 /* ── Home hero — glass TEXT (not a glass box) ───────────────────────────
-   The letterforms are filled with the hero photograph itself, frosted: an
-   SVG <pattern> holding a blurred, lifted copy of the same image, in the
-   hero's own coordinate space. So what shows inside a letter is the part of
-   the photo that letter is actually sitting on — genuinely translucent, no
-   box, no panel, no flat glow.
+   Solid legible letters with a frosted-glass texture *inside* their fill.
+   The stack, bottom to top (built in HeroParallax.tsx, which documents the
+   full rationale): dark aura → opaque warm off-white fill → blurred copy of
+   the hero photograph masked to the glyph shapes → top-edge sheen.
 
-   Why a patterned copy of the photo rather than backdrop-filter over a
-   masked layer: the title rides a Framer Motion element whose opacity
-   animates on scroll, and an ancestor with opacity < 1 forms a Backdrop
-   Root — which would cut backdrop-filter off from the photograph the moment
-   the page started scrolling, collapsing the effect to a flat wash. A
-   pattern fill has no such dependency, needs no CSS mask support, and stays
-   registered with the photo at every scroll position because the title
-   layer rides the photo's parallax rather than the content's. */
+   The load-bearing rule: the photograph is a texture layered ON the fill,
+   never the fill itself. Filling the glyphs with the photo they sit on —
+   the previous approach here — makes them match their own backdrop by
+   construction, so the letters disappear and only the rim survives. That is
+   what produced the hollow-outline wordmark this replaced.
+
+   Why a second copy of the image rather than backdrop-filter: the title
+   rides a Framer Motion element whose opacity animates on scroll, and an
+   ancestor with opacity < 1 forms a Backdrop Root — which would cut
+   backdrop-filter off from the photograph the moment the page started
+   scrolling, collapsing the effect to a flat wash. An explicit <image>
+   layer has no such dependency, and stays registered with the photo at
+   every scroll position because the title layer rides the photo's parallax
+   rather than the content's. */
 
 .hero-title-svg {
     display: block;
@@ -602,8 +607,10 @@ p {
     height: 100%;
 }
 
-/* Shared by all three text layers (shade, glass, sheen) so they can never
-   drift out of register — same class, same coordinates, one font-size.
+/* Shared by every text layer — shade, fill, sheen, and the <text> inside the
+   glyph mask — so they can never drift out of register: same class, same
+   coordinates, one font-size. The mask in particular has to match the fill
+   exactly or the frost would land off the letters.
 
    Sized against the boat in the photograph rather than the type scale:
      - boat measured in the source photo (connected-component analysis):
@@ -640,18 +647,42 @@ p {
     paint-order: stroke;
 }
 
-/* Glass body — filled with the frosted photograph. The `fill` attribute in
-   HeroParallax carries an SVG paint fallback (`url(#…) #f5f2ee`), so if the
-   pattern reference can't resolve the glyphs fall back to solid warm
-   off-white, which with .hero-title-shade behind it is the plain-text
-   fallback. No @supports gate needed: pattern fills are SVG 1.1. */
+/* The wordmark proper: solid, fully opaque warm off-white — the same warm
+   off-white the palette uses for display text, a shade brighter than body
+   copy because this sits over a photograph. Nothing above this layer is
+   required for the title to be readable; if the frost or the sheen fails to
+   render, what remains is clean solid lettering over the dark aura. */
+.hero-title-fill {
+    fill: #f5f2ee;
+}
 
-/* Specular top edge and hairline rim — the cue that reads as "glass" rather
-   than "photo poking through a hole". */
+/* Frosted photograph, clipped to the letters. `mask` (and the WebKit alias
+   for older Safari) points at the SVG <mask> in HeroParallax whose source is
+   a <text> using .hero-title-line — so the clip is the exact glyph outline,
+   anti-aliased edges included.
+
+   opacity 0.34 against the #f5f2ee fill: the frost filter's tonal
+   compression bottoms out at 0.42, so the darkest possible result inside a
+   letter is 0.34*0.42 + 0.66*0.949 = 0.77 luminance, against a hero backdrop
+   measured at 0.13 behind the wordmark. The letters cannot lose their
+   contrast floor no matter what part of the photograph they cross.
+
+   0.34 rather than the 0.5 first tried here: at 0.5 the photograph's own
+   darkness pulled the fill down to ~#c3bfc2, a mid grey. The fill has to
+   stay unmistakably warm off-white and let the frost read as a tint on top
+   of it, not as a wash over it. */
+.hero-title-frost {
+    -webkit-mask: url(#heroTitleGlyphs);
+    mask: url(#heroTitleGlyphs);
+    opacity: 0.34;
+}
+
+/* Specular top edge — the cue that reads as "glass" rather than "flat
+   paint". Fill only. The old version stroked this layer, and at Playwrite
+   VN's hairline weights a rim plus an unfilled interior is precisely how the
+   wordmark ended up looking like a hollow outline. */
 .hero-title-sheen {
     fill: url(#heroTitleSheen);
-    stroke: rgba(255, 255, 255, 0.5);
-    stroke-width: 0.02em;
 }
 
 /* Gallery filter pills — single segmented-control container */
