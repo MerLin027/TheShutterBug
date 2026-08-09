@@ -272,9 +272,9 @@ Two traps that came out of that pass and will silently reappear:
    blur in Firefox. After any `globals.css` change, confirm
    `count(-webkit-backdrop-filter)` is **0** — that is the load-bearing
    invariant, not the delta. (This note previously said the delta should
-   be "~19"; the real figure is 12 as of `b3151139`, changed by Stage 1's
-   consolidation of the glass recipes into shared classes. The count moves
-   whenever recipes are merged or split, so don't treat it as fixed.)
+   be "~19", then "12"; the real figure is 13 as of `1de43304`. It moves
+   whenever glass recipes are merged or split, so don't treat it as fixed —
+   only the zero matters.)
 2. **`font-variation-settings` is one declaration, not several.** An
    inline `'FILL' 1` replaces the whole line and reverts the icon to
    weight 400, so every filled icon restates `'wght' 250` alongside it.
@@ -371,9 +371,71 @@ makes the server render `StudioBoot` and the client render the dashboard.
 Confirmed pre-existing, not introduced by this pass. The same pattern is
 in `MessagesClient`, `AccountClient` and the admin login page.
 
-### Stages 3–6: not started
-Each stage is gated on its own planning prompt. Do not open Stage 3 off
-the back of Stage 2 being closed.
+### Stage 3 — Frontend Logic Reaudit: **COMPLETE** (2026-08-09)
+`tsc --noEmit` was already clean and `eslint src` already at 0 errors / 4
+warnings (all four are deliberate `<img>` and webfont advisories, marked
+in-file), and the audit found no broken conditionals, no missing keys, no
+wrong prop passing and no commented-out leftovers. What it did find:
+
+- **The reorder payload corrupted gallery order whenever a category
+  filter was active.** `DashboardClient` sent absolute positions `0…n-1`,
+  but `photos` holds only the filtered set — the filter refetches with
+  `?category=`. Dragging inside Nature rewrote every Nature photo to
+  `0…k`, colliding with the Urban and Objects photos already holding those
+  numbers; `GET /api/photos` sorts on `position`, so public order went
+  arbitrary. Stage 2's max+1 upload fix made this *more* reachable, not
+  less. It now permutes the positions the visible set already holds, which
+  is correct filtered or not and cannot touch an off-screen photo.
+  **Reproduced before fixing** (two photos landed on position 0 and two on
+  position 1) and re-run after.
+- **Hydration mismatch in all four Studio surfaces**, the one carried over
+  from the UI/UX pass. `useState(() => localStorage.getItem(…))` runs on
+  the server too, where `window` is undefined, so the server painted
+  `StudioBoot` and the client painted the dashboard. There is no
+  initialiser that can read localStorage and match — the fix is to make
+  both passes render the boot screen and let an effect supply the answer.
+  That is `src/lib/useAdminToken.ts`, which also owns the redirect and
+  sign-out. Cost is one extra frame of "Checking your session".
+- **The type scale was dead, and is now live.** `@theme` declared
+  `--font-size-*` / `--font-family-*`; Tailwind v4's namespaces are
+  `--text-*` / `--font-*`, so all 16 `text-headline-*` class names were
+  unknown utilities and every heading rendered at the 14.4px root while
+  `font-headline-*` still applied its weight. Renamed to `--text-*` with
+  `--text-X--line-height` / `--text-X--letter-spacing` sub-properties.
+  The six `--font-family-*` tokens were **deleted** rather than renamed:
+  all six read `"Jost", sans-serif`, which `body` already sets, and
+  `--font-*` would have collided with `--font-weight-*` over the same
+  `font-headline-md` utility name. Public `<h1>`s now measure 28.8px
+  mobile / 43.2px desktop. The two workarounds that existed because the
+  tokens were dead (`text-4xl md:text-6xl` on `/work`, `text-2xl` in
+  `StudioTopBar`) are gone.
+- **An object-URL leak** in `UploadModal` — every preview was created and
+  never revoked — plus a `FormData.get() as string` cast on the contact
+  form that would have hidden a real `TypeError` from `tsc`.
+- **Escape and a body-scroll lock** for all three Studio dialogs and the
+  mobile menu, via the new `StudioModal`. They previously closed on
+  backdrop click only, while the lightbox had full keyboard control.
+- **Fetch error handling landed early from Stage 5.** `fetchPhotos` and
+  `fetchPhoto` had no `try/catch`, so a rejected fetch threw out of the
+  Server Component. Verified: with the backend stopped, `/` and `/work`
+  returned **HTTP 500** before and **200** after. `/about` always survived
+  because `fetchSiteContent` already did this.
+- **Duplication removed:** `API_URL` (8 copies → `src/lib/api.ts`), the
+  session read (4 → `useAdminToken`), the category list (3 →
+  `src/lib/categories.ts`), the spinner markup (6 → `Spinner`), the modal
+  shell (3 → `StudioModal`). The glass/button *CSS* vocabulary was already
+  properly shared by the UI/UX pass and was left alone; no
+  `<GlassButton>` wrapper was introduced.
+
+Third trap, in the same class as the two above:
+3. **Tailwind v4 generates utilities from the variable's namespace
+   prefix, not its name.** `--text-X` makes `text-X`; `--font-size-X`
+   makes nothing at all and fails silently. If a `text-*` class ever stops
+   having an effect, check the token's prefix first.
+
+### Stages 4–6: not started
+Each stage is gated on its own planning prompt. Do not open Stage 4 off
+the back of Stage 3 being closed.
 
 ## The six-stage plan (see plan.md for the actual task breakdown)
 1. Visual/structural restructure (Lovable reference) — layout,

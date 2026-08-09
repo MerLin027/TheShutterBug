@@ -69,7 +69,6 @@ export default async function Lightbox({
               <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
                 <span
                   className="material-symbols-outlined text-[16px]"
-                  data-icon="location_on"
                   style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
                 >
                   location_on
@@ -107,13 +106,13 @@ export default async function Lightbox({
             title="Previous"
             className="btn-icon-glass-lg text-on-surface"
           >
-            <span className="material-symbols-outlined" data-icon="chevron_left">
+            <span className="material-symbols-outlined">
               chevron_left
             </span>
           </Link>
         ) : (
           <span aria-hidden data-inactive className="btn-icon-glass-lg text-on-surface">
-            <span className="material-symbols-outlined" data-icon="chevron_left">
+            <span className="material-symbols-outlined">
               chevron_left
             </span>
           </span>
@@ -132,7 +131,7 @@ export default async function Lightbox({
           title="Close"
           className="btn-icon-glass-lg text-on-surface"
         >
-          <span className="material-symbols-outlined" data-icon="close">
+          <span className="material-symbols-outlined">
             close
           </span>
         </Link>
@@ -145,13 +144,13 @@ export default async function Lightbox({
             title="Next"
             className="btn-icon-glass-lg text-on-surface"
           >
-            <span className="material-symbols-outlined" data-icon="chevron_right">
+            <span className="material-symbols-outlined">
               chevron_right
             </span>
           </Link>
         ) : (
           <span aria-hidden data-inactive className="btn-icon-glass-lg text-on-surface">
-            <span className="material-symbols-outlined" data-icon="chevron_right">
+            <span className="material-symbols-outlined">
               chevron_right
             </span>
           </span>

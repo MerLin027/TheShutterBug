@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export type StudioNavItem = { href: string; label: string; icon: string };
@@ -26,6 +27,23 @@ export default function StudioMenu({
   onSignOut: () => void;
 }) {
   const activeIndex = navItems.findIndex((item) => item.href === pathname);
+
+  // Escape closes, matching the Studio's modals (StudioModal) and the
+  // lightbox (LightboxKeys). This menu covers the whole viewport, so having
+  // no keyboard dismissal was the most conspicuous gap of the three.
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange(false);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onOpenChange]);
 
   return (
     <>

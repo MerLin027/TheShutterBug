@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
+import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
+import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
 import { revalidatePublicPages } from "../../actions";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
 
 // Pre-load placeholders only — the real values arrive from GET /api/site-content
 // on mount. These mirror DEFAULTS in backend/models/SiteContent.js so the
@@ -24,17 +23,8 @@ const SEED_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCFd3kHx3f7TeKHtxF_JbbMOx1gcgGN2yJwun0sRZTvkpH0C5Os9LO4SOCnp3UlHBkmbBdbD9r7C6ScpOSyILvBtEOoSi0flavIB50fRf7kmqOL86vKVCMADob9KFsiurnit21aw1Oq79dX5bfimo8ulSvwskvjA7fhD8eVHmylQFGnnJfLDtoxMj4pehyK71qvCKTeclW6BetKTFL02lrphZAeuRvfWazNDSz6sSrgd0PZuCEQBN_D";
 
 export default function AccountClient() {
-  const router = useRouter();
-
-  const [token] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("admin_token");
-  });
-  // Lazy initializer reads localStorage synchronously on first render.
-  const [email] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("admin_email") || "";
-  });
+  // Effect-based session read, not a lazy initialiser — see useAdminToken.
+  const { token, email, ready, signOut } = useAdminToken();
 
   const [quote, setQuote] = useState(SEED_QUOTE);
   const [bio, setBio] = useState(SEED_BIO);
@@ -54,13 +44,6 @@ export default function AccountClient() {
     };
   }, []);
 
-  // Auth redirect — pure side-effect, no setState.
-  useEffect(() => {
-    if (!token) {
-      router.replace("/admin");
-    }
-  }, [token, router]);
-
   // Load the current About copy. GET is public, but there's no point firing it
   // before we know the admin is staying on the page.
   useEffect(() => {
@@ -70,7 +53,7 @@ export default function AccountClient() {
 
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/site-content`, {
+        const res = await fetch(apiUrl("/api/site-content"), {
           cache: "no-store",
         });
         if (cancelled) return;
@@ -108,7 +91,7 @@ export default function AccountClient() {
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/site-content`, {
+      const res = await fetch(apiUrl("/api/site-content"), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -118,9 +101,7 @@ export default function AccountClient() {
       });
 
       if (res.status === 401) {
-        localStorage.removeItem("admin_token");
-        localStorage.removeItem("admin_email");
-        router.replace("/admin");
+        signOut();
         return;
       }
 
@@ -153,7 +134,7 @@ export default function AccountClient() {
     }
   }
 
-  if (!token || loading) {
+  if (!ready || !token || loading) {
     return <StudioBoot />;
   }
 
@@ -228,7 +209,7 @@ export default function AccountClient() {
           >
             {saving ? (
               <>
-                <div className="admin-spinner !w-4 !h-4 !border-[1.5px]" />
+                <Spinner />
                 <span>Saving…</span>
               </>
             ) : (

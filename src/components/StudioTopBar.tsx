@@ -40,11 +40,12 @@ export default function StudioTopBar({
         <div aria-hidden="true" />
 
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 min-w-0">
-          {/* Sized with a working utility rather than `text-headline-md`.
-              The Studio's page title is the top of this screen's hierarchy
-              and was rendering at body size — see the note on the type scale
-              in globals.css. */}
-          <h1 className="font-headline-md text-2xl md:text-3xl leading-tight text-on-surface truncate">
+          {/* On `text-headline-md` now that the type scale generates real
+              utilities — this carried `text-2xl` as a stand-in while the
+              token was dead. The `md:text-3xl` step is kept on purpose: the
+              Studio's page title is the top of this screen's hierarchy and
+              sits one notch above headline-md on desktop. */}
+          <h1 className="font-headline-md text-headline-md md:text-3xl leading-tight text-on-surface truncate">
             {title}
           </h1>
           {count && (

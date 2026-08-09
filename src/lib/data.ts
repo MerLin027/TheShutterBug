@@ -114,20 +114,31 @@ export async function fetchPhotos(category?: string): Promise<Photo[]> {
     url.searchParams.set("category", category.toLowerCase());
   }
 
-  const res = await fetch(url.toString(), {
-    // Revalidate every 60 s on the server so a newly-uploaded photo
-    // appears without a full redeploy.
-    next: { revalidate: 60 },
-  });
+  // The try/catch is the difference between a cold Render instance being an
+  // empty gallery and being an error page. `!res.ok` only covers a server that
+  // answered; a rejected fetch — DNS failure, connection refused, the free
+  // tier still waking up — throws, and an uncaught throw in a Server Component
+  // takes the whole route down. fetchSiteContent has always done this, which
+  // is why /about survived a dead backend while / and /work did not.
+  try {
+    const res = await fetch(url.toString(), {
+      // Revalidate every 60 s on the server so a newly-uploaded photo
+      // appears without a full redeploy.
+      next: { revalidate: 60 },
+    });
 
-  if (!res.ok) {
-    // Surface the error in the Next.js server logs but don't crash the page.
-    console.error(`[data] GET /api/photos failed — ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      // Surface the error in the Next.js server logs but don't crash the page.
+      console.error(`[data] GET /api/photos failed — ${res.status} ${res.statusText}`);
+      return [];
+    }
+
+    const raw: ApiPhoto[] = await res.json();
+    return raw.map(toPhoto);
+  } catch (err) {
+    console.error("[data] GET /api/photos threw —", err);
     return [];
   }
-
-  const raw: ApiPhoto[] = await res.json();
-  return raw.map(toPhoto);
 }
 
 /**
@@ -146,19 +157,27 @@ export async function fetchFeaturedPhotos(limit?: number): Promise<Photo[]> {
  * Returns null when the photo doesn't exist or the request fails.
  */
 export async function fetchPhoto(id: string): Promise<Photo | null> {
-  const res = await fetch(`${API_URL}/api/photos/${id}`, {
-    next: { revalidate: 60 },
-  });
+  // Same reasoning as fetchPhotos: a rejected fetch must degrade to "no such
+  // photo" (which the lightbox already handles with notFound()) rather than
+  // throwing out of the Server Component.
+  try {
+    const res = await fetch(`${API_URL}/api/photos/${id}`, {
+      next: { revalidate: 60 },
+    });
 
-  if (!res.ok) {
-    if (res.status !== 404) {
-      console.error(`[data] GET /api/photos/${id} failed — ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      if (res.status !== 404) {
+        console.error(`[data] GET /api/photos/${id} failed — ${res.status} ${res.statusText}`);
+      }
+      return null;
     }
+
+    const raw: ApiPhoto = await res.json();
+    return toPhoto(raw);
+  } catch (err) {
+    console.error(`[data] GET /api/photos/${id} threw —`, err);
     return null;
   }
-
-  const raw: ApiPhoto = await res.json();
-  return toPhoto(raw);
 }
 
 /**
@@ -173,22 +192,22 @@ export async function fetchPhoto(id: string): Promise<Photo | null> {
 export async function fetchPhotoNeighbours(
   currentId: string,
   filter?: string
-): Promise<{ all: Photo[]; prev: Photo | null; next: Photo | null }> {
+): Promise<{ prev: Photo | null; next: Photo | null }> {
   // Use the same filter the gallery was showing so prev/next stay within the
   // filtered set rather than jumping to unrelated categories.
   const pool = await fetchPhotos(filter && filter !== "All" ? filter : undefined);
-  if (pool.length === 0) return { all: [], prev: null, next: null };
+  if (pool.length === 0) return { prev: null, next: null };
 
   const idx = pool.findIndex((p) => p.id === currentId);
   // Photo not found in this filtered pool (shouldn't happen, but fall back
   // to disabling navigation rather than crashing).
-  if (idx === -1) return { all: pool, prev: null, next: null };
+  if (idx === -1) return { prev: null, next: null };
 
   // Wrap-around navigation: last photo's "next" is the first, and vice-versa.
   const prev = idx > 0 ? pool[idx - 1] : pool[pool.length - 1];
   const next = idx < pool.length - 1 ? pool[idx + 1] : pool[0];
 
-  return { all: pool, prev, next };
+  return { prev, next };
 }
 
 // ---------------------------------------------------------------------------

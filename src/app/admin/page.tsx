@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
+import { useAdminToken } from "@/lib/useAdminToken";
+import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -15,19 +15,17 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Lazy initialiser — reads localStorage synchronously on first render only.
-  // Returns true if a token exists (meaning we should show the spinner + redirect).
-  const [checking] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !!localStorage.getItem("admin_token");
-  });
+  // This page's redirect runs the other way — away from the login form when a
+  // session already exists — so the hook's own guard is switched off. Reading
+  // the token in an effect rather than during render is what stops the server
+  // from rendering the form while the client renders the boot screen.
+  const { token, ready } = useAdminToken({ redirectWhenMissing: false });
 
-  // Redirect if already authenticated — pure side-effect, no setState
   useEffect(() => {
-    if (checking) {
+    if (ready && token) {
       router.replace("/admin/dashboard");
     }
-  }, [checking, router]);
+  }, [ready, token, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -35,7 +33,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -58,9 +56,10 @@ export default function AdminLoginPage() {
     }
   }
 
-  // Already signed in — hold the boot screen while the redirect runs, so
-  // there's no flash of the login form (addition #3).
-  if (checking) {
+  // Hold the boot screen until the session read has happened, and keep
+  // holding it while the redirect runs if there was a token — so there's no
+  // flash of the login form for someone already signed in (addition #3).
+  if (!ready || token) {
     return <StudioBoot />;
   }
 
@@ -159,7 +158,7 @@ export default function AdminLoginPage() {
               {loading ? "Signing in…" : "Enter Archive"}
               <span className="btn-icon-nest">
                 {loading ? (
-                  <div className="admin-spinner !w-4 !h-4 !border-[1.5px]" />
+                  <Spinner />
                 ) : (
                   <span
                     className="material-symbols-outlined text-[18px]"

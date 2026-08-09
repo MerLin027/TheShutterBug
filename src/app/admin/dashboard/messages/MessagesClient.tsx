@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
+import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
 import { MessageListSkeleton, StudioBoot } from "@/components/StudioSkeletons";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
 
 interface ContactMessage {
   _id: string;
@@ -28,37 +26,24 @@ function formatDate(iso: string) {
 }
 
 export default function MessagesClient() {
-  const router = useRouter();
-
-  const [token] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("admin_token");
-  });
+  // Effect-based session read, not a lazy initialiser — see useAdminToken.
+  const { token, ready, signOut } = useAdminToken();
 
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Auth guard
-  useEffect(() => {
-    if (!token) {
-      router.replace("/admin");
-    }
-  }, [token, router]);
-
   const fetchMessages = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_URL}/api/contact`, {
+      const res = await fetch(apiUrl("/api/contact"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
-        localStorage.removeItem("admin_token");
-        localStorage.removeItem("admin_email");
-        router.replace("/admin");
+        signOut();
         return;
       }
       if (!res.ok) {
@@ -72,14 +57,14 @@ export default function MessagesClient() {
     } finally {
       setLoading(false);
     }
-  }, [token, router]);
+  }, [token, signOut]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMessages();
   }, [fetchMessages]);
 
-  if (!token) {
+  if (!ready || !token) {
     return <StudioBoot />;
   }
 

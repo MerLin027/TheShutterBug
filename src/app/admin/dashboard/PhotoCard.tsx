@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { ApiPhoto } from "@/lib/data";
+import { categoryLabel } from "@/lib/categories";
 
 type Props = {
   photo: ApiPhoto;
@@ -117,8 +118,11 @@ export default function PhotoCard({
 
         <div className="flex items-center justify-between mt-auto">
           <div className="flex flex-col">
+            {/* categoryLabel, not the raw enum value: an untitled photo used
+                to fall back to the lowercase storage form and read "nature"
+                in the same slot where a title would be capitalised. */}
             <span className="font-body-md text-body-md font-bold text-white">
-              {photo.caption || photo.category}
+              {photo.caption || categoryLabel(photo.category)}
             </span>
             <span className="font-label-sm text-label-sm text-white/70 uppercase tracking-widest mt-0.5">
               {photo.category}

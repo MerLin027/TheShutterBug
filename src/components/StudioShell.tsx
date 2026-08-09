@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { useAdminToken } from "@/lib/useAdminToken";
 import StudioMenu, { type StudioNavItem } from "./StudioMenu";
 
 const NAV_ITEMS: StudioNavItem[] = [
@@ -18,14 +19,12 @@ const NAV_ITEMS: StudioNavItem[] = [
  */
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  function handleSignOut() {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_email");
-    router.replace("/admin");
-  }
+  // Sign-out lives in useAdminToken alongside the read, so "what counts as a
+  // session" is defined in one place. redirectWhenMissing is off because the
+  // page inside this shell already owns that guard — two copies would race.
+  const { signOut } = useAdminToken({ redirectWhenMissing: false });
 
   return (
     <div className="bg-primary-container text-on-surface font-body-md min-h-[100dvh] antialiased selection:bg-surface-variant selection:text-on-surface">
@@ -82,7 +81,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
               </span>
             </Link>
             <button
-              onClick={handleSignOut}
+              onClick={signOut}
               className="flex items-center gap-4 px-4 py-3 rounded-xl text-error hover:text-error/80 hover:bg-surface-container-high transition-all group w-full text-left"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
@@ -106,7 +105,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
           pathname={pathname}
           open={menuOpen}
           onOpenChange={setMenuOpen}
-          onSignOut={handleSignOut}
+          onSignOut={signOut}
         />
 
         {/* ─── Main content ───────────────────────────────────────────────── */}

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useRef, FormEvent } from "react";
+import { apiUrl } from "@/lib/api";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Reveal from "@/components/Reveal";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
+import Spinner from "@/components/Spinner";
 
 type FieldErrors = {
   name?: string;
@@ -69,11 +68,15 @@ export default function Contact() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    // FormData.get() returns FormDataEntryValue | null. Casting that to
+    // `string` told tsc a lie — validate() calls .trim() on all three, so a
+    // missing `name` attribute on any input would have been a runtime
+    // TypeError that the type system had been talked out of reporting.
     const data = new FormData(e.currentTarget);
     const payload = {
-      name: data.get("name") as string,
-      email: data.get("email") as string,
-      message: data.get("message") as string,
+      name: String(data.get("name") ?? ""),
+      email: String(data.get("email") ?? ""),
+      message: String(data.get("message") ?? ""),
     };
 
     const errors = validate(payload);
@@ -99,7 +102,7 @@ export default function Contact() {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_URL}/api/contact`, {
+      const res = await fetch(apiUrl("/api/contact"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -277,7 +280,7 @@ export default function Contact() {
                     whole label row, so the button doesn't resize mid-submit. */}
                 <span className="btn-icon-nest">
                   {isLoading ? (
-                    <div className="admin-spinner !w-4 !h-4 !border-[1.5px]" />
+                    <Spinner />
                   ) : (
                     <span className="material-symbols-outlined text-[18px]">
                       arrow_forward

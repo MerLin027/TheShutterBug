@@ -21,17 +21,16 @@ export default async function Work({
       <SiteNav />
 
       <main id="main" className="flex-grow pt-32 md:pt-40 px-margin-mobile md:px-margin-desktop">
-        {/* Sized with built-in utilities, not `text-headline-lg` — that token
-            generates no utility under Tailwind v4's namespaces, so this
-            heading was rendering at 14.4px, the same size as the paragraph
-            under it. See the note above the font-size tokens in globals.css.
-            text-6xl matches the 48px the headline-lg token was always meant
-            to produce.
+        {/* On the type-scale tokens, same as every other page <h1>. This used
+            to carry `text-4xl md:text-6xl` because `text-headline-lg`
+            generated no utility under the old `--font-size-*` names and the
+            heading rendered at 14.4px; the tokens are real now, so the
+            workaround is gone.
 
             The "{n} frames — click any photograph…" line under it is gone by
             request. */}
         <Reveal className="site-container mb-12 text-center" blur>
-          <h1 className="font-headline-lg-mobile md:font-headline-lg text-4xl md:text-6xl leading-tight text-on-surface">
+          <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">
             Gallery
           </h1>
         </Reveal>

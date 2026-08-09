@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Photo } from "@/lib/data";
+import { GALLERY_FILTERS as FILTERS } from "@/lib/categories";
 import Reveal from "@/components/Reveal";
-
-const FILTERS = ["All", "Nature", "Objects", "Monochrome", "Urban"] as const;
 
 // ---------------------------------------------------------------------------
 // Empty-state UI — shown when the DB has no photos yet (pre-admin-panel)
@@ -14,10 +13,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-32 px-8 text-center">
       {/* Camera icon using Material Symbols (already loaded globally) */}
-      <span
-        className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6"
-        data-icon="camera_alt"
-      >
+      <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6">
         camera_alt
       </span>
       <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
@@ -86,10 +82,7 @@ export default function GalleryClient({
         ) : filteredPhotos.length === 0 ? (
           /* Category filter is active but nothing matches — still a subset empty state */
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <span
-              className="material-symbols-outlined text-[48px] text-on-surface-variant/30 mb-4"
-              data-icon="filter_list_off"
-            >
+            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/30 mb-4">
               filter_list_off
             </span>
             <p className="font-body-md text-body-md text-on-surface-variant/70">

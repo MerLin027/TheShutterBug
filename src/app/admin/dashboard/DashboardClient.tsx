@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -16,28 +15,26 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import type { ApiPhoto } from "@/lib/data";
+import { apiUrl } from "@/lib/api";
+import { STUDIO_FILTERS, categoryLabel } from "@/lib/categories";
+import { useAdminToken } from "@/lib/useAdminToken";
 import { revalidatePublicPages } from "../actions";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
+import StudioModal from "@/components/StudioModal";
+import Spinner from "@/components/Spinner";
 import { PhotoGridSkeleton, StudioBoot } from "@/components/StudioSkeletons";
 import PhotoCard from "./PhotoCard";
 import UploadModal from "./UploadModal";
 import EditModal from "./EditModal";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
-
-const CATEGORIES = ["all", "nature", "objects", "monochrome", "urban"] as const;
-
 export default function DashboardClient() {
-  const router = useRouter();
-
   // ── Auth state ──────────────────────────────────────────────────────────
-  // Lazy initializer reads localStorage synchronously on first render.
-  const [token] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("admin_token");
-  });
+  // See useAdminToken for why this is an effect rather than a lazy
+  // initialiser: localStorage doesn't exist at SSR time, so reading it during
+  // the first render made the server and client disagree about which tree to
+  // paint. The hook also owns the redirect when there's no token.
+  const { token, ready, signOut } = useAdminToken();
 
   // ── Data state ──────────────────────────────────────────────────────────
   const [photos, setPhotos] = useState<ApiPhoto[]>([]);
@@ -55,18 +52,11 @@ export default function DashboardClient() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // ── Auth redirect — pure side-effect, no setState ───────────────────────
-  useEffect(() => {
-    if (!token) {
-      router.replace("/admin");
-    }
-  }, [token, router]);
-
   // ── Fetch photos ────────────────────────────────────────────────────────
   const fetchPhotos = useCallback(async () => {
     if (!token) return;
 
-    const url = new URL(`${API_URL}/api/photos`);
+    const url = new URL(apiUrl("/api/photos"));
     if (activeCategory !== "all") {
       url.searchParams.set("category", activeCategory);
     }
@@ -77,10 +67,7 @@ export default function DashboardClient() {
       });
 
       if (res.status === 401) {
-        // Token expired/invalid — clear and redirect
-        localStorage.removeItem("admin_token");
-        localStorage.removeItem("admin_email");
-        router.replace("/admin");
+        signOut();
         return;
       }
 
@@ -93,7 +80,7 @@ export default function DashboardClient() {
     } finally {
       setLoading(false);
     }
-  }, [token, activeCategory, router]);
+  }, [token, activeCategory, signOut]);
 
   // Fetch on mount and when category changes.
   // The fetchPhotos callback calls setPhotos/setLoading internally, but
@@ -110,7 +97,7 @@ export default function DashboardClient() {
     setDeleting(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/photos/${deletingPhoto._id}`, {
+      const res = await fetch(apiUrl(`/api/photos/${deletingPhoto._id}`), {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -129,6 +116,21 @@ export default function DashboardClient() {
   }
 
   // ── Drag-to-reorder handler ─────────────────────────────────────────────
+  //
+  // The payload used to be `reordered.map((p, i) => ({ id, position: i }))` —
+  // absolute positions 0…n-1. That is only correct when `photos` is the whole
+  // gallery, and it isn't whenever a category filter is active: the filter
+  // refetches with ?category=, so dragging inside "Nature" rewrote every
+  // Nature photo to 0…k and collided head-on with the Urban and Objects
+  // photos already holding those numbers. `GET /api/photos` sorts on
+  // `position`, so the public gallery's order went arbitrary — and the Stage 2
+  // upload fix (max+1) made this MORE reachable, not less, by spreading
+  // positions across a real range instead of leaving them all at 0.
+  //
+  // Instead, permute the positions the visible set already holds. The list
+  // arrives sorted by position, so reassigning that same multiset of values in
+  // the new visual order is exactly "swap these two cards' slots" — correct
+  // filtered or not, and it cannot touch a photo that isn't on screen.
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id || !token) return;
@@ -137,15 +139,19 @@ export default function DashboardClient() {
     const newIndex = photos.findIndex((p) => p._id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Optimistic update
-    const reordered = arrayMove(photos, oldIndex, newIndex);
+    const slots = photos.map((p) => p.position);
+    const moved = arrayMove(photos, oldIndex, newIndex);
+
+    // Carry the new positions into local state too, so a second drag before
+    // the refetch lands reads the values the server now holds rather than the
+    // pre-drag ones.
+    const reordered = moved.map((p, i) => ({ ...p, position: slots[i] }));
     setPhotos(reordered);
 
-    // Build items array with new positions
-    const items = reordered.map((p, i) => ({ id: p._id, position: i }));
+    const items = reordered.map((p) => ({ id: p._id, position: p.position }));
 
     try {
-      const res = await fetch(`${API_URL}/api/photos/reorder`, {
+      const res = await fetch(apiUrl("/api/photos/reorder"), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -178,7 +184,7 @@ export default function DashboardClient() {
     );
 
     try {
-      const res = await fetch(`${API_URL}/api/photos/${photo._id}`, {
+      const res = await fetch(apiUrl(`/api/photos/${photo._id}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -203,8 +209,9 @@ export default function DashboardClient() {
     }
   }
 
-  // ── Pre-auth: token check hasn't resolved into a redirect yet ───────────
-  if (!token) {
+  // ── Pre-auth: the session read hasn't happened yet, or there's no token
+  //    and the hook's redirect is in flight ─────────────────────────────────
+  if (!ready || !token) {
     return <StudioBoot />;
   }
 
@@ -238,9 +245,9 @@ export default function DashboardClient() {
             aria-label="Filter by category"
             className="btn-outline appearance-none w-full px-9 py-2.5 text-center text-on-surface font-label-sm text-label-sm uppercase cursor-pointer focus:ring-0"
           >
-            {CATEGORIES.map((c) => (
+            {STUDIO_FILTERS.map((c) => (
               <option key={c} value={c}>
-                {c === "all" ? "All categories" : c.charAt(0).toUpperCase() + c.slice(1)}
+                {c === "all" ? "All categories" : categoryLabel(c)}
               </option>
             ))}
           </select>
@@ -324,6 +331,7 @@ export default function DashboardClient() {
       {showUpload && token && (
         <UploadModal
           token={token}
+          onUnauthorized={signOut}
           onClose={() => setShowUpload(false)}
           onSuccess={async () => {
             setShowUpload(false);
@@ -338,6 +346,7 @@ export default function DashboardClient() {
         <EditModal
           photo={editingPhoto}
           token={token}
+          onUnauthorized={signOut}
           onClose={() => setEditingPhoto(null)}
           onSuccess={async () => {
             setEditingPhoto(null);
@@ -349,49 +358,49 @@ export default function DashboardClient() {
 
       {/* Delete Confirmation */}
       {deletingPhoto && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center admin-modal-backdrop"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !deleting)
-              setDeletingPhoto(null);
-          }}
+        /* dismissible={!deleting} preserves the existing rule that a delete
+           in flight can't be dismissed — now enforced for Escape as well as
+           for the backdrop click. */
+        <StudioModal
+          size="sm"
+          className="text-center"
+          dismissible={!deleting}
+          onClose={() => setDeletingPhoto(null)}
         >
-          <div className="admin-modal-enter liquid-glass rounded-2xl w-full max-w-sm mx-4 p-8 flex flex-col gap-6 text-center">
-            <span className="material-symbols-outlined text-[48px] text-error mx-auto">
-              delete_forever
-            </span>
-            <h3 className="font-headline-md text-headline-md text-on-surface">
-              Delete photo?
-            </h3>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              This will permanently remove the image from Cloudinary and the
-              database. This action cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => setDeletingPhoto(null)}
-                disabled={deleting}
-                className="btn-outline px-6 py-3 text-on-surface font-label-sm text-label-sm uppercase"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="btn-danger px-6 py-3 font-label-sm text-label-sm uppercase flex items-center gap-2"
-              >
-                {deleting ? (
-                  <div className="admin-spinner !w-4 !h-4 !border-[1.5px]" />
-                ) : (
-                  <span className="material-symbols-outlined text-[16px]">
-                    delete
-                  </span>
-                )}
-                Delete
-              </button>
-            </div>
+          <span className="material-symbols-outlined text-[48px] text-error mx-auto">
+            delete_forever
+          </span>
+          <h3 className="font-headline-md text-headline-md text-on-surface">
+            Delete photo?
+          </h3>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            This will permanently remove the image from Cloudinary and the
+            database. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => setDeletingPhoto(null)}
+              disabled={deleting}
+              className="btn-outline px-6 py-3 text-on-surface font-label-sm text-label-sm uppercase"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="btn-danger px-6 py-3 font-label-sm text-label-sm uppercase flex items-center gap-2"
+            >
+              {deleting ? (
+                <Spinner />
+              ) : (
+                <span className="material-symbols-outlined text-[16px]">
+                  delete
+                </span>
+              )}
+              Delete
+            </button>
           </div>
-        </div>
+        </StudioModal>
       )}
     </StudioShell>
   );

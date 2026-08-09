@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
-
-/** Matches backend Photo model enum — lowercase, same as DB. */
-const CATEGORIES = ["nature", "objects", "monochrome", "urban"] as const;
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type FormEvent,
+  type ChangeEvent,
+} from "react";
+import { apiUrl } from "@/lib/api";
+import { CATEGORIES, CATEGORY_LABELS } from "@/lib/categories";
+import StudioModal from "@/components/StudioModal";
+import Spinner from "@/components/Spinner";
 
 /** Max file size: 10 MB (addition #4) */
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -14,10 +19,17 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 type Props = {
   onClose: () => void;
   onSuccess: () => void;
+  /** Token expired mid-upload — clear the session and return to login. */
+  onUnauthorized: () => void;
   token: string;
 };
 
-export default function UploadModal({ onClose, onSuccess, token }: Props) {
+export default function UploadModal({
+  onClose,
+  onSuccess,
+  onUnauthorized,
+  token,
+}: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
@@ -40,40 +52,66 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
     return null;
   }
 
+  /**
+   * Swap the preview, releasing the one it replaces.
+   *
+   * Every preview is an object URL the browser holds until it is explicitly
+   * revoked. Nothing revoked them: picking three files in a row leaked two
+   * blobs, and closing the modal leaked the third. The live URL is mirrored
+   * in a ref as well as in state so the unmount cleanup can reach it without
+   * setting state on an unmounting component.
+   */
+  const previewRef = useRef<string | null>(null);
+
+  const setPreviewUrl = useCallback((next: string | null) => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = next;
+    setPreview(next);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewRef.current) {
+        URL.revokeObjectURL(previewRef.current);
+        previewRef.current = null;
+      }
+    };
+  }, []);
+
+  /**
+   * One accept path for the file picker and the drop zone — they were the
+   * same six lines twice, and only one of the two reset the input.
+   */
+  const acceptFile = useCallback(
+    (f: File) => {
+      setError("");
+
+      const validationError = validateFile(f);
+      if (validationError) {
+        setError(validationError);
+        setFile(null);
+        setPreviewUrl(null);
+        // Reset the input so the same file can be re-selected after fixing
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      setFile(f);
+      setPreviewUrl(URL.createObjectURL(f));
+    },
+    [setPreviewUrl]
+  );
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    setError("");
     const f = e.target.files?.[0];
-    if (!f) return;
-
-    const validationError = validateFile(f);
-    if (validationError) {
-      setError(validationError);
-      setFile(null);
-      setPreview(null);
-      // Reset the input so the same file can be re-selected after fixing
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    if (f) acceptFile(f);
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragActive(false);
-    setError("");
     const f = e.dataTransfer.files?.[0];
-    if (!f) return;
-
-    const validationError = validateFile(f);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    if (f) acceptFile(f);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -98,11 +136,18 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
       formData.append("tags", tags);
       formData.append("aspectRatio", aspectRatio.toString());
 
-      const res = await fetch(`${API_URL}/api/photos`, {
+      const res = await fetch(apiUrl("/api/photos"), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
+
+      // An expired JWT used to surface here as "Upload failed", with no way
+      // to tell it apart from a rejected file.
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({ message: "Upload failed" }));
@@ -119,165 +164,144 @@ export default function UploadModal({ onClose, onSuccess, token }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center admin-modal-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="admin-modal-enter liquid-glass rounded-2xl w-full max-w-lg mx-4 p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-headline-md text-headline-md text-on-surface">
-            Upload new photo
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="btn-icon-glass text-on-surface"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+    <StudioModal title="Upload new photo" onClose={onClose}>
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+        {/* Drop zone / file picker — Drive-style, visual only */}
+        <div
+          className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+            dragActive
+              ? "studio-dropzone-active"
+              : "border-white/15 hover:border-white/30"
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={preview}
+              alt="Preview"
+              className="max-h-48 mx-auto rounded-xl object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <span className="material-symbols-outlined text-[44px] text-on-surface-variant">
+                cloud_upload
+              </span>
+              <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
+                Drop an image here, or click to browse
+              </p>
+              <p className="font-body-md text-xs text-on-surface-variant/70">
+                Images only · max 10MB
+              </p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
 
-        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-          {/* Drop zone / file picker — Drive-style, visual only */}
-          <div
-            className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
-              dragActive
-                ? "studio-dropzone-active"
-                : "border-white/15 hover:border-white/30"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+        {/* Title — writes to the `caption` field, which the frontend
+            already surfaces as each photo's display title */}
+        <div className="studio-field px-4 py-3">
+          <label className="sr-only" htmlFor="upload-title">
+            Title
+          </label>
+          <input
+            id="upload-title"
+            type="text"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Title"
+            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
+          />
+        </div>
+
+        {/* Genre */}
+        <div className="studio-field px-4 py-3">
+          <label className="sr-only" htmlFor="upload-genre">
+            Genre
+          </label>
+          <select
+            id="upload-genre"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 cursor-pointer"
           >
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview}
-                alt="Preview"
-                className="max-h-48 mx-auto rounded-xl object-contain"
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-3 py-6">
-                <span className="material-symbols-outlined text-[44px] text-on-surface-variant">
-                  cloud_upload
-                </span>
-                <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
-                  Drop an image here, or click to browse
-                </p>
-                <p className="font-body-md text-xs text-on-surface-variant/70">
-                  Images only · max 10MB
-                </p>
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c} className="bg-surface-container-high">
+                {CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {/* Title — writes to the `caption` field, which the frontend
-              already surfaces as each photo's display title */}
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="upload-title">
-              Title
-            </label>
-            <input
-              id="upload-title"
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Title"
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
-            />
-          </div>
+        {/* Location */}
+        <div className="studio-field px-4 py-3">
+          <label className="sr-only" htmlFor="upload-location">
+            Location
+          </label>
+          <input
+            id="upload-location"
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Location"
+            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
+          />
+        </div>
 
-          {/* Genre */}
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="upload-genre">
-              Genre
-            </label>
-            <select
-              id="upload-genre"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 cursor-pointer"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="bg-surface-container-high">
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Tags */}
+        <div className="studio-field px-4 py-3">
+          <label className="sr-only" htmlFor="upload-tags">
+            Tags, comma separated
+          </label>
+          <input
+            id="upload-tags"
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="Tags, comma separated"
+            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
+          />
+        </div>
 
-          {/* Location */}
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="upload-location">
-              Location
-            </label>
-            <input
-              id="upload-location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Location"
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
-            />
-          </div>
+        {/* Error */}
+        {error && (
+          <p className="text-error text-sm text-center">{error}</p>
+        )}
 
-          {/* Tags */}
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="upload-tags">
-              Tags, comma separated
-            </label>
-            <input
-              id="upload-tags"
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="Tags, comma separated"
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
-            />
-          </div>
-
-          {/* Error */}
-          {error && (
-            <p className="text-error text-sm text-center">{error}</p>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={uploading || !file}
+          className="btn-glass mt-2 px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
+        >
+          {uploading ? (
+            <>
+              <Spinner />
+              <span>Uploading…</span>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[16px]">
+                cloud_upload
+              </span>
+              Add to Archive
+            </>
           )}
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={uploading || !file}
-            className="btn-glass mt-2 px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
-          >
-            {uploading ? (
-              <>
-                <div className="admin-spinner !w-4 !h-4 !border-[1.5px]" />
-                <span>Uploading…</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[16px]">
-                  cloud_upload
-                </span>
-                Add to Archive
-              </>
-            )}
-          </button>
-        </form>
-      </div>
-    </div>
+        </button>
+      </form>
+    </StudioModal>
   );
 }
 
