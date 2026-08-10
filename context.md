@@ -460,7 +460,7 @@ verification list that were deferred, not failures:
    range is not the same as the pages looking right — headings could be
    correctly sized and still wrong against the reference.
 
-### Stage 4 — Backend Logic Reaudit: **COMPLETE** (2026-08-10)
+### Stage 4 — Backend Logic Reaudit: **COMPLETE** (2026-08-10) — *one Stage 3 item still carried forward, see the end of this section*
 `backend/` is 683 lines and had never had a correctness pass — built in Phase
 3, extended in Phase 5, amended twice in Stage 2. The security fundamentals
 held: `protect` on every mutating route, `upload.single()` correctly
@@ -529,10 +529,30 @@ What it found:
 **Frontend, in the same stage:** the Studio Messages page got the Delete
 button the new endpoint needs, reusing Stage 3's `StudioModal`/`Spinner`. Both
 `mailto:` links were removed on request — the "Reply via Email" button and the
-linked sender address, now plain selectable text. Worth stating plainly for
-anyone reading this later: **nothing in this project sends email.** There is
-no nodemailer, no SMTP, no mail service in any dependency or source file. The
-contact form writes a row to MongoDB and that is all it has ever done.
+linked sender address, now plain selectable text.
+
+And the contact page's reply promise was cut. `/contact` read "…or just to say
+something about a photograph. **I read everything and usually reply within a
+couple of days.**" The second sentence is gone — **cut, not reworded, and it
+should not come back in any form.** There is no notification of any kind
+behind this form: a submission writes a row to MongoDB and sits there until
+someone opens Studio and looks. A stated reply window was a promise nothing in
+the system keeps. The remaining line ("Commissions, licensing, exhibitions —
+or just to say something about a photograph.") still fills two balanced lines
+at 375px and 1440px, so no spacing needed adjusting.
+
+Worth stating plainly for anyone reading this later: **nothing in this project
+sends email.** There is no nodemailer, no SMTP, no mail service in any
+dependency or source file, and there never has been. The contact form writes a
+Mongo row and that is all it has ever done. Do not add copy — anywhere — that
+implies otherwise.
+
+**Still says it, and was deliberately left alone:** the success banner at
+[src/app/contact/page.tsx](src/app/contact/page.tsx) tells the sender
+"Message sent. I'll be in touch within a couple of days." That is the same
+unearned promise, made directly to the person who just submitted. It was left
+standing only because the instruction named the heading copy specifically —
+flag it before the next copy pass rather than assuming it was kept on purpose.
 
 Verified with 53 API assertions (status codes, auth coverage on every
 protected route, the Bearer-prefix fix, upload guards, the A1 orphan check
@@ -542,6 +562,18 @@ edit, reorder leaving positions distinct, delete, and all six public routes),
 and the contact round-trip. `tsc` clean; `npx eslint src backend` is **0
 errors / 4 warnings**, down from 9 — the five backend warnings are gone and
 the four that remain are the deliberate `<img>` and webfont advisories.
+
+**Outstanding after Stage 4 — one item, carried forward, NOT resolved.**
+Stage 4 closed Stage 3's contact round-trip item but did not touch the other
+one, and nothing in Stage 4 addresses it:
+
+- **The type scale's visual impact is still measured, not reviewed.** Stage
+  3's `--text-*` rename resized every heading on every page and was verified
+  numerically only. **The screenshot walk of all 8 routes against the Lovable
+  reference in `design-reference/lovable-redesign/` has still not been done.**
+  See the full note under the Stage 3 entry above. Do not mark it resolved
+  without actually running it — headings can be correctly sized and still be
+  wrong against the reference.
 
 ### Stages 5–6: not started
 Each stage is gated on its own planning prompt. Do not open Stage 5 off

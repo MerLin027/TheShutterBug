@@ -137,13 +137,19 @@ export default function Contact() {
           <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
             Say hello
           </h1>
-          {/* First person. The About page says "I am a photographer… I shoot
-              on a mix of digital and film"; this page used to say "We review
-              all submissions", which read as a different, larger outfit. */}
+          {/* First person where the page speaks at all. The About page says
+              "I am a photographer… I shoot on a mix of digital and film";
+              this page used to say "We review all submissions", which read as
+              a different, larger outfit.
+
+              This line also used to end "I read everything and usually reply
+              within a couple of days." Cut, not reworded: there is no
+              notification of any kind behind this form — a submission writes
+              a row to MongoDB and waits to be found in Studio — so a reply
+              window was a promise nothing in the system keeps. */}
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">
             Commissions, licensing, exhibitions — or just to say something
-            about a photograph. I read everything and usually reply within a
-            couple of days.
+            about a photograph.
           </p>
         </Reveal>
 
