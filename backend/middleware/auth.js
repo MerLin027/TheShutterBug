@@ -4,7 +4,10 @@ import AdminUser from '../models/AdminUser.js';
 export const protect = async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // Note the trailing space: 'Bearer' alone also matched 'Bearerxyz', which
+  // then failed safely a step later (split(' ')[1] is undefined and jwt.verify
+  // throws a 401) but for the wrong reason.
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -16,7 +19,7 @@ export const protect = async (req, res, next) => {
       }
 
       return next();
-    } catch (error) {
+    } catch {
       // jwt.verify threw (expired, malformed, etc.)
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }

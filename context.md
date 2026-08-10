@@ -371,11 +371,11 @@ makes the server render `StudioBoot` and the client render the dashboard.
 Confirmed pre-existing, not introduced by this pass. The same pattern is
 in `MessagesClient`, `AccountClient` and the admin login page.
 
-### Stage 3 — Frontend Logic Reaudit: **COMPLETE** (2026-08-09) — *two verification items still open, see the end of this section*
+### Stage 3 — Frontend Logic Reaudit: **COMPLETE** (2026-08-09) — *one verification item still open, see the end of this section*
 The audit and every fix it produced are done and pushed (`ee9490d9`). Two
-checks from the stage's own verification list were **not** completed and are
-listed as outstanding at the end of this section — read them before treating
-Stage 3 as fully signed off.
+checks from the stage's own verification list were deferred; **the first was
+closed during Stage 4 and the second is still open** — see the end of this
+section before treating Stage 3 as fully signed off.
 
 `tsc --noEmit` was already clean and `eslint src` already at 0 errors / 4
 warnings (all four are deliberate `<img>` and webfont advisories, marked
@@ -439,20 +439,17 @@ Third trap, in the same class as the two above:
    makes nothing at all and fails silently. If a `text-*` class ever stops
    having an effect, check the token's prefix first.
 
-**Outstanding verification — NOT resolved. Do not mark these done without
-actually running them.** Both are checks from Stage 3's own verification
-list that were deferred, not failures:
+**Outstanding verification.** Both were checks from Stage 3's own
+verification list that were deferred, not failures:
 
-1. **The contact round-trip has never been tested with a real submission.**
-   Only the read half is verified: the Studio Messages page renders
-   correctly against `GET /api/contact` (h1, count pill, empty state, 200
-   with 0 messages), and the public form's client-side validation blocks an
-   empty submit. **No message was ever POSTed**, deliberately — there is no
-   delete endpoint for contact messages, so a test submission would sit in
-   the real inbox permanently. The last actual end-to-end confirmation of
-   `POST /api/contact` → Messages is Stage 2's. Whoever closes this needs
-   either a throwaway DB, a delete path, or the user's consent to leave one
-   test message behind.
+1. ~~**The contact round-trip has never been tested with a real
+   submission.**~~ **CLOSED in Stage 4 (2026-08-10).** It was blocked on
+   there being no delete endpoint, so a test submission would have sat in the
+   real inbox permanently. Stage 4 added `DELETE /api/contact/:id` and a
+   Delete button, and the full round-trip then ran on the real database with
+   the user's consent: public form → row in Mongo with all three fields →
+   rendered in Studio Messages → removed through the new button → gone from
+   Mongo, inbox back to its prior contents.
 2. **The type scale's visual impact has been measured, not reviewed.** The
    `--text-*` rename resized every heading on every page. What was checked
    is numeric: `<h1>` at 28.8px mobile / 43.2px desktop, labels at 10.8px,
@@ -463,9 +460,92 @@ list that were deferred, not failures:
    range is not the same as the pages looking right — headings could be
    correctly sized and still wrong against the reference.
 
-### Stages 4–6: not started
-Each stage is gated on its own planning prompt. Do not open Stage 4 off
-the back of Stage 3 being closed.
+### Stage 4 — Backend Logic Reaudit: **COMPLETE** (2026-08-10)
+`backend/` is 683 lines and had never had a correctness pass — built in Phase
+3, extended in Phase 5, amended twice in Stage 2. The security fundamentals
+held: `protect` on every mutating route, `upload.single()` correctly
+registered **after** `protect` (reversed, an unauthenticated request would
+stream its body into Cloudinary before being rejected), `passwordHash` never
+serialised, no secret in any log, `.env` gitignored and untracked, and
+**`/reorder` still registered before `/:id`**. Not reachable either: NoSQL
+operator injection through `req.query`, because Express 5's default query
+parser is `simple`, so `?category[$ne]=x` arrives as a literal key.
+
+What it found:
+
+- **Every failed upload stranded a Cloudinary asset, and had since Phase 3.**
+  `upload.single('image')` is middleware, so the file is *already* on
+  Cloudinary by the time the handler runs. Any subsequent failure — an
+  invalid category enum, a missing `aspectRatio`, a bad `position` — returned
+  400 and left the asset there forever, with no DB row pointing at it and
+  nothing in the app able to remove it. **Reproduced before fixing**: with
+  cleanup disabled, an invalid-category upload left
+  `the-shutter-bug/al6g8skgebsybnpazcnw` behind, matching the public_id
+  multer had just logged and referenced by no row. Now every non-2xx exit
+  destroys the asset first. (multer's *own* failures were always fine —
+  `CloudinaryStorage` implements `_removeFile`.)
+- **Five malformed-input paths answered 500 instead of 400**: `POST /login`
+  with `{}` (bcrypt threw on `undefined`), reorder with `{items: []}` (the
+  driver rejects an empty batch), reorder with a bad id, and
+  `?category=a&category=b` (a repeated param arrives as an *array*, which
+  CastErrors on a String path). Login had a second wrinkle: Mongoose strips
+  `undefined` from a filter, so `findOne({ email: undefined })` degraded to
+  `findOne({})` and returned the first admin — no bypass, the password still
+  had to match, but login should not answer for an account nobody named.
+- **The error handler returned `err.message` verbatim to the client.** It now
+  logs the detail and returns a fixed `'Server Error'`. Verified with a
+  forced `TypeError`: body is `{"message":"Server Error"}`, stack in the log.
+- **Eleven copy-pasted try/catch blocks → one `middleware/errorHandler.js`.**
+  Express 5 auto-forwards a rejected promise from an async handler, so those
+  catches existed only because nothing central knew how to *type* an error.
+  It now maps `CastError`/`ValidationError`/`MulterError` → 400, honours an
+  explicit `err.status`, and generic-500s everything else. Routes keep their
+  deliberate 404s and 400s and nothing else. A JSON 404 replaced Express's
+  default HTML page for unmatched paths.
+- **Uploads had no size limit and no type filter** — any authenticated
+  request could stream unbounded data of any format into Cloudinary. Now
+  25 MB and `image/*`, both surfacing as clean 400s.
+- **`JWT_SECRET` was never validated.** Unset, login 500s and *every*
+  protected route 401s — a symptom pointing nowhere near the cause. It and
+  `MONGODB_URI` now refuse to boot; Cloudinary warns instead, since reads
+  work without it. Plus a non-fatal `cloudinary.api.ping()` at startup: a
+  presence check could never have caught Stage 2's actual bug (the
+  credentials were present and *malformed*), but a ping does, and prints
+  `Cloudinary credentials OK` or a loud rejection.
+- **A Cloudinary outage made a photo permanently undeletable** — the destroy
+  was awaited before the DB delete, so a failure 500'd the route and left the
+  row stuck in the gallery. Reversed deliberately: log the public_id and
+  delete the row anyway. An orphaned asset is recoverable from the Cloudinary
+  console; a stuck row is recoverable from nowhere in the UI.
+- **`DELETE /api/contact/:id` added** (protected, shaped like the photo
+  delete minus Cloudinary) — see the Stage 3 item it closes, above.
+- Deduplicated: the category enum (now exported from `models/Photo.js` and
+  used to validate the query filter), the email regex (exported from
+  `models/Contact.js`), and the two health endpoints (one handler, still
+  mounted at both `/health` and `/api/health` — the cron-job.org keep-alive
+  points at one of them and its config lives outside this repo, so neither
+  path could be safely deleted).
+
+**Frontend, in the same stage:** the Studio Messages page got the Delete
+button the new endpoint needs, reusing Stage 3's `StudioModal`/`Spinner`. Both
+`mailto:` links were removed on request — the "Reply via Email" button and the
+linked sender address, now plain selectable text. Worth stating plainly for
+anyone reading this later: **nothing in this project sends email.** There is
+no nodemailer, no SMTP, no mail service in any dependency or source file. The
+contact form writes a row to MongoDB and that is all it has ever done.
+
+Verified with 53 API assertions (status codes, auth coverage on every
+protected route, the Bearer-prefix fix, upload guards, the A1 orphan check
+against a live Cloudinary listing), 28 browser assertions (Studio grid,
+category filter, upload through the real modal at max+1, featured toggle,
+edit, reorder leaving positions distinct, delete, and all six public routes),
+and the contact round-trip. `tsc` clean; `npx eslint src backend` is **0
+errors / 4 warnings**, down from 9 — the five backend warnings are gone and
+the four that remain are the deliberate `<img>` and webfont advisories.
+
+### Stages 5–6: not started
+Each stage is gated on its own planning prompt. Do not open Stage 5 off
+the back of Stage 4 being closed.
 
 ## The six-stage plan (see plan.md for the actual task breakdown)
 1. Visual/structural restructure (Lovable reference) — layout,

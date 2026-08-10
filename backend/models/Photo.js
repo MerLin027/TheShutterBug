@@ -1,5 +1,16 @@
 import mongoose from 'mongoose';
 
+/**
+ * The category vocabulary, in one place.
+ *
+ * Exported so routes can validate a query param against the same list the
+ * schema enforces — GET /api/photos used to pass `req.query.category` straight
+ * to Mongoose without ever consulting this. Mirrors CATEGORIES in
+ * src/lib/categories.ts; the two must stay in sync (the frontend lowercases
+ * its display labels down to exactly these values before sending them).
+ */
+export const CATEGORIES = ['nature', 'objects', 'monochrome', 'urban'];
+
 const photoSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
@@ -11,7 +22,7 @@ const photoSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['nature', 'objects', 'monochrome', 'urban'],
+    enum: CATEGORIES,
     required: true
   },
   tags: {

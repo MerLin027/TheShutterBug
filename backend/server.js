@@ -5,6 +5,7 @@ import './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db.js';
+import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 import authRoutes from './routes/auth.js';
 import photoRoutes from './routes/photos.js';
@@ -34,7 +35,17 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
-app.get('/api/health', (req, res) => res.status(200).send('ok'));
+// Health check. Deliberately no DB call — it must answer while Atlas is
+// unreachable, or the keep-alive ping would report the service as down
+// whenever the database blips.
+//
+// Registered at BOTH paths on purpose. These were two separate handlers with
+// two different response bodies; the cron-job.org keep-alive that stops Render
+// idling points at one of them, and that configuration lives outside this
+// repo, so neither path can be safely deleted. One handler, two mounts.
+const health = (req, res) => res.status(200).json({ status: 'ok' });
+app.get('/api/health', health);
+app.get('/health', health);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -42,19 +53,12 @@ app.use('/api/photos', photoRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/site-content', siteContentRoutes);
 
-// Health check endpoint for Render
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+// Unmatched path → JSON 404, matching every other response on this API.
+app.use(notFound);
 
-// Generic error handler — catches errors thrown/forwarded from async route handlers.
-// Express 5 auto-forwards async throws; this surfaces them as a clean JSON 500.
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  const status = err.status || err.statusCode || 500;
-  res.status(status).json({ message: err.message || 'Internal Server Error' });
-});
+// Must be last. See middleware/errorHandler.js for why routes no longer
+// carry their own try/catch.
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

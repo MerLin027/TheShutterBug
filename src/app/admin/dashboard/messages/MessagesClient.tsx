@@ -5,6 +5,8 @@ import { apiUrl } from "@/lib/api";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
+import StudioModal from "@/components/StudioModal";
+import Spinner from "@/components/Spinner";
 import { MessageListSkeleton, StudioBoot } from "@/components/StudioSkeletons";
 
 interface ContactMessage {
@@ -33,6 +35,17 @@ export default function MessagesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Delete confirmation. Holds the whole message, not just its id, so the
+  // dialog can name the sender.
+  const [deletingMessage, setDeletingMessage] = useState<ContactMessage | null>(
+    null
+  );
+  const [deleting, setDeleting] = useState(false);
+  // Kept separate from `error`: that one replaces the whole list with a
+  // full-page error state, which is the wrong response to one row failing to
+  // delete. This renders inside the dialog instead.
+  const [deleteError, setDeleteError] = useState("");
 
   const fetchMessages = useCallback(async () => {
     if (!token) return;
@@ -63,6 +76,45 @@ export default function MessagesClient() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMessages();
   }, [fetchMessages]);
+
+  // Backed by DELETE /api/contact/:id, added in Stage 4. Before it existed
+  // there was no way to remove a message from anywhere in the app — the inbox
+  // only ever grew.
+  //
+  // No revalidatePublicPages() here, unlike the photo and account mutations:
+  // messages are never rendered on a public page.
+  async function handleDelete() {
+    if (!deletingMessage || !token) return;
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      const res = await fetch(apiUrl(`/api/contact/${deletingMessage._id}`), {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        signOut();
+        return;
+      }
+
+      if (!res.ok) {
+        setDeleteError("Failed to delete the message. Please try again.");
+        return;
+      }
+
+      // Drop it locally rather than refetching — the list is already correct
+      // and a refetch would flash the skeleton for a single-row change.
+      setMessages((prev) => prev.filter((m) => m._id !== deletingMessage._id));
+      if (expanded === deletingMessage._id) setExpanded(null);
+      setDeletingMessage(null);
+    } catch {
+      setDeleteError("Network error. Could not delete the message.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (!ready || !token) {
     return <StudioBoot />;
@@ -199,12 +251,12 @@ export default function MessagesClient() {
                             <span className="material-symbols-outlined text-[16px]">
                               mail
                             </span>
-                            <a
-                              href={`mailto:${msg.email}`}
-                              className="font-label-sm text-label-sm uppercase text-accent hover:underline"
-                            >
+                            {/* Plain text, not a mailto: link — this app sends
+                                no email and hands off to no mail client. The
+                                address is here to be read and copied. */}
+                            <span className="font-label-sm text-label-sm uppercase text-accent select-all">
                               {msg.email}
-                            </a>
+                            </span>
                           </div>
                           <div className="flex items-center gap-1.5 sm:hidden">
                             <span className="material-symbols-outlined text-[16px]">
@@ -219,17 +271,22 @@ export default function MessagesClient() {
                         <p className="font-body-md text-body-md text-on-surface leading-relaxed whitespace-pre-wrap">
                           {msg.message}
                         </p>
-                        {/* Quick reply button */}
-                        <div>
-                          <a
-                            href={`mailto:${msg.email}?subject=Re: Your inquiry`}
-                            className="btn-outline inline-flex items-center gap-2 px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase"
+                        {/* Row actions. There was a "Reply via Email" mailto:
+                            button here; removed on request. Nothing in this
+                            project sends or composes email. */}
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => {
+                              setDeleteError("");
+                              setDeletingMessage(msg);
+                            }}
+                            className="btn-danger inline-flex items-center gap-2 px-6 py-2.5 font-label-sm text-label-sm uppercase"
                           >
                             <span className="material-symbols-outlined text-[16px]">
-                              reply
+                              delete
                             </span>
-                            Reply via Email
-                          </a>
+                            Delete
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -240,6 +297,55 @@ export default function MessagesClient() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation — same shape as the photo delete in
+          DashboardClient, including dismissible={!deleting} so a delete in
+          flight can't be dismissed by Escape or a backdrop click. */}
+      {deletingMessage && (
+        <StudioModal
+          size="sm"
+          className="text-center"
+          dismissible={!deleting}
+          onClose={() => setDeletingMessage(null)}
+        >
+          <span className="material-symbols-outlined text-[48px] text-error mx-auto">
+            delete_forever
+          </span>
+          <h3 className="font-headline-md text-headline-md text-on-surface">
+            Delete message?
+          </h3>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            This will permanently remove {deletingMessage.name}&rsquo;s message
+            from the database. This action cannot be undone.
+          </p>
+          {deleteError && (
+            <p className="font-body-md text-body-md text-error">{deleteError}</p>
+          )}
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => setDeletingMessage(null)}
+              disabled={deleting}
+              className="btn-outline px-6 py-3 text-on-surface font-label-sm text-label-sm uppercase"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="btn-danger px-6 py-3 font-label-sm text-label-sm uppercase flex items-center gap-2"
+            >
+              {deleting ? (
+                <Spinner />
+              ) : (
+                <span className="material-symbols-outlined text-[16px]">
+                  delete
+                </span>
+              )}
+              Delete
+            </button>
+          </div>
+        </StudioModal>
+      )}
     </StudioShell>
   );
 }

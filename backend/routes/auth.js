@@ -17,22 +17,33 @@ const generateToken = (id) => {
 // @access  Public
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  
-  try {
-    const user = await AdminUser.findOne({ email });
 
-    if (user && (await bcrypt.compare(password, user.passwordHash))) {
-      res.json({
-        _id: user._id,
-        email: user.email,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+  // Reject a malformed body before any DB or bcrypt call.
+  //
+  // Two things went wrong without this. bcrypt.compare(undefined, hash) throws,
+  // so POSTing `{}` answered 500 for what is plainly a 400. And Mongoose strips
+  // undefined from a query filter, so findOne({ email: undefined }) degraded to
+  // findOne({}) and returned the first admin — the password still had to match,
+  // so there was no bypass, but login should not answer for an account the
+  // caller never named.
+  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
   }
+
+  const user = await AdminUser.findOne({ email });
+
+  // One message for both branches, deliberately: distinguishing "no such
+  // account" from "wrong password" tells an attacker which emails are real.
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    return res.status(401).json({ message: 'Invalid email or password' });
+  }
+
+  // passwordHash is never included in the response.
+  res.json({
+    _id: user._id,
+    email: user.email,
+    token: generateToken(user._id),
+  });
 });
 
 // There is deliberately no POST /register route.
