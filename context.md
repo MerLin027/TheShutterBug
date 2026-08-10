@@ -371,7 +371,12 @@ makes the server render `StudioBoot` and the client render the dashboard.
 Confirmed pre-existing, not introduced by this pass. The same pattern is
 in `MessagesClient`, `AccountClient` and the admin login page.
 
-### Stage 3 — Frontend Logic Reaudit: **COMPLETE** (2026-08-09)
+### Stage 3 — Frontend Logic Reaudit: **COMPLETE** (2026-08-09) — *two verification items still open, see the end of this section*
+The audit and every fix it produced are done and pushed (`ee9490d9`). Two
+checks from the stage's own verification list were **not** completed and are
+listed as outstanding at the end of this section — read them before treating
+Stage 3 as fully signed off.
+
 `tsc --noEmit` was already clean and `eslint src` already at 0 errors / 4
 warnings (all four are deliberate `<img>` and webfont advisories, marked
 in-file), and the audit found no broken conditionals, no missing keys, no
@@ -406,7 +411,8 @@ wrong prop passing and no commented-out leftovers. What it did find:
   all six read `"Jost", sans-serif`, which `body` already sets, and
   `--font-*` would have collided with `--font-weight-*` over the same
   `font-headline-md` utility name. Public `<h1>`s now measure 28.8px
-  mobile / 43.2px desktop. The two workarounds that existed because the
+  mobile / 43.2px desktop — *measured only; the visual review against the
+  reference screenshots is still outstanding, see below.* The two workarounds that existed because the
   tokens were dead (`text-4xl md:text-6xl` on `/work`, `text-2xl` in
   `StudioTopBar`) are gone.
 - **An object-URL leak** in `UploadModal` — every preview was created and
@@ -432,6 +438,30 @@ Third trap, in the same class as the two above:
    prefix, not its name.** `--text-X` makes `text-X`; `--font-size-X`
    makes nothing at all and fails silently. If a `text-*` class ever stops
    having an effect, check the token's prefix first.
+
+**Outstanding verification — NOT resolved. Do not mark these done without
+actually running them.** Both are checks from Stage 3's own verification
+list that were deferred, not failures:
+
+1. **The contact round-trip has never been tested with a real submission.**
+   Only the read half is verified: the Studio Messages page renders
+   correctly against `GET /api/contact` (h1, count pill, empty state, 200
+   with 0 messages), and the public form's client-side validation blocks an
+   empty submit. **No message was ever POSTed**, deliberately — there is no
+   delete endpoint for contact messages, so a test submission would sit in
+   the real inbox permanently. The last actual end-to-end confirmation of
+   `POST /api/contact` → Messages is Stage 2's. Whoever closes this needs
+   either a throwaway DB, a delete path, or the user's consent to leave one
+   test message behind.
+2. **The type scale's visual impact has been measured, not reviewed.** The
+   `--text-*` rename resized every heading on every page. What was checked
+   is numeric: `<h1>` at 28.8px mobile / 43.2px desktop, labels at 10.8px,
+   the built CSS containing the rules, no horizontal overflow at 360 / 375 /
+   1440, and the nav pill still holding one row down to 360px. What was
+   **not** done is a screenshot walk of all 8 routes against the Lovable
+   reference in `design-reference/lovable-redesign/`. Numbers landing in
+   range is not the same as the pages looking right — headings could be
+   correctly sized and still wrong against the reference.
 
 ### Stages 4–6: not started
 Each stage is gated on its own planning prompt. Do not open Stage 4 off
