@@ -28,6 +28,14 @@ backend/node_modules
 # vendored Claude skill packs — third-party, ~12 MB, not project code
 .claude/
 
+# agent working files — local only, not part of the shipped project.
+# design-reference/ holds the Stitch HTML exports, the Lovable redesign
+# screenshots and plan.md; AGENTS.md and HANDOFF.md are agent instructions.
+# context.md stays tracked — it's the project's own build record.
+AGENTS.md
+HANDOFF.md
+design-reference/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
