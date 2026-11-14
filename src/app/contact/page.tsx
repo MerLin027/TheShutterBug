@@ -62,7 +62,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="field-label">
+      <label htmlFor={id} className="field-label-caps">
         {label}
       </label>
       {children}
@@ -157,17 +157,18 @@ export default function Contact() {
 
       <main
         id="main"
-        className="flex-1 px-margin-mobile pb-24 pt-28 md:px-margin-desktop md:pb-32 md:pt-36"
+        className="flex-1 px-margin-mobile pb-28 pt-36 md:px-margin-desktop md:pb-36 md:pt-44"
       >
         {/* Asymmetric split: heading and intro left, form right. Was a
             centred stack with placeholder-only fields. */}
         <div className="site-container grid gap-10 md:grid-cols-12 md:gap-16">
           <div className="enter md:col-span-5">
-            <h1 className="text-title-sm font-medium text-fg md:text-title">Say hello</h1>
+            <p className="caps">Contact</p>
+            <h1 className="display-title mt-5">Say hello</h1>
             {/* First person, matching the About page. The line that promised
                 a reply window was cut in dc3ac35b: nothing behind this form
                 notifies anyone — it writes a row to MongoDB and waits. */}
-            <p className="mt-4 max-w-[30rem] text-lead text-fg-2">
+            <p className="lede mt-6 max-w-[28rem]">
               Commissions, licensing, exhibitions, or just to say something
               about a photograph
             </p>
@@ -188,11 +189,11 @@ export default function Contact() {
               </div>
             )}
 
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
-              <div className="grid gap-6 sm:grid-cols-2">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-10" noValidate>
+              <div className="grid gap-10 sm:grid-cols-2">
                 <Field id="name" label="Name" error={fieldErrors.name}>
                   <input
-                    className="field"
+                    className="field-line"
                     id="name"
                     name="name"
                     type="text"
@@ -206,7 +207,7 @@ export default function Contact() {
                 </Field>
                 <Field id="email" label="Email" error={fieldErrors.email}>
                   <input
-                    className="field"
+                    className="field-line"
                     id="email"
                     name="email"
                     type="email"
@@ -222,7 +223,7 @@ export default function Contact() {
 
               <Field id="message" label="Message" error={fieldErrors.message}>
                 <textarea
-                  className="field resize-y"
+                  className="field-line resize-none"
                   id="message"
                   name="message"
                   rows={6}
@@ -241,7 +242,7 @@ export default function Contact() {
                 </div>
               )}
 
-              <button className="btn btn-primary" type="submit" disabled={isLoading}>
+              <button className="btn btn-primary !rounded-full px-8" type="submit" disabled={isLoading}>
                 {isLoading ? "Sending…" : "Send message"}
                 {/* Same-size slot for the arrow and the spinner, so the
                     button doesn't change width mid-submit. */}

@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Jost } from "next/font/google";
+import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 
 // Self-hosted at build time by next/font: no request to Google at runtime,
 // no render-blocking third-party stylesheet, and nothing third-party for the
 // CSP to allow. Each is exposed as a CSS variable that globals.css reads.
 
-/** Every interface surface. Variable font, wght 100–900. */
+/** Text, labels, buttons. Variable font, wght 100–900. */
 const jost = Jost({
   subsets: ["latin"],
   variable: "--font-jost",
   display: "swap",
 });
 
-/** Contact-sheet signature: frame numbers and meta only. Preloaded since
- *  Phase B because every photo card shows a frame line. */
-const plexMono = IBM_Plex_Mono({
+/**
+ * Display serif (Phase R, editorial direction chosen by the owner and
+ * recommended by the ui-ux-pro-max skill for photography portfolios):
+ * titles, the wordmark, captions. Variable wght 300–700, with italics.
+ */
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-plex-mono",
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
   display: "swap",
 });
 
@@ -42,12 +45,12 @@ export default function RootLayout({
 }>) {
   return (
     // data-scroll-behavior is required alongside `scroll-behavior: smooth`:
-    // Next 16 only suppresses smooth scrolling during a route transition when
-    // it finds this attribute. Without it every navigation animates a long
-    // smooth scroll to the top underneath the route transition.
+    // Next 16 only suppresses smooth scrolling during a route change when it
+    // finds this attribute; without it every navigation animates a long
+    // smooth scroll back to the top.
     <html
       lang="en"
-      className={`dark ${jost.variable} ${plexMono.variable}`}
+      className={`dark ${jost.variable} ${cormorant.variable}`}
       data-scroll-behavior="smooth"
     >
       <body className="bg-paper antialiased">
@@ -59,10 +62,6 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-
-        {/* Phase B: no film-grain overlay (unslop: no grain/noise as
-            decoration) and no Framer Motion page fade — route changes run as
-            native view transitions (next.config.ts, globals.css). */}
         {children}
       </body>
     </html>
