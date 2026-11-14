@@ -380,3 +380,4 @@ Newest last. One entry per task: what changed, how it was verified, and anything
   - **Harness notes.**
     - The heredoc-plus-`rm -rf` safety block and the shell eating Windows backslashes are both known traps (HANDOFF §7). Scripts now go in files.
     - The owner cleared their temp folder mid-phase; the harness in this session's scratchpad was unaffected.
+- **2026-11-14 · Phase C committed** as `1a25e9e3` and pushed to `origin/redesign/unslop`. `main` is untouched.
