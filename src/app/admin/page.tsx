@@ -3,11 +3,27 @@
 import Link from "next/link";
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { useAdminToken } from "@/lib/useAdminToken";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
 
+/**
+ * Studio sign-in (Redesign Phase C, task C5).
+ *
+ * A plain card on the page. The blurred background photo this used to sit
+ * on loaded from a Google URL that had expired — it rendered at 0×0 — and it
+ * isn't replaced: a sign-in screen is one of the places a quiet page is the
+ * right answer. Also gone: the glass card, the script "Studio Access" title
+ * and the hover-scale on the card.
+ *
+ * Security notes (OWASP A07): the error shown is the server's own generic
+ * "Invalid email or password" — it never says which field was wrong — and
+ * the fields carry autocomplete hints so a password manager can fill a
+ * long random password, which is the practical fix for the short one the
+ * account currently has (REDESIGN.md task D8). Rate limiting is Phase D.
+ */
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -15,10 +31,9 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // This page's redirect runs the other way — away from the login form when a
-  // session already exists — so the hook's own guard is switched off. Reading
-  // the token in an effect rather than during render is what stops the server
-  // from rendering the form while the client renders the boot screen.
+  // This page's redirect runs the other way — away from the form when a
+  // session already exists — so the hook's own guard is off. Reading the
+  // token in an effect is what keeps server and client renders identical.
   const { token, ready } = useAdminToken({ redirectWhenMissing: false });
 
   useEffect(() => {
@@ -39,7 +54,7 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setError(data.message || "Invalid email or password");
@@ -51,135 +66,81 @@ export default function AdminLoginPage() {
       localStorage.setItem("admin_email", data.email ?? "");
       router.replace("/admin/dashboard");
     } catch {
-      setError("Network error — is the backend running?");
+      setError("Couldn't reach the server. It may be waking up, so try again in a moment.");
       setLoading(false);
     }
   }
 
-  // Hold the boot screen until the session read has happened, and keep
-  // holding it while the redirect runs if there was a token — so there's no
-  // flash of the login form for someone already signed in (addition #3).
+  // Hold the boot screen until the session read has happened, and while the
+  // redirect runs if there was a token — no flash of the form for someone
+  // already signed in.
   if (!ready || token) {
     return <StudioBoot />;
   }
 
-  /* -------------------------------------------------------------------
-     Literal port of design-reference/admin-login.html
-     ------------------------------------------------------------------- */
   return (
-    <div className="bg-primary-container text-on-surface h-[100dvh] w-full overflow-hidden relative font-body-md antialiased">
-      {/* Background Image with Heavy Blur */}
-      <div className="absolute inset-0 w-full h-full z-0">
-        {/* Purely decorative — a blurred wash behind the card, carrying no
-            information. alt="Background" made a screen reader announce it as
-            a meaningful image; empty alt + aria-hidden drops it correctly. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          aria-hidden="true"
-          className="w-full h-full object-cover blur-3xl scale-110"
-          src="https://lh3.googleusercontent.com/aida/AP1WRLt_p_3taNJFKaIPQ9dLhmTlbuIjeo-4Mdjwxse2woumL9J8YXATt7K8hd6we0SjhDdAByWT6bH_c3Ksfvp5A7jRMee1bxkAfjI0uaOHxbnKXii9cEOZ_Oy354DfKYAfxNL9wGCTmdu05hFGXQntOjXgZoOoYz3dLj7t7ZlJ0y5AG0pdt9wB2Dju5ZaqpVasI-9BrLEkCzh-wXtx5RxXpcNdi6IDR3HflyyhHzAyCf6V70Ux-Y_EbuPgavk"
-        />
-        <div className="absolute inset-0 bg-moody-overlay mix-blend-multiply" />
-      </div>
+    <div className="flex min-h-[100dvh] w-full flex-col bg-paper text-fg antialiased">
+      <main id="main" className="flex flex-1 items-center justify-center px-4 py-12">
+        <div className="enter w-full max-w-sm">
+          <p className="mb-6 text-center">
+            <span className="block text-lead font-medium text-fg">The Shutter Bug</span>
+            <span className="block text-label text-fg-3">Studio</span>
+          </p>
 
-      {/* Main Content Container */}
-      <main
-        id="main"
-        className="relative z-10 w-full h-full flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop"
-      >
-        {/* The site title that used to float above the card is gone by
-            request. "Studio Access" is therefore the page's top-level
-            heading now and carries <h1> — same classes, so it renders
-            identically; this only keeps the document from having no h1. */}
+          <div className="panel p-6">
+            <h1 className="mb-6 text-heading font-medium text-fg">Sign in</h1>
 
-        {/* Floating Login Card */}
-        <div className="liquid-glass rounded-2xl w-full max-w-sm p-8 flex flex-col gap-8 transform transition-transform hover:scale-[1.01] duration-300">
-          <div className="text-center">
-            <h1 className="font-title text-[1.5rem] leading-tight text-on-surface">
-              Studio Access
-            </h1>
-          </div>
-
-          {/* Placeholders removed per the brief. With no placeholder text the
-              visible <label> is the only thing naming each field, so both are
-              now properly associated by htmlFor/id — previously neither label
-              pointed at its input. Fields use .studio-field, the same filled
-              treatment as the Contact form and the Account page, instead of
-              this page's own one-off underline style. */}
-          <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label
-                htmlFor="admin-email"
-                className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
-              >
-                Email
-              </label>
-              <div className="studio-field px-4 py-3">
+            <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+              <div>
+                <label htmlFor="admin-email" className="field-label">
+                  Email
+                </label>
                 <input
                   id="admin-email"
-                  className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none"
+                  className="field"
                   type="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="admin-password"
-                className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
-              >
-                Password
-              </label>
-              <div className="studio-field px-4 py-3">
+              <div>
+                <label htmlFor="admin-password" className="field-label">
+                  Password
+                </label>
                 <input
                   id="admin-password"
-                  className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none"
+                  className="field"
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
-            </div>
 
-            {/* Error message */}
-            {error && (
-              <p className="text-error text-sm text-center">{error}</p>
-            )}
+              {error && (
+                <p role="alert" className="text-body-md text-error">
+                  {error}
+                </p>
+              )}
 
-            <button
-              className="btn-glass group mt-2 pl-8 pr-2 py-2 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center justify-center gap-4"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? "Signing in…" : "Enter Archive"}
-              <span className="btn-icon-nest">
-                {loading ? (
-                  <Spinner />
-                ) : (
-                  <span
-                    className="material-symbols-outlined text-[18px]"
-                    style={{ fontVariationSettings: "'FILL' 0, 'wght' 250" }}
-                  >
-                    arrow_forward
-                  </span>
-                )}
-              </span>
-            </button>
-          </form>
+              <button className="btn btn-primary mt-1 w-full" type="submit" disabled={loading}>
+                {loading && <Spinner />}
+                {loading ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
+          </div>
 
-          <Link
-            href="/"
-            className="flex items-center justify-center gap-2 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              arrow_back
-            </span>
-            Back to Site
-          </Link>
+          <div className="mt-4 text-center">
+            <Link href="/" className="btn btn-text">
+              <ArrowLeft size={16} aria-hidden="true" />
+              Back to site
+            </Link>
+          </div>
         </div>
       </main>
     </div>

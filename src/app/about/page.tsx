@@ -1,68 +1,60 @@
+import type { CSSProperties } from "react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import Reveal from "@/components/Reveal";
 import { fetchSiteContent, splitBio } from "@/lib/data";
 
-// Match / and /work — a Save in Studio calls revalidatePath("/about"), so this
+// Match / and /work — a Save in Studio revalidates this immediately, so this
 // is only the ceiling on how stale the page can get if that action is missed.
 export const revalidate = 60;
 
+/**
+ * About (Redesign Phase B). Asymmetric split: portrait (5/12) beside the
+ * text (7/12), centred against each other. The portrait is a plain print —
+ * the hairline "glass tray" mount it used to sit in is gone with the rest of
+ * the decorative glass.
+ *
+ * Quote, bio and portrait URL are the owner's content from Studio → Account.
+ * The portrait URL is free text (context.md §8), so it is used as given.
+ */
 export default async function About() {
   const { quote, bio, aboutImageUrl } = await fetchSiteContent();
   const paragraphs = splitBio(bio);
 
   return (
-    <div className="bg-primary-container text-on-surface antialiased min-h-[100dvh] flex flex-col">
+    <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <SiteNav />
 
-      {/* Main Content: Split Screen */}
-      <main id="main" className="site-container flex-1 flex flex-col md:flex-row relative pt-32 md:pt-40 px-margin-mobile md:px-margin-desktop gap-12 md:gap-16 pb-section-gap">
-        {/* Left: Portrait Image */}
-        {/* Nested enclosure: hairline tray (rounded-3xl, 32px) holding the
-            image at rounded-2xl (24px), separated by p-1.5. The radii are
-            roughly concentric, which is what makes it read as a mounted
-            print rather than a cropped rectangle sitting on the page.
-
-            Deliberately applied HERE and nowhere else. The same treatment on
-            the gallery and Selected Frames grids would put twenty visible
-            trays on screen at once, and context.md's brief is that the UI is
-            an invisible frame — one portrait can carry a frame, a wall of
-            thumbnails cannot.
-
-            dvh, not vh: on iOS Safari `vh` resolves to the large viewport, so
-            this stood taller than the visible area with the URL bar showing
-            and then reflowed as it collapsed. */}
-        <Reveal className="w-full md:w-1/2" y={0}>
-          <div className="photo-surface rounded-3xl bg-white/5 border border-white/10 p-1.5">
-            <div className="rounded-2xl overflow-hidden h-[60dvh] md:h-[75dvh]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt="Atmospheric portrait of the photographer at dusk, holding a camera, looking out over the water."
-                className="w-full h-full object-cover object-[70%_30%]"
-                src={aboutImageUrl}
-              />
-            </div>
+      <main
+        id="main"
+        className="flex-1 px-margin-mobile pb-24 pt-28 md:px-margin-desktop md:pb-32 md:pt-36"
+      >
+        <div className="site-container grid items-center gap-10 md:grid-cols-12 md:gap-16">
+          <div className="enter frame-media aspect-[4/5] md:col-span-5">
+            {/* eslint-disable-next-line @next/next/no-img-element -- free-text URL from the Studio; any host */}
+            <img
+              src={aboutImageUrl}
+              alt="Portrait of the photographer holding a camera"
+              className="object-[70%_30%]"
+              decoding="async"
+            />
           </div>
-        </Reveal>
 
-        {/* Right: Bio Text */}
-        <Reveal className="w-full md:w-1/2 flex items-center" delay={0.1} blur>
-          <div className="max-w-xl space-y-6">
-            <span className="font-label-sm text-label-sm uppercase tracking-widest text-accent">
-              About
-            </span>
-            <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface leading-tight">
+          <div
+            className="enter md:col-span-7"
+            style={{ "--i": 1 } as CSSProperties}
+          >
+            <p className="mb-4 text-label text-fg-3">About</p>
+            <h1 className="max-w-[18ch] text-title-sm font-medium text-fg md:text-title">
               {quote}
             </h1>
-            {/* Paragraph count is whatever the admin saved — space-y-5 keeps
-                the vertical rhythm regardless of how many there are. */}
-            <div className="space-y-5 font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+            {/* Paragraph count is whatever the owner saved. */}
+            <div className="mt-8 max-w-[38rem] space-y-5 text-lead text-fg-2">
               {paragraphs.map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
               ))}
             </div>
           </div>
-        </Reveal>
+        </div>
       </main>
 
       <SiteFooter />

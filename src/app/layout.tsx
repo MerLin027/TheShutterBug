@@ -1,6 +1,26 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Mono, Jost } from "next/font/google";
 import "./globals.css";
-import PageTransition from "@/components/PageTransition";
+
+// Self-hosted at build time by next/font: no request to Google at runtime,
+// no render-blocking third-party stylesheet, and nothing third-party for the
+// CSP to allow. Each is exposed as a CSS variable that globals.css reads.
+
+/** Every interface surface. Variable font, wght 100–900. */
+const jost = Jost({
+  subsets: ["latin"],
+  variable: "--font-jost",
+  display: "swap",
+});
+
+/** Contact-sheet signature: frame numbers and meta only. Preloaded since
+ *  Phase B because every photo card shows a frame line. */
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "The Shutter Bug",
@@ -24,38 +44,26 @@ export default function RootLayout({
     // data-scroll-behavior is required alongside `scroll-behavior: smooth`:
     // Next 16 only suppresses smooth scrolling during a route transition when
     // it finds this attribute. Without it every navigation animates a long
-    // smooth scroll to the top underneath PageTransition's fade.
-    <html lang="en" className="dark" data-scroll-behavior="smooth">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-          rel="stylesheet"
-        />
-        {/* Jost covers every non-title surface (body, labels, nav, buttons,
-            form fields) at 400/500/600/700; Playwrite VN is loaded only for
-            .font-title. Inter and Space Grotesk are gone — after the token
-            swap in globals.css nothing referenced either of them. */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Playwrite+VN:wght@400&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="antialiased bg-primary-container">
+    // smooth scroll to the top underneath the route transition.
+    <html
+      lang="en"
+      className={`dark ${jost.variable} ${plexMono.variable}`}
+      data-scroll-behavior="smooth"
+    >
+      <body className="bg-paper antialiased">
         {/* Keyboard users otherwise have to tab through the whole navbar on
             every page before reaching content. */}
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-5 focus:py-2.5 focus:font-label-sm focus:text-label-sm focus:uppercase focus:tracking-widest focus:text-on-accent"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-control focus:bg-fg focus:px-4 focus:py-2.5 focus:text-label focus:font-medium focus:text-paper"
         >
           Skip to content
         </a>
 
-        {/* Film grain, applied once here rather than per page — it used to
-            live on Contact alone, which made that page read as a different
-            surface from the rest of the site. */}
-        <div className="noise-overlay" aria-hidden="true" />
-
-        <PageTransition>{children}</PageTransition>
+        {/* Phase B: no film-grain overlay (unslop: no grain/noise as
+            decoration) and no Framer Motion page fade — route changes run as
+            native view transitions (next.config.ts, globals.css). */}
+        {children}
       </body>
     </html>
   );

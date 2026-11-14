@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { LogOut, Menu, X, type LucideIcon } from "lucide-react";
 
-export type StudioNavItem = { href: string; label: string; icon: string };
+export type StudioNavItem = { href: string; label: string; icon: LucideIcon };
 
 /**
- * Admin-only hamburger menu (§1.6), shown below `md`. Items slide in
- * directionally relative to the current page's position in the nav order —
- * items below the active page slide up from below, items above slide down
- * from above. Timing matches the glass-interaction language already used
- * elsewhere (duration-300 equivalent), so there's one animation system.
+ * Studio menu below `md`: a button in the top bar's corner opens a full
+ * sheet with the same rows as the desktop sidebar.
+ *
+ * Phase C: the Framer Motion directional slide-in is gone (it was the last
+ * thing in the project using Framer Motion). The sheet fades and rises a
+ * few pixels in CSS — unslop's rule for menus — and simply disappears on
+ * close. Escape closes it, focus moves into it on open and back to the
+ * button on close, and the page behind cannot scroll.
  */
 export default function StudioMenu({
   navItems,
@@ -26,11 +29,20 @@ export default function StudioMenu({
   onOpenChange: (open: boolean) => void;
   onSignOut: () => void;
 }) {
-  const activeIndex = navItems.findIndex((item) => item.href === pathname);
+  const openButton = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
 
-  // Escape closes, matching the Studio's modals (StudioModal) and the
-  // lightbox (LightboxKeys). This menu covers the whole viewport, so having
-  // no keyboard dismissal was the most conspicuous gap of the three.
+  useEffect(() => {
+    if (open) {
+      wasOpen.current = true;
+      closeButton.current?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      openButton.current?.focus();
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -40,113 +52,86 @@ export default function StudioMenu({
         onOpenChange(false);
       }
     }
-
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previous;
+    };
   }, [open, onOpenChange]);
 
   return (
     <>
       <button
+        ref={openButton}
+        type="button"
         onClick={() => onOpenChange(true)}
-        className="btn-icon-glass-lg md:hidden fixed top-6 left-6 z-40 text-on-surface"
+        className="tool-btn fixed left-3 top-3 z-40 size-11 md:hidden"
         aria-label="Open menu"
+        aria-expanded={open}
       >
-        <span className="material-symbols-outlined">menu</span>
+        <Menu size={20} aria-hidden="true" />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden fixed inset-0 z-[90] admin-modal-backdrop flex flex-col"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) onOpenChange(false);
-            }}
-          >
-            <div className="flex flex-col h-full p-8 gap-2 bg-surface-container-lowest/95">
-              <div className="flex items-center justify-between mb-10">
-                <Link
-                  href="/"
-                  className="font-title text-[1.4rem] leading-none text-on-surface"
-                  onClick={() => onOpenChange(false)}
-                >
-                  The Shutter Bug
-                </Link>
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="btn-icon-glass text-on-surface"
-                  aria-label="Close menu"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Studio menu"
+          className="studio-sheet fixed inset-0 z-[90] flex flex-col bg-paper-deep px-3 pb-6 pt-3 md:hidden"
+        >
+          <div className="mb-6 flex items-center justify-between pl-3">
+            <Link href="/" onClick={() => onOpenChange(false)} className="block">
+              <span className="block text-lead font-medium leading-tight text-fg">
+                The Shutter Bug
+              </span>
+              <span className="block text-label text-fg-3">Studio</span>
+            </Link>
+            <button
+              ref={closeButton}
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="tool-btn size-11"
+              aria-label="Close menu"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          </div>
 
-              <div className="flex-1 flex flex-col gap-2">
-                {navItems.map((item, i) => {
-                  const active = pathname === item.href;
-                  const fromY = i > activeIndex ? 32 : i < activeIndex ? -32 : 0;
-                  return (
-                    <motion.div
-                      key={item.href}
-                      initial={{ opacity: 0, y: fromY }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: 0.3,
-                        delay: 0.05 * i,
-                        ease: [0.25, 1, 0.5, 1],
-                      }}
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={() => onOpenChange(false)}
-                        className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${
-                          active
-                            ? "bg-accent/10 text-accent font-bold"
-                            : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[20px]">
-                          {item.icon}
-                        </span>
-                        <span className="font-label-sm text-label-sm uppercase tracking-widest">
-                          {item.label}
-                        </span>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-                <motion.button
-                  initial={{ opacity: 0, y: 32 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    delay: 0.05 * navItems.length,
-                    ease: [0.25, 1, 0.5, 1],
-                  }}
-                  onClick={() => {
-                    onOpenChange(false);
-                    onSignOut();
-                  }}
-                  className="flex items-center gap-4 px-4 py-4 rounded-xl text-error hover:bg-surface-container-high transition-all text-left"
+          <ul className="flex flex-col gap-0.5">
+            {navItems.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={pathname === item.href ? "page" : undefined}
+                  onClick={() => onOpenChange(false)}
+                  className="studio-nav-row h-12"
                 >
-                  <span className="material-symbols-outlined text-[20px]">
-                    logout
-                  </span>
-                  <span className="font-label-sm text-label-sm uppercase tracking-widest">
-                    Sign Out
-                  </span>
-                </motion.button>
-              </div>
-              {/* No logged-in address at the foot of the menu — see the note
-                  in StudioShell's sidebar. */}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  <item.icon size={18} aria-hidden="true" />
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <ul className="mt-auto flex flex-col gap-0.5 border-t border-line pt-4">
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenChange(false);
+                  onSignOut();
+                }}
+                className="studio-nav-row h-12 w-full"
+              >
+                <LogOut size={18} aria-hidden="true" />
+                Sign out
+              </button>
+            </li>
+          </ul>
+        </div>
+      )}
     </>
   );
 }

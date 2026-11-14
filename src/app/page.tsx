@@ -1,23 +1,23 @@
 import { fetchFeaturedPhotos } from "@/lib/data";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import HeroParallax from "@/components/HeroParallax";
+import Hero from "@/components/Hero";
 import SelectedFrames from "@/components/SelectedFrames";
 
 // Revalidate every 60 s (matches the fetch revalidation in data.ts).
 export const revalidate = 60;
 
 export default async function Home() {
-  const featured = await fetchFeaturedPhotos();
+  // On failure Selected Frames renders nothing, exactly as when nothing is
+  // featured: the hero needs no data, so Home stays whole during an outage
+  // rather than showing an error block on the landing page.
+  const { photos: featured } = await fetchFeaturedPhotos();
 
   return (
-    <div className="bg-primary-container text-on-surface font-body-md antialiased">
+    <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <SiteNav />
-      {/* Home had no <main> at all — the hero is a <header> and Selected
-          Frames a bare <section>, which left the page with no primary
-          landmark for screen readers or the skip-link to target. */}
       <main id="main">
-        <HeroParallax />
+        <Hero />
         <SelectedFrames photos={featured} />
       </main>
       <SiteFooter />

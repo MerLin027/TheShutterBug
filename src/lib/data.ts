@@ -1,11 +1,18 @@
 // ---------------------------------------------------------------------------
-// data.ts — API client for the Render backend
-// Replaces the former hardcoded photo array with real fetch calls.
-// All functions are async and intended for use in Server Components or
-// Server Actions (they run on the Next.js server, never in the browser).
+// data.ts — server-side API client for the public pages.
+//
+// Runs in Server Components only. Every fetch here:
+//   - goes through apiFetch(), so it carries a timeout and a cache tag;
+//   - reports failure as `failed: true` rather than as an empty result.
+//
+// That second point is the one that matters. Until the redesign, a dead
+// backend and an empty collection produced the same `[]`, and the site said
+// "No photos yet" during a database outage. A visitor (and the owner) could
+// not tell an empty portfolio from a broken one.
 // ---------------------------------------------------------------------------
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
+import { API_URL } from "@/lib/api";
+import { GALLERY_FILTERS } from "@/lib/categories";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,16 +49,122 @@ export type SiteContent = {
 /** Normalised shape used by all frontend components. */
 export type Photo = {
   id: string;
+  /** Full view (lightbox): format/quality-optimised, capped at 2400px wide. */
   src: string;
+  /** Grid view: ~800px wide. Use with `srcSet` + a `sizes` attribute. */
+  thumb: string;
+  /** Responsive candidates for grid cards. */
+  srcSet: string;
   alt: string;
   /** Tailwind aspect-ratio class derived from aspectRatio */
   aspect: string;
+  /** width / height, as stored. */
+  ratio: number;
+  /**
+   * Contact-sheet frame number, "001". From the stored position, so it is
+   * stable per photo — it doesn't renumber under a filter, the way a real
+   * frame number doesn't change when you only print some of the roll.
+   */
+  frame: string;
+  /** The owner's caption, or "" when none was given. */
+  caption: string;
+  /** Caption if present, else the category — for alt text and the lightbox. */
   title: string;
   location: string;
   year: string;
   category: "Nature" | "Objects" | "Monochrome" | "Urban";
   isFeatured: boolean;
 };
+
+/** A list fetch. `failed` distinguishes "backend unreachable" from "empty". */
+export type PhotoList = { photos: Photo[]; failed: boolean };
+
+// ---------------------------------------------------------------------------
+// Fetch plumbing
+// ---------------------------------------------------------------------------
+
+/**
+ * Ceiling for any one request to the API. Generous on purpose: a Render free
+ * instance waking from idle legitimately takes 20–50 s. The point is that a
+ * ceiling exists. A fetch that hangs never rejects, so without one a stalled
+ * backend hung the page instead of reaching the fallback path.
+ */
+const FETCH_TIMEOUT_MS = 20_000;
+
+/** Revalidation window for every public fetch, in seconds. */
+const REVALIDATE_SECONDS = 60;
+
+/**
+ * Cache tags. `updateTag()` in admin/actions.ts expires these on every Studio
+ * mutation, which is what makes an edit or delete show up immediately on
+ * every page that fetched the data — including /lightbox/[id], which no path
+ * revalidation reached before.
+ */
+export const PHOTOS_TAG = "photos";
+export const SITE_CONTENT_TAG = "site-content";
+
+function apiFetch(path: string, tag: string): Promise<Response> {
+  return fetch(`${API_URL}${path}`, {
+    next: { revalidate: REVALIDATE_SECONDS, tags: [tag] },
+    // Opts out of per-render memoisation only — the data cache still applies.
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Cloudinary delivery
+// ---------------------------------------------------------------------------
+
+const CLOUDINARY_HOST = "res.cloudinary.com";
+const UPLOAD_MARKER = "/image/upload/";
+/** A transformation component looks like `w_800` or `f_auto` — key_value. */
+const TRANSFORM_PART = /^[a-z]{1,3}_[^/]+$/;
+
+/**
+ * Ask Cloudinary for a sized, format- and quality-optimised rendition.
+ *
+ * Every photo used to be served as its raw upload, so a 25 MB original was
+ * what every visitor downloaded into a 315px grid card.
+ *
+ * - Returns `src` UNCHANGED unless it is an https URL on res.cloudinary.com
+ *   with an /image/upload/ path. The About portrait is a free-text URL and the
+ *   hero is Google-hosted; neither may be rewritten.
+ * - Returns `src` unchanged if a transformation is already present, so it can
+ *   never double-apply.
+ * - `c_limit` is load-bearing: it only ever scales DOWN. Without it, a request
+ *   for w_800 on a 600px test image produced a larger file than the original.
+ */
+export function cloudinaryUrl(src: string, width: number): string {
+  if (!Number.isFinite(width) || width <= 0) return src;
+
+  let url: URL;
+  try {
+    url = new URL(src);
+  } catch {
+    return src;
+  }
+  if (url.protocol !== "https:" || url.hostname !== CLOUDINARY_HOST) return src;
+
+  const at = url.pathname.indexOf(UPLOAD_MARKER);
+  if (at === -1) return src;
+
+  const head = url.pathname.slice(0, at + UPLOAD_MARKER.length);
+  const rest = url.pathname.slice(at + UPLOAD_MARKER.length);
+  const firstSegment = rest.split("/")[0] ?? "";
+  if (firstSegment.split(",").every((part) => TRANSFORM_PART.test(part))) {
+    return src;
+  }
+
+  url.pathname = `${head}f_auto,q_auto,c_limit,w_${Math.round(width)}/${rest}`;
+  return url.toString();
+}
+
+/** Grid-card candidate widths. Largest covers a 390px phone at DPR 3. */
+const THUMB_WIDTHS = [480, 800, 1200] as const;
+
+function cloudinarySrcSet(src: string): string {
+  return THUMB_WIDTHS.map((w) => `${cloudinaryUrl(src, w)} ${w}w`).join(", ");
+}
 
 // ---------------------------------------------------------------------------
 // Adapter helpers
@@ -77,137 +190,148 @@ function capitalise(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const CATEGORY_MAP: Record<string, Photo["category"]> = {
+  nature: "Nature",
+  objects: "Objects",
+  monochrome: "Monochrome",
+  urban: "Urban",
+};
+
 /** Convert a raw API document to the normalised Photo type. */
 function toPhoto(raw: ApiPhoto): Photo {
-  const categoryMap: Record<string, Photo["category"]> = {
-    nature: "Nature",
-    objects: "Objects",
-    monochrome: "Monochrome",
-    urban: "Urban",
-  };
-
+  const ratio = Number.isFinite(raw.aspectRatio) && raw.aspectRatio > 0 ? raw.aspectRatio : 1.5;
   return {
     id: raw._id,
-    src: raw.imageUrl,
+    src: cloudinaryUrl(raw.imageUrl, 2400),
+    thumb: cloudinaryUrl(raw.imageUrl, 800),
+    srcSet: cloudinarySrcSet(raw.imageUrl),
     alt: raw.caption || `${capitalise(raw.category)} photograph`,
-    aspect: aspectClass(raw.aspectRatio),
+    aspect: aspectClass(ratio),
+    ratio,
+    frame: String((Number.isFinite(raw.position) ? raw.position : 0) + 1).padStart(3, "0"),
+    caption: raw.caption?.trim() ?? "",
     title: raw.caption || capitalise(raw.category),
     location: raw.location || "",
     year: raw.createdAt ? new Date(raw.createdAt).getFullYear().toString() : "",
-    category: categoryMap[raw.category] ?? "Nature",
+    category: CATEGORY_MAP[raw.category] ?? "Nature",
     isFeatured: raw.isFeatured,
   };
 }
+
+/**
+ * Map an untrusted `?filter=` value onto the gallery's fixed filter set.
+ * Anything unrecognised becomes "All". /work already did this; the lightbox
+ * passed the raw value straight through to `?category=`, which the API now
+ * answers with a 400 — so prev/next silently vanished on a bad link.
+ */
+export function normaliseFilter(filter: string | undefined): (typeof GALLERY_FILTERS)[number] {
+  const valid = GALLERY_FILTERS as readonly string[];
+  return filter && valid.includes(filter)
+    ? (filter as (typeof GALLERY_FILTERS)[number])
+    : "All";
+}
+
+/** MongoDB ObjectId: 24 hex characters. Anything else cannot be a photo. */
+const OBJECT_ID = /^[0-9a-f]{24}$/i;
 
 // ---------------------------------------------------------------------------
 // Fetch functions
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch all photos, sorted by position (ascending).
- * Optionally filter by lowercase category string.
- * Returns [] when the DB is empty — callers should render an empty state.
+ * All photos, sorted by position (ascending), optionally filtered by a
+ * display-form category ("Nature"). `failed` is true when the API could not
+ * be reached or answered with an error.
  */
-export async function fetchPhotos(category?: string): Promise<Photo[]> {
-  const url = new URL(`${API_URL}/api/photos`);
-  if (category && category !== "All") {
-    url.searchParams.set("category", category.toLowerCase());
-  }
+export async function fetchPhotos(category?: string): Promise<PhotoList> {
+  const filter = normaliseFilter(category);
+  const query = filter === "All" ? "" : `?category=${encodeURIComponent(filter.toLowerCase())}`;
 
-  // The try/catch is the difference between a cold Render instance being an
-  // empty gallery and being an error page. `!res.ok` only covers a server that
-  // answered; a rejected fetch — DNS failure, connection refused, the free
-  // tier still waking up — throws, and an uncaught throw in a Server Component
-  // takes the whole route down. fetchSiteContent has always done this, which
-  // is why /about survived a dead backend while / and /work did not.
   try {
-    const res = await fetch(url.toString(), {
-      // Revalidate every 60 s on the server so a newly-uploaded photo
-      // appears without a full redeploy.
-      next: { revalidate: 60 },
-    });
-
+    const res = await apiFetch(`/api/photos${query}`, PHOTOS_TAG);
     if (!res.ok) {
-      // Surface the error in the Next.js server logs but don't crash the page.
       console.error(`[data] GET /api/photos failed — ${res.status} ${res.statusText}`);
-      return [];
+      return { photos: [], failed: true };
     }
-
     const raw: ApiPhoto[] = await res.json();
-    return raw.map(toPhoto);
+    return { photos: raw.map(toPhoto), failed: false };
   } catch (err) {
     console.error("[data] GET /api/photos threw —", err);
-    return [];
+    return { photos: [], failed: true };
   }
 }
 
 /**
- * Fetch photos flagged `isFeatured`, for Home's "Selected Frames" section.
- * The backend's GET /api/photos only accepts a `category` filter, so
- * featured-filtering happens here rather than as a new query param.
+ * Photos flagged `isFeatured`, for Home's "Selected frames". The API only
+ * filters by category, so featured-filtering happens here.
  */
-export async function fetchFeaturedPhotos(limit?: number): Promise<Photo[]> {
-  const all = await fetchPhotos();
-  const featured = all.filter((p) => p.isFeatured);
-  return limit ? featured.slice(0, limit) : featured;
+export async function fetchFeaturedPhotos(limit?: number): Promise<PhotoList> {
+  const { photos, failed } = await fetchPhotos();
+  const featured = photos.filter((p) => p.isFeatured);
+  return { photos: limit ? featured.slice(0, limit) : featured, failed };
 }
 
 /**
- * Fetch a single photo by its MongoDB _id.
- * Returns null when the photo doesn't exist or the request fails.
+ * One photo by id. `photo: null, failed: false` means it genuinely does not
+ * exist (render the 404). `failed: true` means the API could not answer
+ * (render the error page — telling a visitor a photograph is gone because
+ * the database blinked is wrong).
  */
-export async function fetchPhoto(id: string): Promise<Photo | null> {
-  // Same reasoning as fetchPhotos: a rejected fetch must degrade to "no such
-  // photo" (which the lightbox already handles with notFound()) rather than
-  // throwing out of the Server Component.
+export async function fetchPhoto(id: string): Promise<{ photo: Photo | null; failed: boolean }> {
+  // Validate before it reaches a URL path: "../contact" would otherwise
+  // resolve to a different endpoint.
+  if (!OBJECT_ID.test(id)) return { photo: null, failed: false };
+
   try {
-    const res = await fetch(`${API_URL}/api/photos/${id}`, {
-      next: { revalidate: 60 },
-    });
-
+    const res = await apiFetch(`/api/photos/${id}`, PHOTOS_TAG);
+    if (res.status === 404) return { photo: null, failed: false };
     if (!res.ok) {
-      if (res.status !== 404) {
-        console.error(`[data] GET /api/photos/${id} failed — ${res.status} ${res.statusText}`);
-      }
-      return null;
+      console.error(`[data] GET /api/photos/${id} failed — ${res.status} ${res.statusText}`);
+      return { photo: null, failed: true };
     }
-
     const raw: ApiPhoto = await res.json();
-    return toPhoto(raw);
+    return { photo: toPhoto(raw), failed: false };
   } catch (err) {
     console.error(`[data] GET /api/photos/${id} threw —`, err);
-    return null;
+    return { photo: null, failed: true };
   }
 }
 
 /**
- * Fetch photos (optionally filtered by category) and return the prev/next
- * neighbours for a given photo id within that set.
- * Used by the lightbox to build navigation links.
+ * Everything the lightbox needs, in ONE list request where possible.
  *
- * @param currentId   MongoDB _id of the photo currently open in the lightbox.
- * @param filter      Active gallery filter (e.g. "Nature"). Pass "All" or
- *                    omit to use the full unfiltered list.
+ * It used to fetch the photo by id and, in parallel, the whole list to find
+ * neighbours — the list already contained the photo, so the same document
+ * arrived twice through two cache entries that could disagree in age. Now the
+ * photo is read out of the list, and the by-id request is only a fallback for
+ * an id that isn't in the filtered list (a stale ?filter= on a shared link).
+ *
+ * Navigation wraps: the last photo's "next" is the first, and vice versa.
  */
-export async function fetchPhotoNeighbours(
-  currentId: string,
+export async function fetchLightbox(
+  id: string,
   filter?: string
-): Promise<{ prev: Photo | null; next: Photo | null }> {
-  // Use the same filter the gallery was showing so prev/next stay within the
-  // filtered set rather than jumping to unrelated categories.
-  const pool = await fetchPhotos(filter && filter !== "All" ? filter : undefined);
-  if (pool.length === 0) return { prev: null, next: null };
+): Promise<{ photo: Photo | null; prev: Photo | null; next: Photo | null; failed: boolean }> {
+  if (!OBJECT_ID.test(id)) return { photo: null, prev: null, next: null, failed: false };
 
-  const idx = pool.findIndex((p) => p.id === currentId);
-  // Photo not found in this filtered pool (shouldn't happen, but fall back
-  // to disabling navigation rather than crashing).
-  if (idx === -1) return { prev: null, next: null };
+  const { photos: pool, failed } = await fetchPhotos(filter);
+  const idx = pool.findIndex((p) => p.id === id);
 
-  // Wrap-around navigation: last photo's "next" is the first, and vice-versa.
-  const prev = idx > 0 ? pool[idx - 1] : pool[pool.length - 1];
-  const next = idx < pool.length - 1 ? pool[idx + 1] : pool[0];
+  if (idx !== -1) {
+    const prev = pool.length > 1 ? pool[(idx - 1 + pool.length) % pool.length] : null;
+    const next = pool.length > 1 ? pool[(idx + 1) % pool.length] : null;
+    return { photo: pool[idx], prev, next, failed: false };
+  }
 
-  return { prev, next };
+  // Not in this pool. If the list itself failed, the single lookup almost
+  // certainly will too, but try it: it is one request and may be cached.
+  const single = await fetchPhoto(id);
+  return {
+    photo: single.photo,
+    prev: null,
+    next: null,
+    failed: single.failed || (failed && !single.photo),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -232,15 +356,12 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
 };
 
 /**
- * Fetch the editable About-page copy.
- * Never returns null — falls back to DEFAULT_SITE_CONTENT so About degrades
- * to its original copy rather than rendering blanks.
+ * The editable About-page copy. Never fails outward — About degrades to its
+ * original copy rather than rendering blanks or an error page.
  */
 export async function fetchSiteContent(): Promise<SiteContent> {
   try {
-    const res = await fetch(`${API_URL}/api/site-content`, {
-      next: { revalidate: 60 },
-    });
+    const res = await apiFetch("/api/site-content", SITE_CONTENT_TAG);
 
     if (!res.ok) {
       console.error(

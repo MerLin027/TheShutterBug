@@ -1,8 +1,10 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { ApiPhoto } from "@/lib/data";
+import { GripVertical, Pencil, Star, Trash2 } from "lucide-react";
+import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
 import { categoryLabel } from "@/lib/categories";
 
 type Props = {
@@ -12,124 +14,104 @@ type Props = {
   onToggleFeatured: (photo: ApiPhoto) => void;
 };
 
-export default function PhotoCard({
-  photo,
-  onEdit,
-  onDelete,
-  onToggleFeatured,
-}: Props) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: photo._id });
+/**
+ * One photo in the Studio grid (Redesign Phase C, task C1).
+ *
+ * The photograph is never touched: no blur, no darkening, no glass over it.
+ * The old card blurred and dimmed the photo under a glass overlay on hover
+ * (breaking the project's own "no glass over a photograph" rule) and put a
+ * red Delete pill in the middle of it. Its controls only existed on hover,
+ * so on a phone they were unreliable at best. REDESIGN.md §3.9 has the old
+ * markup.
+ *
+ * Now: a solid tool row under the photo, always visible. Reorder handle on
+ * the left (pointer drag, touch drag, or Space + arrow keys via dnd-kit's
+ * keyboard sensor), then the caption and frame line, then feature / edit /
+ * delete as equal quiet icon buttons. Delete still goes through the confirm
+ * dialog — it just no longer dominates the card.
+ *
+ * The <li> is a `.frame` in the same justified rows as the public gallery,
+ * so the order the owner drags here is exactly the order visitors read.
+ */
+export default function PhotoCard({ photo, onEdit, onDelete, onToggleFeatured }: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: photo._id });
+
+  const ratio = Number.isFinite(photo.aspectRatio) && photo.aspectRatio > 0 ? photo.aspectRatio : 1.5;
+  const frame = String((photo.position ?? 0) + 1).padStart(3, "0");
+  const name = photo.caption || `${categoryLabel(photo.category)} photograph ${frame}`;
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    "--r": ratio,
+    // Translate only. rectSortingStrategy also emits a scale to morph one
+    // card into another's box; with photos of different shapes that would
+    // squash the image mid-drag.
+    transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 50 : "auto" as const,
-  };
+    zIndex: isDragging ? 50 : undefined,
+  } as CSSProperties;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="relative group rounded-2xl overflow-hidden break-inside-avoid bg-surface-container liquid-hover border border-white/5"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        alt={photo.caption || `Untitled ${photo.category} photograph`}
-        className="w-full h-auto object-cover transition-all duration-700 group-hover:scale-[1.03] group-hover:blur-[2px] group-hover:brightness-75"
-        src={photo.imageUrl}
-      />
+    <li ref={setNodeRef} style={style} className={`frame ${isDragging ? "opacity-40" : ""}`}>
+      <div className="frame-media" style={{ aspectRatio: ratio }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition; no next/image by decision (REDESIGN.md §2) */}
+        <img
+          src={cloudinaryUrl(photo.imageUrl, 800)}
+          alt={photo.caption || `Untitled ${photo.category} photograph`}
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
 
-      {/* Liquid Glass Overlay (Hover) — four controls: Reorder, Featured,
-          Edit, Delete.
-
-          The reorder handle used to be a fifth element outside this overlay:
-          a dark square pinned top-left of the card, painted at all times
-          while every other control waited for hover, so a grid at rest was a
-          grid of photographs each with a widget stuck on it. It is the same
-          handle with the same dnd-kit listeners, moved inside the overlay and
-          into the same circular glass shape as its neighbours. Reordering is
-          untouched — drag still starts from the handle, at the same corner.
-
-          There were also *two* handles bound to one sortable: this one and a
-          second `drag_pan` circle in the bottom-right of the overlay. They
-          were never visible at the same time (the overlay covered the square
-          one on hover), and spreading dnd-kit's `attributes` across two
-          elements gave one sortable item two focusable roles. One handle
-          now. */}
-      <div className="glass-overlay absolute inset-0 flex flex-col justify-between p-4 z-20 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
-        {/* Reorder handle left, secondary actions right */}
-        <div className="flex justify-between gap-2">
-          <div
-            className="btn-icon-glass text-white cursor-grab active:cursor-grabbing"
-            title="Drag to reorder"
-            {...attributes}
-            {...listeners}
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              drag_indicator
-            </span>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => onToggleFeatured(photo)}
-              title={photo.isFeatured ? "Remove from Selected Frames" : "Add to Selected Frames"}
-              className={`btn-icon-glass ${
-                photo.isFeatured ? "btn-icon-glass-on" : "text-white"
-              }`}
-            >
-              <span
-                className="material-symbols-outlined text-[18px]"
-                style={{
-                  fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}, 'wght' 250`,
-                }}
-              >
-                star
-              </span>
-            </button>
-            <button
-              onClick={() => onEdit(photo)}
-              title="Edit"
-              className="btn-icon-glass text-white"
-            >
-              <span className="material-symbols-outlined text-[18px]">edit</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Prominent Delete — centered, matching the reference */}
+      <div className="mt-2 flex items-center gap-1">
         <button
-          onClick={() => onDelete(photo)}
-          className="btn-danger mx-auto flex items-center gap-2 px-5 py-2.5 font-label-sm text-label-sm uppercase tracking-widest"
+          type="button"
+          className="tool-btn shrink-0 cursor-grab touch-none active:cursor-grabbing"
+          aria-label={`Reorder ${name}`}
+          {...attributes}
+          {...listeners}
         >
-          <span className="material-symbols-outlined text-[16px]">
-            delete
-          </span>
-          Delete
+          <GripVertical size={18} aria-hidden="true" />
         </button>
 
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex flex-col">
-            {/* categoryLabel, not the raw enum value: an untitled photo used
-                to fall back to the lowercase storage form and read "nature"
-                in the same slot where a title would be capitalised. */}
-            <span className="font-body-md text-body-md font-bold text-white">
-              {photo.caption || categoryLabel(photo.category)}
-            </span>
-            <span className="font-label-sm text-label-sm text-white/70 uppercase tracking-widest mt-0.5">
-              {photo.category}
-            </span>
-          </div>
+        <div className="min-w-0 flex-1 px-1">
+          {photo.caption && (
+            <p className="truncate text-label text-fg">{photo.caption}</p>
+          )}
+          <p className="frame-meta truncate">
+            {frame} · {categoryLabel(photo.category)}
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => onToggleFeatured(photo)}
+          aria-pressed={photo.isFeatured}
+          aria-label={`Feature ${name} in Selected frames`}
+          title={photo.isFeatured ? "Featured in Selected frames" : "Feature in Selected frames"}
+          className="tool-btn shrink-0"
+        >
+          <Star size={18} fill={photo.isFeatured ? "currentColor" : "none"} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(photo)}
+          aria-label={`Edit ${name}`}
+          title="Edit"
+          className="tool-btn shrink-0"
+        >
+          <Pencil size={18} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(photo)}
+          aria-label={`Delete ${name}`}
+          title="Delete"
+          className="tool-btn tool-btn-danger shrink-0"
+        >
+          <Trash2 size={18} aria-hidden="true" />
+        </button>
       </div>
-    </div>
+    </li>
   );
 }

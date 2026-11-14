@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, FormEvent } from "react";
+import { useState, useRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { apiUrl } from "@/lib/api";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import Reveal from "@/components/Reveal";
 import Spinner from "@/components/Spinner";
+import { ArrowRight, CircleAlert, CircleCheck } from "lucide-react";
 
 type FieldErrors = {
   name?: string;
@@ -19,7 +19,7 @@ type FieldErrors = {
  * `required` attributes on the three inputs were decorative and an empty or
  * malformed submission went straight to the API. `noValidate` stays (native
  * validation bubbles are unstyleable and look nothing like this site); this
- * is what earns it.
+ * is what earns it. The server validates again; this is UX only.
  */
 function validate(payload: {
   name: string;
@@ -35,18 +35,44 @@ function validate(payload: {
   if (!payload.email.trim()) {
     errors.email = "Please enter your email address.";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(payload.email.trim())) {
-    // Deliberately loose. Anything stricter rejects valid addresses; the
-    // real check is whether the reply lands, which only the server can know.
+    // Deliberately loose. Anything stricter rejects valid addresses.
     errors.email = "That doesn't look like an email address.";
   }
 
   if (!payload.message.trim()) {
     errors.message = "Please write a message.";
   } else if (payload.message.trim().length < 10) {
-    errors.message = "A little more detail would help — 10 characters or more.";
+    errors.message = "A little more detail would help: 10 characters or more.";
   }
 
   return errors;
+}
+
+/** One labelled field: label above, error below, wired with aria. */
+function Field({
+  id,
+  label,
+  error,
+  children,
+}: {
+  id: keyof FieldErrors;
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="field-label">
+        {label}
+      </label>
+      {children}
+      {error && (
+        <p id={`${id}-error`} className="field-error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function Contact() {
@@ -68,10 +94,9 @@ export default function Contact() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    // FormData.get() returns FormDataEntryValue | null. Casting that to
-    // `string` told tsc a lie — validate() calls .trim() on all three, so a
-    // missing `name` attribute on any input would have been a runtime
-    // TypeError that the type system had been talked out of reporting.
+    // FormData.get() returns FormDataEntryValue | null — normalise to string
+    // rather than casting, so a missing `name` attribute can't become a
+    // runtime TypeError the type system was talked out of reporting.
     const data = new FormData(e.currentTarget);
     const payload = {
       name: String(data.get("name") ?? ""),
@@ -90,9 +115,7 @@ export default function Contact() {
         (field) => errors[field]
       );
       if (firstInvalid) {
-        formRef.current
-          ?.querySelector<HTMLElement>(`#${firstInvalid}`)
-          ?.focus();
+        formRef.current?.querySelector<HTMLElement>(`#${firstInvalid}`)?.focus();
       }
       return;
     }
@@ -123,180 +146,116 @@ export default function Contact() {
   }
 
   const isLoading = status === "loading";
+  const invalid = (field: keyof FieldErrors) =>
+    fieldErrors[field]
+      ? { "aria-invalid": true as const, "aria-describedby": `${field}-error` }
+      : {};
 
   return (
-    <div className="bg-primary-container text-on-surface min-h-[100dvh] flex flex-col relative overflow-x-hidden selection:bg-tertiary selection:text-on-tertiary">
+    <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <SiteNav />
 
-      {/* Main Content */}
-      <main id="main" className="flex-grow flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop pt-32 md:pt-40 pb-section-gap relative z-10 w-full max-w-2xl mx-auto">
-        <Reveal className="text-center mb-12 space-y-4" blur>
-          <span className="font-label-sm text-label-sm uppercase tracking-widest text-accent">
-            Contact
-          </span>
-          <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
-            Say hello
-          </h1>
-          {/* First person where the page speaks at all. The About page says
-              "I am a photographer… I shoot on a mix of digital and film";
-              this page used to say "We review all submissions", which read as
-              a different, larger outfit.
-
-              This line also used to end "I read everything and usually reply
-              within a couple of days." Cut, not reworded: there is no
-              notification of any kind behind this form — a submission writes
-              a row to MongoDB and waits to be found in Studio — so a reply
-              window was a promise nothing in the system keeps. */}
-          <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">
-            Commissions, licensing, exhibitions — or just to say something
-            about a photograph.
-          </p>
-        </Reveal>
-
-        {/* Success Banner */}
-        {status === "success" && (
-          <div className="w-full mb-8 flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/5 border border-white/15 text-on-surface animate-[fadeInUp_0.4s_ease-out]">
-            <span
-              className="material-symbols-outlined text-[20px] text-accent shrink-0"
-              style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
-            >
-              check_circle
-            </span>
-            <p className="font-body-md text-body-md">
-              Message sent. I&apos;ll be in touch within a couple of days.
+      <main
+        id="main"
+        className="flex-1 px-margin-mobile pb-24 pt-28 md:px-margin-desktop md:pb-32 md:pt-36"
+      >
+        {/* Asymmetric split: heading and intro left, form right. Was a
+            centred stack with placeholder-only fields. */}
+        <div className="site-container grid gap-10 md:grid-cols-12 md:gap-16">
+          <div className="enter md:col-span-5">
+            <h1 className="text-title-sm font-medium text-fg md:text-title">Say hello</h1>
+            {/* First person, matching the About page. The line that promised
+                a reply window was cut in dc3ac35b: nothing behind this form
+                notifies anyone — it writes a row to MongoDB and waits. */}
+            <p className="mt-4 max-w-[30rem] text-lead text-fg-2">
+              Commissions, licensing, exhibitions, or just to say something
+              about a photograph
             </p>
           </div>
-        )}
 
-        <Reveal className="w-full" delay={0.1}>
-          <form ref={formRef} onSubmit={handleSubmit} className="w-full space-y-5" noValidate>
-            <div>
+          <div className="enter md:col-span-7" style={{ "--i": 1 } as CSSProperties}>
+            {status === "success" && (
               <div
-                className={`studio-field px-5 py-4 ${fieldErrors.name ? "studio-field-error" : ""}`}
+                role="status"
+                className="mb-8 flex items-start gap-3 rounded-control border border-line bg-card px-4 py-3"
               >
-                <label className="sr-only" htmlFor="name">
-                  Name
-                </label>
-                <input
-                  className="w-full bg-transparent border-0 font-body-md text-body-md text-on-surface focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
-                  id="name"
-                  name="name"
-                  placeholder="Your name"
-                  type="text"
-                  required
-                  disabled={isLoading}
-                  aria-invalid={fieldErrors.name ? true : undefined}
-                  aria-describedby={fieldErrors.name ? "name-error" : undefined}
-                  onChange={() => clearFieldError("name")}
-                />
-              </div>
-              {fieldErrors.name && (
-                <p
-                  id="name-error"
-                  className="mt-2 px-1 font-label-sm text-label-sm text-error"
-                >
-                  {fieldErrors.name}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <div
-                className={`studio-field px-5 py-4 ${fieldErrors.email ? "studio-field-error" : ""}`}
-              >
-                <label className="sr-only" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  className="w-full bg-transparent border-0 font-body-md text-body-md text-on-surface focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
-                  id="email"
-                  name="email"
-                  placeholder="Your email"
-                  type="email"
-                  required
-                  disabled={isLoading}
-                  aria-invalid={fieldErrors.email ? true : undefined}
-                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
-                  onChange={() => clearFieldError("email")}
-                />
-              </div>
-              {fieldErrors.email && (
-                <p
-                  id="email-error"
-                  className="mt-2 px-1 font-label-sm text-label-sm text-error"
-                >
-                  {fieldErrors.email}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <div
-                className={`studio-field px-5 py-4 ${fieldErrors.message ? "studio-field-error" : ""}`}
-              >
-                <label className="sr-only" htmlFor="message">
-                  Message
-                </label>
-                <textarea
-                  className="w-full bg-transparent border-0 font-body-md text-body-md text-on-surface focus:ring-0 focus:outline-none p-0 resize-none placeholder:text-on-surface-variant/50"
-                  id="message"
-                  name="message"
-                  placeholder="Tell me about the project…"
-                  rows={5}
-                  required
-                  disabled={isLoading}
-                  aria-invalid={fieldErrors.message ? true : undefined}
-                  aria-describedby={
-                    fieldErrors.message ? "message-error" : undefined
-                  }
-                  onChange={() => clearFieldError("message")}
-                ></textarea>
-              </div>
-              {fieldErrors.message && (
-                <p
-                  id="message-error"
-                  className="mt-2 px-1 font-label-sm text-label-sm text-error"
-                >
-                  {fieldErrors.message}
-                </p>
-              )}
-            </div>
-
-            {/* Inline Error */}
-            {status === "error" && (
-              <div className="flex items-center gap-2 text-error animate-[fadeInUp_0.3s_ease-out]">
-                <span
-                  className="material-symbols-outlined text-[18px] shrink-0"
-                  style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
-                >
-                  error
-                </span>
-                <p className="font-body-md text-body-md">{errorMsg}</p>
+                <CircleCheck size={20} className="mt-0.5 text-accent" aria-hidden="true" />
+                {/* Owner's decision (2026-11-14): no reply promise. Nothing
+                    behind this form notifies anyone, so the old "I'll be in
+                    touch within a couple of days" was a promise the system
+                    could not keep. */}
+                <p className="text-body-md text-fg">Message sent. Thank you.</p>
               </div>
             )}
 
-            <div className="pt-6 flex justify-center">
-              <button
-                className="btn-glass group pl-8 pr-2 py-2 font-label-sm text-label-sm tracking-widest uppercase text-on-surface flex items-center gap-4"
-                type="submit"
-                disabled={isLoading}
-              >
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <Field id="name" label="Name" error={fieldErrors.name}>
+                  <input
+                    className="field"
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    maxLength={100}
+                    required
+                    disabled={isLoading}
+                    onChange={() => clearFieldError("name")}
+                    {...invalid("name")}
+                  />
+                </Field>
+                <Field id="email" label="Email" error={fieldErrors.email}>
+                  <input
+                    className="field"
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    maxLength={254}
+                    required
+                    disabled={isLoading}
+                    onChange={() => clearFieldError("email")}
+                    {...invalid("email")}
+                  />
+                </Field>
+              </div>
+
+              <Field id="message" label="Message" error={fieldErrors.message}>
+                <textarea
+                  className="field resize-y"
+                  id="message"
+                  name="message"
+                  rows={6}
+                  maxLength={5000}
+                  required
+                  disabled={isLoading}
+                  onChange={() => clearFieldError("message")}
+                  {...invalid("message")}
+                ></textarea>
+              </Field>
+
+              {status === "error" && (
+                <div role="alert" className="flex items-start gap-2 text-error">
+                  <CircleAlert size={18} className="mt-0.5" aria-hidden="true" />
+                  <p className="text-body-md">{errorMsg}</p>
+                </div>
+              )}
+
+              <button className="btn btn-primary" type="submit" disabled={isLoading}>
                 {isLoading ? "Sending…" : "Send message"}
-                {/* The spinner swaps into the nest rather than replacing the
-                    whole label row, so the button doesn't resize mid-submit. */}
-                <span className="btn-icon-nest">
+                {/* Same-size slot for the arrow and the spinner, so the
+                    button doesn't change width mid-submit. */}
+                <span className="inline-flex size-[18px] items-center justify-center">
                   {isLoading ? (
                     <Spinner />
                   ) : (
-                    <span className="material-symbols-outlined text-[18px]">
-                      arrow_forward
-                    </span>
+                    <ArrowRight size={18} aria-hidden="true" />
                   )}
                 </span>
               </button>
-            </div>
-          </form>
-        </Reveal>
+            </form>
+          </div>
+        </div>
       </main>
 
       <SiteFooter />
