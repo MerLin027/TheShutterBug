@@ -51,7 +51,11 @@ export default function SelectedFrames({ photos }: { photos: Photo[] }) {
                 <img
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                   alt={photo.alt}
-                  src={photo.src}
+                  src={photo.thumb}
+                  srcSet={photo.srcSet}
+                  sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div className="flex items-center justify-between mt-3">

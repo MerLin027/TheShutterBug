@@ -7,6 +7,7 @@ import { apiUrl } from "@/lib/api";
 import { useAdminToken } from "@/lib/useAdminToken";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -160,12 +161,7 @@ export default function AdminLoginPage() {
                 {loading ? (
                   <Spinner />
                 ) : (
-                  <span
-                    className="material-symbols-outlined text-[18px]"
-                    style={{ fontVariationSettings: "'FILL' 0, 'wght' 250" }}
-                  >
-                    arrow_forward
-                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
                 )}
               </span>
             </button>
@@ -175,9 +171,7 @@ export default function AdminLoginPage() {
             href="/"
             className="flex items-center justify-center gap-2 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
           >
-            <span className="material-symbols-outlined text-[16px]">
-              arrow_back
-            </span>
+            <ArrowLeft size={16} aria-hidden="true" />
             Back to Site
           </Link>
         </div>

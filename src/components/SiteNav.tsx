@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutGrid } from "lucide-react";
 
 /**
  * Shared navbar for every public page (§1.1). Order: Home, Gallery (icon
@@ -81,14 +82,11 @@ export default function SiteNav() {
                 inherited the 14.4px root and rendered noticeably smaller than
                 the nav labels it sits beside. 20px matches the Studio
                 sidebar's icons, so icons are one size site-wide. */}
-            <span
-              className="material-symbols-outlined text-[20px]"
-              style={{
-                fontVariationSettings: `'FILL' ${isGallery ? 1 : 0}, 'wght' 250`,
-              }}
-            >
-              grid_view
-            </span>
+            <LayoutGrid
+              aria-hidden="true"
+              size={20}
+              fill={isGallery ? "currentColor" : "none"}
+            />
           </Link>
           <Link
             aria-current={isAbout ? "page" : undefined}

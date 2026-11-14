@@ -1,10 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import type { Photo } from "@/lib/data";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { normaliseFilter, type Photo } from "@/lib/data";
 import { GALLERY_FILTERS as FILTERS } from "@/lib/categories";
 import Reveal from "@/components/Reveal";
+import { Camera, CloudOff, FunnelX } from "lucide-react";
+
+/**
+ * `sizes` for grid cards: 1 column below md, 2 to lg, 3 to xl, then 4 —
+ * matching the column classes below. Lets the browser pick the smallest
+ * srcSet candidate that is still sharp.
+ */
+const GRID_SIZES =
+  "(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw";
+
+// ---------------------------------------------------------------------------
+// Load-failure state — the API could not be reached. Distinct from "empty":
+// telling a visitor the collection is empty during an outage is false.
+// ---------------------------------------------------------------------------
+function LoadFailedState() {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-center justify-center py-32 px-8 text-center"
+    >
+      <CloudOff className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
+      <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
+        The gallery couldn&apos;t load
+      </h2>
+      <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed mb-6">
+        The photographs are fine — the server didn&apos;t answer. It may be
+        waking up; try again in a moment.
+      </p>
+      <button
+        type="button"
+        onClick={() => startTransition(() => router.refresh())}
+        disabled={pending}
+        className="btn-outline px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase disabled:opacity-60"
+      >
+        {pending ? "Trying…" : "Try again"}
+      </button>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Empty-state UI — shown when the DB has no photos yet (pre-admin-panel)
@@ -13,9 +56,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-32 px-8 text-center">
       {/* Camera icon using Material Symbols (already loaded globally) */}
-      <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6">
-        camera_alt
-      </span>
+      <Camera className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
       <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
         No photos yet
       </h2>
@@ -33,15 +74,14 @@ function EmptyState() {
 // ---------------------------------------------------------------------------
 export default function GalleryClient({
   photos,
+  failed = false,
   initialFilter,
 }: {
   photos: Photo[];
+  failed?: boolean;
   initialFilter?: string;
 }) {
-  const validFilters = FILTERS as readonly string[];
-  const startFilter =
-    initialFilter && validFilters.includes(initialFilter) ? initialFilter : "All";
-  const [activeFilter, setActiveFilter] = useState<string>(startFilter);
+  const [activeFilter, setActiveFilter] = useState<string>(normaliseFilter(initialFilter));
 
   const filteredPhotos =
     activeFilter === "All"
@@ -77,14 +117,14 @@ export default function GalleryClient({
 
       {/* Gallery — empty state or masonry grid */}
       <section className="pb-section-gap">
-        {photos.length === 0 ? (
+        {failed ? (
+          <LoadFailedState />
+        ) : photos.length === 0 ? (
           <EmptyState />
         ) : filteredPhotos.length === 0 ? (
           /* Category filter is active but nothing matches — still a subset empty state */
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/30 mb-4">
-              filter_list_off
-            </span>
+            <FunnelX className="text-on-surface-variant/30 mb-4" size={48} aria-hidden="true" />
             <p className="font-body-md text-body-md text-on-surface-variant/70">
               No photos in this category yet.
             </p>
@@ -117,7 +157,11 @@ export default function GalleryClient({
                       <img
                         className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
                         alt={photo.alt}
-                        src={photo.src}
+                        src={photo.thumb}
+                        srcSet={photo.srcSet}
+                        sizes={GRID_SIZES}
+                        loading={i < 4 ? "eager" : "lazy"}
+                        decoding="async"
                       />
                     </div>
                     <div className="flex items-center justify-between mt-3">

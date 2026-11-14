@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioMenu, { type StudioNavItem } from "./StudioMenu";
+import { ArrowLeft, Images, LogOut, Mail, User } from "lucide-react";
 
 const NAV_ITEMS: StudioNavItem[] = [
-  { href: "/admin/dashboard", label: "Gallery", icon: "photo_library" },
-  { href: "/admin/dashboard/messages", label: "Messages", icon: "mail" },
-  { href: "/admin/dashboard/account", label: "Account", icon: "person" },
+  { href: "/admin/dashboard", label: "Gallery", icon: Images },
+  { href: "/admin/dashboard/messages", label: "Messages", icon: Mail },
+  { href: "/admin/dashboard/account", label: "Account", icon: User },
 ];
 
 /**
@@ -57,9 +58,11 @@ export default function StudioShell({ children }: { children: ReactNode }) {
                       : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
-                    {item.icon}
-                  </span>
+                  <item.icon
+                    aria-hidden="true"
+                    size={20}
+                    className="group-hover:scale-110 transition-transform"
+                  />
                   <span className="font-label-sm text-label-sm uppercase">
                     {item.label}
                   </span>
@@ -73,9 +76,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
               href="/"
               className="flex items-center gap-4 px-4 py-3 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all group"
             >
-              <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
-                arrow_back
-              </span>
+              <ArrowLeft className="group-hover:scale-110 transition-transform" size={20} aria-hidden="true" />
               <span className="font-label-sm text-label-sm uppercase">
                 Back to Site
               </span>
@@ -84,9 +85,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
               onClick={signOut}
               className="flex items-center gap-4 px-4 py-3 rounded-xl text-error hover:text-error/80 hover:bg-surface-container-high transition-all group w-full text-left"
             >
-              <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
-                logout
-              </span>
+              <LogOut className="group-hover:scale-110 transition-transform" size={20} aria-hidden="true" />
               <span className="font-label-sm text-label-sm uppercase">
                 Sign Out
               </span>

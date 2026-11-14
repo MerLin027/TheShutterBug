@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Reveal from "@/components/Reveal";
+import { ArrowRight } from "lucide-react";
 
 /**
  * Custom 404. Next's default is an unstyled black-on-white page, which on a
@@ -37,9 +38,7 @@ export default function NotFound() {
             >
               Browse the Gallery
               <span className="btn-icon-nest">
-                <span className="material-symbols-outlined text-[18px]">
-                  arrow_forward
-                </span>
+                <ArrowRight size={18} aria-hidden="true" />
               </span>
             </Link>
             <Link

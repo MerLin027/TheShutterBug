@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { ApiPhoto } from "@/lib/data";
+import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
 import { apiUrl } from "@/lib/api";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/categories";
 import StudioModal from "@/components/StudioModal";
 import Spinner from "@/components/Spinner";
+import { Save } from "lucide-react";
 
 type Props = {
   photo: ApiPhoto;
@@ -102,7 +103,7 @@ export default function EditModal({
       <div className="shrink-0 rounded-2xl overflow-hidden bg-surface-container">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photo.imageUrl}
+          src={cloudinaryUrl(photo.imageUrl, 1200)}
           alt={photo.caption || "Photo"}
           className="block w-full h-auto max-h-64 object-contain"
         />
@@ -229,9 +230,7 @@ export default function EditModal({
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined text-[16px]">
-                save
-              </span>
+              <Save size={16} aria-hidden="true" />
               Save Changes
             </>
           )}

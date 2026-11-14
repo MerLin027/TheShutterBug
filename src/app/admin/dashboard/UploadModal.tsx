@@ -12,9 +12,18 @@ import { apiUrl } from "@/lib/api";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/categories";
 import StudioModal from "@/components/StudioModal";
 import Spinner from "@/components/Spinner";
+import { CloudUpload } from "lucide-react";
 
-/** Max file size: 10 MB (addition #4) */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+/**
+ * Client-side ceiling, in step with MAX_UPLOAD_BYTES in
+ * backend/config/cloudinary.js (25 MB). Change the two together: the client
+ * used to refuse anything over 10 MB while the server accepted 25, so a
+ * 12 MB frame the API would take never left the browser.
+ *
+ * This is UX only. The server limit is the one that enforces anything.
+ */
+const MAX_FILE_SIZE_MB = 25;
+const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type Props = {
   onClose: () => void;
@@ -47,7 +56,7 @@ export default function UploadModal({
       return "Please select an image file (JPEG, PNG, WebP, etc.)";
     }
     if (f.size > MAX_FILE_SIZE) {
-      return `File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Maximum is 10 MB.`;
+      return `File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Maximum is ${MAX_FILE_SIZE_MB} MB.`;
     }
     return null;
   }
@@ -190,14 +199,12 @@ export default function UploadModal({
             />
           ) : (
             <div className="flex flex-col items-center gap-3 py-6">
-              <span className="material-symbols-outlined text-[44px] text-on-surface-variant">
-                cloud_upload
-              </span>
+              <CloudUpload className="text-on-surface-variant" size={44} aria-hidden="true" />
               <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
                 Drop an image here, or click to browse
               </p>
               <p className="font-body-md text-xs text-on-surface-variant/70">
-                Images only · max 10MB
+                Images only · max {MAX_FILE_SIZE_MB} MB
               </p>
             </div>
           )}
@@ -293,9 +300,7 @@ export default function UploadModal({
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined text-[16px]">
-                cloud_upload
-              </span>
+              <CloudUpload size={16} aria-hidden="true" />
               Add to Archive
             </>
           )}

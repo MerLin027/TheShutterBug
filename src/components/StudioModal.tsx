@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { X } from "lucide-react";
 
 /**
  * The Studio's modal shell, extracted from the three hand-rolled copies in
@@ -88,7 +89,7 @@ export default function StudioModal({
               aria-label="Close"
               className="btn-icon-glass text-on-surface"
             >
-              <span className="material-symbols-outlined">close</span>
+              <X size={24} aria-hidden="true" />
             </button>
           </div>
         )}

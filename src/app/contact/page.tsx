@@ -6,6 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Reveal from "@/components/Reveal";
 import Spinner from "@/components/Spinner";
+import { ArrowRight, CircleAlert, CircleCheck } from "lucide-react";
 
 type FieldErrors = {
   name?: string;
@@ -156,12 +157,7 @@ export default function Contact() {
         {/* Success Banner */}
         {status === "success" && (
           <div className="w-full mb-8 flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/5 border border-white/15 text-on-surface animate-[fadeInUp_0.4s_ease-out]">
-            <span
-              className="material-symbols-outlined text-[20px] text-accent shrink-0"
-              style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
-            >
-              check_circle
-            </span>
+            <CircleCheck className="text-accent shrink-0" size={20} fill="currentColor" aria-hidden="true" />
             <p className="font-body-md text-body-md">
               Message sent. I&apos;ll be in touch within a couple of days.
             </p>
@@ -265,12 +261,7 @@ export default function Contact() {
             {/* Inline Error */}
             {status === "error" && (
               <div className="flex items-center gap-2 text-error animate-[fadeInUp_0.3s_ease-out]">
-                <span
-                  className="material-symbols-outlined text-[18px] shrink-0"
-                  style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
-                >
-                  error
-                </span>
+                <CircleAlert className="shrink-0" size={18} fill="currentColor" aria-hidden="true" />
                 <p className="font-body-md text-body-md">{errorMsg}</p>
               </div>
             )}
@@ -288,9 +279,7 @@ export default function Contact() {
                   {isLoading ? (
                     <Spinner />
                   ) : (
-                    <span className="material-symbols-outlined text-[18px]">
-                      arrow_forward
-                    </span>
+                    <ArrowRight size={18} aria-hidden="true" />
                   )}
                 </span>
               </button>

@@ -8,7 +8,10 @@ import SelectedFrames from "@/components/SelectedFrames";
 export const revalidate = 60;
 
 export default async function Home() {
-  const featured = await fetchFeaturedPhotos();
+  // On failure Selected Frames renders nothing, exactly as when nothing is
+  // featured: the hero needs no data, so Home stays whole during an outage
+  // rather than showing an error block on the landing page.
+  const { photos: featured } = await fetchFeaturedPhotos();
 
   return (
     <div className="bg-primary-container text-on-surface font-body-md antialiased">

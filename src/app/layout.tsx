@@ -1,6 +1,37 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Mono, Jost, Playwrite_VN } from "next/font/google";
 import "./globals.css";
 import PageTransition from "@/components/PageTransition";
+
+// Self-hosted at build time by next/font: no request to Google at runtime,
+// no render-blocking third-party stylesheet, and nothing third-party for the
+// CSP to allow. Each is exposed as a CSS variable that globals.css reads.
+
+/** Every interface surface. Variable font, wght 100–900. */
+const jost = Jost({
+  subsets: ["latin"],
+  variable: "--font-jost",
+  display: "swap",
+});
+
+/**
+ * Script wordmark (.font-title). Google lists no subsets for this family,
+ * so next/font never preloads it (its types don't even accept `preload`).
+ * Kept for rollback (REDESIGN.md §3.3).
+ */
+const playwrite = Playwrite_VN({
+  variable: "--font-playwrite",
+  display: "swap",
+});
+
+/** Contact-sheet signature — frame numbers and meta only. */
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: "The Shutter Bug",
@@ -25,21 +56,11 @@ export default function RootLayout({
     // Next 16 only suppresses smooth scrolling during a route transition when
     // it finds this attribute. Without it every navigation animates a long
     // smooth scroll to the top underneath PageTransition's fade.
-    <html lang="en" className="dark" data-scroll-behavior="smooth">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-          rel="stylesheet"
-        />
-        {/* Jost covers every non-title surface (body, labels, nav, buttons,
-            form fields) at 400/500/600/700; Playwrite VN is loaded only for
-            .font-title. Inter and Space Grotesk are gone — after the token
-            swap in globals.css nothing referenced either of them. */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Playwrite+VN:wght@400&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      className={`dark ${jost.variable} ${playwrite.variable} ${plexMono.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body className="antialiased bg-primary-container">
         {/* Keyboard users otherwise have to tab through the whole navbar on
             every page before reaching content. */}

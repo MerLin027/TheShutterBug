@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { fetchPhoto, fetchPhotoNeighbours } from "@/lib/data";
+import { fetchLightbox, normaliseFilter } from "@/lib/data";
 import LightboxKeys from "@/components/LightboxKeys";
+import { ChevronLeft, ChevronRight, MapPin, X } from "lucide-react";
 
 export const revalidate = 60;
 
@@ -13,26 +14,29 @@ export default async function Lightbox({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const { id } = await params;
-  const { filter } = await searchParams;
+  // Untrusted query value → one of the fixed gallery filters, else "All".
+  const filter = normaliseFilter((await searchParams).filter);
 
-  // Fetch the target photo and its neighbours in parallel.
-  // Pass the active filter so prev/next stay within the filtered set.
-  const [photo, { prev, next }] = await Promise.all([
-    fetchPhoto(id),
-    fetchPhotoNeighbours(id, filter),
-  ]);
+  // One list request gives the photo and its neighbours within the active
+  // filter; see fetchLightbox for the by-id fallback.
+  const { photo, prev, next, failed } = await fetchLightbox(id, filter);
 
-  // If the photo genuinely doesn't exist, use Next.js notFound().
+  // An outage is not a missing photo. Throwing hands this to app/error.tsx
+  // ("couldn't load, try again") instead of claiming the photograph is gone.
+  if (failed) {
+    throw new Error("The photograph could not be loaded.");
+  }
+
   if (!photo) {
     notFound();
   }
 
   // Build helpers for constructing prev/next/close hrefs that preserve the
   // active filter when one is set.
-  const filterParam = filter && filter !== "All" ? `?filter=${encodeURIComponent(filter)}` : "";
+  const filterParam = filter !== "All" ? `?filter=${encodeURIComponent(filter)}` : "";
   const lightboxHref = (photoId: string) =>
     `/lightbox/${photoId}${filterParam}`;
-  const closeHref = filter && filter !== "All" ? `/work?filter=${encodeURIComponent(filter)}` : "/work";
+  const closeHref = filter !== "All" ? `/work?filter=${encodeURIComponent(filter)}` : "/work";
 
 
   return (
@@ -67,12 +71,7 @@ export default async function Lightbox({
             </h1>
             {photo.location && (
               <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
-                <span
-                  className="material-symbols-outlined text-[16px]"
-                  style={{ fontVariationSettings: "'FILL' 1, 'wght' 250" }}
-                >
-                  location_on
-                </span>
+                <MapPin size={16} fill="currentColor" aria-hidden="true" />
                 <span>{photo.location}</span>
               </div>
             )}
@@ -106,15 +105,11 @@ export default async function Lightbox({
             title="Previous"
             className="btn-icon-glass-lg text-on-surface"
           >
-            <span className="material-symbols-outlined">
-              chevron_left
-            </span>
+            <ChevronLeft size={24} aria-hidden="true" />
           </Link>
         ) : (
           <span aria-hidden data-inactive className="btn-icon-glass-lg text-on-surface">
-            <span className="material-symbols-outlined">
-              chevron_left
-            </span>
+            <ChevronLeft size={24} aria-hidden="true" />
           </span>
         )}
 
@@ -131,9 +126,7 @@ export default async function Lightbox({
           title="Close"
           className="btn-icon-glass-lg text-on-surface"
         >
-          <span className="material-symbols-outlined">
-            close
-          </span>
+          <X size={24} aria-hidden="true" />
         </Link>
 
         {/* Next */}
@@ -144,15 +137,11 @@ export default async function Lightbox({
             title="Next"
             className="btn-icon-glass-lg text-on-surface"
           >
-            <span className="material-symbols-outlined">
-              chevron_right
-            </span>
+            <ChevronRight size={24} aria-hidden="true" />
           </Link>
         ) : (
           <span aria-hidden data-inactive className="btn-icon-glass-lg text-on-surface">
-            <span className="material-symbols-outlined">
-              chevron_right
-            </span>
+            <ChevronRight size={24} aria-hidden="true" />
           </span>
         )}
       </nav>

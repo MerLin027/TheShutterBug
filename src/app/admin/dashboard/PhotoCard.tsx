@@ -2,8 +2,9 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { ApiPhoto } from "@/lib/data";
+import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
 import { categoryLabel } from "@/lib/categories";
+import { GripVertical, Pencil, Star, Trash2 } from "lucide-react";
 
 type Props = {
   photo: ApiPhoto;
@@ -44,7 +45,9 @@ export default function PhotoCard({
       <img
         alt={photo.caption || `Untitled ${photo.category} photograph`}
         className="w-full h-auto object-cover transition-all duration-700 group-hover:scale-[1.03] group-hover:blur-[2px] group-hover:brightness-75"
-        src={photo.imageUrl}
+        src={cloudinaryUrl(photo.imageUrl, 800)}
+        loading="lazy"
+        decoding="async"
       />
 
       {/* Liquid Glass Overlay (Hover) — four controls: Reorder, Featured,
@@ -73,9 +76,7 @@ export default function PhotoCard({
             {...attributes}
             {...listeners}
           >
-            <span className="material-symbols-outlined text-[18px]">
-              drag_indicator
-            </span>
+            <GripVertical size={18} aria-hidden="true" />
           </div>
 
           <div className="flex gap-2">
@@ -86,21 +87,18 @@ export default function PhotoCard({
                 photo.isFeatured ? "btn-icon-glass-on" : "text-white"
               }`}
             >
-              <span
-                className="material-symbols-outlined text-[18px]"
-                style={{
-                  fontVariationSettings: `'FILL' ${photo.isFeatured ? 1 : 0}, 'wght' 250`,
-                }}
-              >
-                star
-              </span>
+              <Star
+                aria-hidden="true"
+                size={18}
+                fill={photo.isFeatured ? "currentColor" : "none"}
+              />
             </button>
             <button
               onClick={() => onEdit(photo)}
               title="Edit"
               className="btn-icon-glass text-white"
             >
-              <span className="material-symbols-outlined text-[18px]">edit</span>
+              <Pencil size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -110,9 +108,7 @@ export default function PhotoCard({
           onClick={() => onDelete(photo)}
           className="btn-danger mx-auto flex items-center gap-2 px-5 py-2.5 font-label-sm text-label-sm uppercase tracking-widest"
         >
-          <span className="material-symbols-outlined text-[16px]">
-            delete
-          </span>
+          <Trash2 size={16} aria-hidden="true" />
           Delete
         </button>
 

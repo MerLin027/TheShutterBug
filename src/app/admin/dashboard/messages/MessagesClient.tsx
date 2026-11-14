@@ -8,6 +8,7 @@ import StudioTopBar from "@/components/StudioTopBar";
 import StudioModal from "@/components/StudioModal";
 import Spinner from "@/components/Spinner";
 import { MessageListSkeleton, StudioBoot } from "@/components/StudioSkeletons";
+import { ChevronDown, CircleAlert, Clock, Mail, RefreshCw, Trash2, User } from "lucide-react";
 
 interface ContactMessage {
   _id: string;
@@ -138,7 +139,7 @@ export default function MessagesClient() {
           title="Refresh"
           aria-label="Refresh messages"
         >
-          <span className="material-symbols-outlined">refresh</span>
+          <RefreshCw size={24} aria-hidden="true" />
         </button>
       </StudioTopBar>
 
@@ -150,9 +151,7 @@ export default function MessagesClient() {
         {/* Error */}
         {!loading && error && (
           <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
-            <span className="material-symbols-outlined text-[48px] text-error/60">
-              error_outline
-            </span>
+            <CircleAlert className="text-error/60" size={48} aria-hidden="true" />
             <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">
               {error}
             </p>
@@ -160,7 +159,7 @@ export default function MessagesClient() {
               onClick={fetchMessages}
               className="btn-outline flex items-center gap-2 px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase"
             >
-              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <RefreshCw size={16} aria-hidden="true" />
               Retry
             </button>
           </div>
@@ -169,9 +168,7 @@ export default function MessagesClient() {
         {/* Empty State */}
         {!loading && !error && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30 mb-6">
-              mail_outline
-            </span>
+            <Mail className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
             <h3 className="font-headline-md text-headline-md text-on-surface mb-3">
               No messages yet
             </h3>
@@ -225,11 +222,11 @@ export default function MessagesClient() {
                       <span className="hidden sm:block font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">
                         {formatDate(msg.createdAt)}
                       </span>
-                      <span
-                        className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
-                      >
-                        expand_more
-                      </span>
+                      <ChevronDown
+                        aria-hidden="true"
+                        size={18}
+                        className={`text-on-surface-variant transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                      />
                     </div>
                   </button>
 
@@ -240,17 +237,13 @@ export default function MessagesClient() {
                         {/* Metadata row */}
                         <div className="flex flex-wrap gap-4 text-on-surface-variant">
                           <div className="flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[16px]">
-                              person
-                            </span>
+                            <User size={16} aria-hidden="true" />
                             <span className="font-label-sm text-label-sm uppercase">
                               {msg.name}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[16px]">
-                              mail
-                            </span>
+                            <Mail size={16} aria-hidden="true" />
                             {/* Plain text, not a mailto: link — this app sends
                                 no email and hands off to no mail client. The
                                 address is here to be read and copied. */}
@@ -259,9 +252,7 @@ export default function MessagesClient() {
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 sm:hidden">
-                            <span className="material-symbols-outlined text-[16px]">
-                              schedule
-                            </span>
+                            <Clock size={16} aria-hidden="true" />
                             <span className="font-label-sm text-label-sm uppercase">
                               {formatDate(msg.createdAt)}
                             </span>
@@ -282,9 +273,7 @@ export default function MessagesClient() {
                             }}
                             className="btn-danger inline-flex items-center gap-2 px-6 py-2.5 font-label-sm text-label-sm uppercase"
                           >
-                            <span className="material-symbols-outlined text-[16px]">
-                              delete
-                            </span>
+                            <Trash2 size={16} aria-hidden="true" />
                             Delete
                           </button>
                         </div>
@@ -308,9 +297,7 @@ export default function MessagesClient() {
           dismissible={!deleting}
           onClose={() => setDeletingMessage(null)}
         >
-          <span className="material-symbols-outlined text-[48px] text-error mx-auto">
-            delete_forever
-          </span>
+          <Trash2 className="text-error mx-auto" size={48} aria-hidden="true" />
           <h3 className="font-headline-md text-headline-md text-on-surface">
             Delete message?
           </h3>
@@ -337,9 +324,7 @@ export default function MessagesClient() {
               {deleting ? (
                 <Spinner />
               ) : (
-                <span className="material-symbols-outlined text-[16px]">
-                  delete
-                </span>
+                <Trash2 size={16} aria-hidden="true" />
               )}
               Delete
             </button>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 
 // The bare googleusercontent URL serves a 512x286 thumbnail (12 KB), which
 // was being upscaled ~4x to fill the hero — that was the blur. Appending a
@@ -295,9 +296,7 @@ export default function HeroParallax() {
         >
           Enter the Gallery
           <span className="btn-icon-nest">
-            <span className="material-symbols-outlined text-[18px]">
-              arrow_forward
-            </span>
+            <ArrowRight size={18} aria-hidden="true" />
           </span>
         </Link>
       </motion.div>

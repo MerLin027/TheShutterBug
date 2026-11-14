@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { LogOut, Menu, X, type LucideIcon } from "lucide-react";
 
-export type StudioNavItem = { href: string; label: string; icon: string };
+export type StudioNavItem = { href: string; label: string; icon: LucideIcon };
 
 /**
  * Admin-only hamburger menu (§1.6), shown below `md`. Items slide in
@@ -52,7 +53,7 @@ export default function StudioMenu({
         className="btn-icon-glass-lg md:hidden fixed top-6 left-6 z-40 text-on-surface"
         aria-label="Open menu"
       >
-        <span className="material-symbols-outlined">menu</span>
+        <Menu size={24} aria-hidden="true" />
       </button>
 
       <AnimatePresence>
@@ -81,7 +82,7 @@ export default function StudioMenu({
                   className="btn-icon-glass text-on-surface"
                   aria-label="Close menu"
                 >
-                  <span className="material-symbols-outlined">close</span>
+                  <X size={24} aria-hidden="true" />
                 </button>
               </div>
 
@@ -109,9 +110,7 @@ export default function StudioMenu({
                             : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[20px]">
-                          {item.icon}
-                        </span>
+                        <item.icon aria-hidden="true" size={20} />
                         <span className="font-label-sm text-label-sm uppercase tracking-widest">
                           {item.label}
                         </span>
@@ -133,9 +132,7 @@ export default function StudioMenu({
                   }}
                   className="flex items-center gap-4 px-4 py-4 rounded-xl text-error hover:bg-surface-container-high transition-all text-left"
                 >
-                  <span className="material-symbols-outlined text-[20px]">
-                    logout
-                  </span>
+                  <LogOut size={20} aria-hidden="true" />
                   <span className="font-label-sm text-label-sm uppercase tracking-widest">
                     Sign Out
                   </span>
