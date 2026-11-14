@@ -60,6 +60,15 @@ export type Photo = {
   aspect: string;
   /** width / height, as stored. */
   ratio: number;
+  /**
+   * Contact-sheet frame number, "001". From the stored position, so it is
+   * stable per photo — it doesn't renumber under a filter, the way a real
+   * frame number doesn't change when you only print some of the roll.
+   */
+  frame: string;
+  /** The owner's caption, or "" when none was given. */
+  caption: string;
+  /** Caption if present, else the category — for alt text and the lightbox. */
   title: string;
   location: string;
   year: string;
@@ -199,6 +208,8 @@ function toPhoto(raw: ApiPhoto): Photo {
     alt: raw.caption || `${capitalise(raw.category)} photograph`,
     aspect: aspectClass(ratio),
     ratio,
+    frame: String((Number.isFinite(raw.position) ? raw.position : 0) + 1).padStart(3, "0"),
+    caption: raw.caption?.trim() ?? "",
     title: raw.caption || capitalise(raw.category),
     location: raw.location || "",
     year: raw.createdAt ? new Date(raw.createdAt).getFullYear().toString() : "",

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Jost, Playwrite_VN } from "next/font/google";
 import "./globals.css";
-import PageTransition from "@/components/PageTransition";
 
 // Self-hosted at build time by next/font: no request to Google at runtime,
 // no render-blocking third-party stylesheet, and nothing third-party for the
@@ -24,13 +23,13 @@ const playwrite = Playwrite_VN({
   display: "swap",
 });
 
-/** Contact-sheet signature — frame numbers and meta only. */
+/** Contact-sheet signature: frame numbers and meta only. Preloaded since
+ *  Phase B because every photo card shows a frame line. */
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400"],
   variable: "--font-plex-mono",
   display: "swap",
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -55,28 +54,26 @@ export default function RootLayout({
     // data-scroll-behavior is required alongside `scroll-behavior: smooth`:
     // Next 16 only suppresses smooth scrolling during a route transition when
     // it finds this attribute. Without it every navigation animates a long
-    // smooth scroll to the top underneath PageTransition's fade.
+    // smooth scroll to the top underneath the route transition.
     <html
       lang="en"
       className={`dark ${jost.variable} ${playwrite.variable} ${plexMono.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body className="antialiased bg-primary-container">
+      <body className="bg-paper antialiased">
         {/* Keyboard users otherwise have to tab through the whole navbar on
             every page before reaching content. */}
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-5 focus:py-2.5 focus:font-label-sm focus:text-label-sm focus:uppercase focus:tracking-widest focus:text-on-accent"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-control focus:bg-fg focus:px-4 focus:py-2.5 focus:text-label focus:font-medium focus:text-paper"
         >
           Skip to content
         </a>
 
-        {/* Film grain, applied once here rather than per page — it used to
-            live on Contact alone, which made that page read as a different
-            surface from the rest of the site. */}
-        <div className="noise-overlay" aria-hidden="true" />
-
-        <PageTransition>{children}</PageTransition>
+        {/* Phase B: no film-grain overlay (unslop: no grain/noise as
+            decoration) and no Framer Motion page fade — route changes run as
+            native view transitions (next.config.ts, globals.css). */}
+        {children}
       </body>
     </html>
   );

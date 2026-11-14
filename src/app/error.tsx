@@ -6,11 +6,9 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 /**
- * Route-level error page, the counterpart to not-found.tsx. Next's default
- * here is an unstyled page that reads as the site having broken outright.
- *
- * Reached when a page throws — most often /lightbox/[id] when the API cannot
- * be reached (it throws rather than claiming the photo was deleted).
+ * Route-level error page, the counterpart to not-found.tsx. Reached when a
+ * page throws — most often /lightbox/[id] when the API cannot be reached (it
+ * throws rather than claiming the photograph was deleted).
  *
  * The error's message is never rendered: errors forwarded from Server
  * Components are already redacted in production, and nothing about the
@@ -31,37 +29,32 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="bg-primary-container text-on-surface font-body-md antialiased min-h-[100dvh] flex flex-col">
+    <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <SiteNav />
 
       <main
         id="main"
-        className="site-container flex-grow flex flex-col items-center justify-center text-center px-margin-mobile md:px-margin-desktop pt-32 md:pt-40 pb-section-gap"
+        className="flex flex-1 items-center px-margin-mobile pb-24 pt-28 md:px-margin-desktop md:pt-36"
       >
-        <div role="alert" className="space-y-6 max-w-md">
-          <span className="block font-label-sm text-label-sm uppercase tracking-widest text-accent">
-            Couldn&apos;t load
-          </span>
-          <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
+        <div role="alert" className="site-container">
+          <p className="frame-meta">Couldn&apos;t load</p>
+          <h1 className="mt-3 text-title-sm font-medium text-fg md:text-title">
             The darkroom door is stuck
           </h1>
-          <p className="font-body-lg text-body-lg text-on-surface-variant">
-            The server didn&apos;t answer in time. It may be waking up — try
+          <p className="mt-4 max-w-[34rem] text-lead text-fg-2">
+            The server didn&apos;t answer in time. It may be waking up, so try
             again in a moment.
           </p>
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => startTransition(() => unstable_retry())}
               disabled={pending}
-              className="btn-glass pl-8 pr-8 py-3.5 font-label-sm text-label-sm tracking-widest uppercase text-on-surface disabled:opacity-60"
+              className="btn btn-primary"
             >
               {pending ? "Trying…" : "Try again"}
             </button>
-            <Link
-              href="/"
-              className="px-5 py-3.5 font-label-sm text-label-sm tracking-widest uppercase text-on-surface-variant hover:text-accent transition-colors"
-            >
+            <Link href="/" className="btn btn-text">
               Back home
             </Link>
           </div>

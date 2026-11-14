@@ -1,76 +1,64 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import { Camera, CloudOff, FunnelX } from "lucide-react";
 import { normaliseFilter, type Photo } from "@/lib/data";
 import { GALLERY_FILTERS as FILTERS } from "@/lib/categories";
-import Reveal from "@/components/Reveal";
-import { Camera, CloudOff, FunnelX } from "lucide-react";
-
-/**
- * `sizes` for grid cards: 1 column below md, 2 to lg, 3 to xl, then 4 —
- * matching the column classes below. Lets the browser pick the smallest
- * srcSet candidate that is still sharp.
- */
-const GRID_SIZES =
-  "(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw";
+import FrameGrid from "@/components/FrameGrid";
 
 // ---------------------------------------------------------------------------
-// Load-failure state — the API could not be reached. Distinct from "empty":
-// telling a visitor the collection is empty during an outage is false.
+// States. All three share one quiet shape: muted line icon, one sentence,
+// at most one action.
 // ---------------------------------------------------------------------------
+function Notice({
+  icon: Icon,
+  title,
+  children,
+  alert = false,
+}: {
+  icon: typeof Camera;
+  title: string;
+  children?: ReactNode;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      role={alert ? "alert" : undefined}
+      className="flex flex-col items-center px-6 py-24 text-center"
+    >
+      <Icon size={32} className="mb-5 text-fg-3" aria-hidden="true" />
+      <h2 className="text-heading font-medium text-fg">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+/** The API could not be reached. Distinct from "empty" on purpose. */
 function LoadFailedState() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
-    <div
-      role="alert"
-      className="flex flex-col items-center justify-center py-32 px-8 text-center"
-    >
-      <CloudOff className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
-      <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
-        The gallery couldn&apos;t load
-      </h2>
-      <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed mb-6">
-        The photographs are fine — the server didn&apos;t answer. It may be
-        waking up; try again in a moment.
+    <Notice icon={CloudOff} title="The gallery couldn't load" alert>
+      <p className="mt-3 max-w-sm text-body-md text-fg-2">
+        The photographs are safe. The server didn&apos;t answer and may be
+        waking up, so try again in a moment.
       </p>
       <button
         type="button"
         onClick={() => startTransition(() => router.refresh())}
         disabled={pending}
-        className="btn-outline px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase disabled:opacity-60"
+        className="btn btn-quiet mt-6"
       >
         {pending ? "Trying…" : "Try again"}
       </button>
-    </div>
+    </Notice>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Empty-state UI — shown when the DB has no photos yet (pre-admin-panel)
-// ---------------------------------------------------------------------------
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-32 px-8 text-center">
-      {/* Camera icon using Material Symbols (already loaded globally) */}
-      <Camera className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
-      <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
-        No photos yet
-      </h2>
-      <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed">
-        The collection is empty for now. Photos will appear here once they are
-        uploaded through the admin panel.
-      </p>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// GalleryClient — receives all photos from the server component parent,
-// owns the filter state locally, and renders the masonry grid.
+// GalleryClient — receives every photo from the server, owns the filter.
 // ---------------------------------------------------------------------------
 export default function GalleryClient({
   photos,
@@ -83,102 +71,62 @@ export default function GalleryClient({
 }) {
   const [activeFilter, setActiveFilter] = useState<string>(normaliseFilter(initialFilter));
 
-  const filteredPhotos =
-    activeFilter === "All"
-      ? photos
-      : photos.filter(
-          (p) => p.category === activeFilter
-        );
+  const visible =
+    activeFilter === "All" ? photos : photos.filter((p) => p.category === activeFilter);
 
   return (
     <>
-      {/* Filter pills — single segmented-control container.
-          mb-12 is the site's one heading-to-content gap (48px). This block
-          was mb-16 while the heading above it was mb-12 and Contact's was
-          mb-14, so a visitor moving between pages met three different gaps
-          in the same structural position. */}
-      <section className="mb-12 flex justify-center">
-        <div className="filter-group rounded-full flex items-center gap-1 overflow-x-auto p-1.5">
+      {/* Heading row: title left, filters right; the filters wrap under the
+          title on narrow screens. Was a centred title over a glass
+          segmented control that overflowed at 390px ("Monochr…", Urban
+          hidden) — REDESIGN.md §3.6. */}
+      <div className="enter mb-8 flex flex-col gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+        <h1 className="text-title-sm font-medium text-fg md:text-title">Gallery</h1>
+        <div
+          role="group"
+          aria-label="Filter by category"
+          className="-mx-1 flex flex-wrap gap-x-4 gap-y-0 sm:gap-x-6"
+        >
           {FILTERS.map((filter) => (
             <button
               key={filter}
+              type="button"
+              aria-pressed={activeFilter === filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-6 py-2 rounded-full font-label-sm text-label-sm transition-all uppercase tracking-[0.1em] whitespace-nowrap ${
-                activeFilter === filter
-                  ? "text-accent glass-pill-active"
-                  : "text-on-surface-variant/70 hover:text-accent hover:bg-white/10"
-              }`}
+              className="tab"
             >
               {filter}
             </button>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* Gallery — empty state or masonry grid */}
-      <section className="pb-section-gap">
-        {failed ? (
-          <LoadFailedState />
-        ) : photos.length === 0 ? (
-          <EmptyState />
-        ) : filteredPhotos.length === 0 ? (
-          /* Category filter is active but nothing matches — still a subset empty state */
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <FunnelX className="text-on-surface-variant/30 mb-4" size={48} aria-hidden="true" />
-            <p className="font-body-md text-body-md text-on-surface-variant/70">
-              No photos in this category yet.
-            </p>
-          </div>
-        ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-gutter space-y-gutter">
-            {filteredPhotos.map((photo, i) => (
-              <Reveal
-                key={photo.id}
-                delay={Math.min((i % 8) * 0.06, 0.36)}
-                className="break-inside-avoid"
-              >
-                <div className="relative overflow-hidden group cursor-pointer">
-                  <Link
-                    href={
-                      activeFilter === "All"
-                        ? `/lightbox/${photo.id}`
-                        : `/lightbox/${photo.id}?filter=${encodeURIComponent(activeFilter)}`
-                    }
-                  >
-                    {/* rounded-2xl to match Selected Frames and the About
-                        portrait — gallery media was the only photo surface on
-                        the site with square corners. */}
-                    <div
-                      className={`photo-surface ${photo.aspect} w-full bg-surface-container-low rounded-2xl overflow-hidden`}
-                    >
-                      {/* Keep plain <img> consistent with the Phase 2 port.
-                          next/image is reserved for when Cloudinary loader is
-                          wired up in a future pass. */}
-                      <img
-                        className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
-                        alt={photo.alt}
-                        src={photo.thumb}
-                        srcSet={photo.srcSet}
-                        sizes={GRID_SIZES}
-                        loading={i < 4 ? "eager" : "lazy"}
-                        decoding="async"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="font-body-md text-body-md font-bold text-on-surface">
-                        {photo.title}
-                      </span>
-                      <span className="font-label-sm text-label-sm tracking-widest uppercase text-on-surface-variant">
-                        {photo.category}
-                      </span>
-                    </div>
-                  </Link>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        )}
-      </section>
+      {failed ? (
+        <LoadFailedState />
+      ) : photos.length === 0 ? (
+        <Notice icon={Camera} title="No photographs yet">
+          <p className="mt-3 max-w-sm text-body-md text-fg-2">
+            The collection is empty for now.
+          </p>
+        </Notice>
+      ) : visible.length === 0 ? (
+        <Notice icon={FunnelX} title={`No ${activeFilter.toLowerCase()} photographs yet`}>
+          <button type="button" onClick={() => setActiveFilter("All")} className="btn btn-quiet mt-6">
+            Show all
+          </button>
+        </Notice>
+      ) : (
+        <FrameGrid
+          photos={visible}
+          label={activeFilter === "All" ? "All photographs" : `${activeFilter} photographs`}
+          eagerCount={4}
+          hrefFor={(photo) =>
+            activeFilter === "All"
+              ? `/lightbox/${photo.id}`
+              : `/lightbox/${photo.id}?filter=${encodeURIComponent(activeFilter)}`
+          }
+        />
+      )}
     </>
   );
 }

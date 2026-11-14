@@ -157,23 +157,23 @@ Each phase is its own approval gate. A task is done only when its "done when" ch
 ### Phase B: Unslop the public site (nine passes, each across every public page)
 | ID | Task | Detail | Skills | Status |
 |---|---|---|---|---|
-| B0 | New token layer | Warm-neutral dark ramp, 3 text roles, gold as the only accent, radius scale, one easing curve and its durations. Delete the 28 dead tokens | unslop tokens, design-system (validate-tokens), minimalist (restraint only) | ☐ |
-| B1 | Spacing | 4px grid; one container for every section and the footer; remove the empty band on Home; replace the 46 arbitrary px values | unslop §1 | ☐ |
-| B2 | Colour | Neutrals from the ramp; accent only for the active page, primary action and focus; glass on the navbar only; remove the grain overlay | unslop §2 | ☐ |
-| B3 | Icons | lucide (from A4) at 16/18px in text colours; drop icons that add nothing | unslop §3 | ☐ |
-| B4 | Copy | Keep the voice; no trailing periods on labels or buttons; one label per intent; run UI strings through the humanizer. Bio content isn't changed | unslop §4, humanizer, taste (CTA rules) | ☐ |
-| B5 | Type | Sentence case instead of 53 uppercase and 36 wide-tracked labels; weights 400–500; Jost wordmark (rollback: §3.3); mono for the signature only | unslop §5, taste (type) | ☐ |
-| B6a | Layout: hero | Photo full-bleed and static, title placed on the calm part of the image, one CTA. No glass letters, no parallax (rollback: §3.1). Uses the current boat image until a real one arrives | unslop §6, §8 | ☐ |
-| B6b | Layout: gallery | Masonry that fills **in reading order**, computed from the stored `aspectRatio` so the Studio drag order is what visitors see | unslop §6, mobile-principles | ☐ |
-| B6c | Layout: mobile filters | Pills that fit or wrap at 360–390px, or a visible scroll cue; 44px touch targets | mobile-principles | ☐ |
-| B6d | Layout: footer | Remove "Studio Access" (rollback: §3.2); align with the content container | decision 4 | ☐ |
-| B6e | Layout: About, Contact, 404, lightbox | Labels above inputs on Contact (no placeholder-as-label); lightbox caption from the signature line; same container everywhere | taste (forms), unslop §6 | ☐ |
-| B7 | Details | Radii that nest instead of pills everywhere; visible focus rings (only 2 today); signature frame numbers; no "Nature … NATURE" duplication | unslop §7, design-audit (a11y) | ☐ |
-| B8 | Visuals | Photos only, no generated imagery; image edges blend with the page; fixed dimensions so nothing shifts on load | unslop §8 | ☐ |
-| B9 | Motion | Remove parallax, `hover:scale` and `transition-all`; blur-free reveals with at most one entrance per page; one curve; reduced-motion kept | unslop §9, motion-principles, framer-motion, design-audit | ☐ |
-| B10 | Moment: grid → lightbox | The clicked photo grows into the lightbox using native View Transitions, falling back to an instant switch | genjutsu css-native, cast (one-sentence thesis first) | ☐ |
-| B11 | *Optional experiment:* lightbox frame change | A WebGL dissolve between photos (three.js shader), behind a flag. Built only if B10 feels flat; dropped if it costs more than it adds (bundle, battery, reduced-motion) | threejs-shaders, -textures, -animation | ☐ |
-| B✓ | Verify | Unslop checklist; screenshots at 375, 768, 1024 and 1440 against `redesign-before/`; contrast and keyboard sweep; `tsc`/`eslint`/`build` clean | unslop checklist, design-audit, ui-ux-pro-max pre-delivery list | ☐ |
+| B0 | New token layer | Warm-neutral dark ramp, 3 text roles, gold as the only accent, radius scale, one easing curve and its durations. Delete the 28 dead tokens | unslop tokens, design-system (validate-tokens), minimalist (restraint only) | ☑ |
+| B1 | Spacing | 4px grid; one container for every section and the footer; remove the empty band on Home; replace the 46 arbitrary px values | unslop §1 | ☑ |
+| B2 | Colour | Neutrals from the ramp; accent only for the active page, primary action and focus; glass on the navbar only; remove the grain overlay | unslop §2 | ☑ |
+| B3 | Icons | lucide (from A4) at 16/18px in text colours; drop icons that add nothing | unslop §3 | ☑ |
+| B4 | Copy | Keep the voice; no trailing periods on labels or buttons; one label per intent; run UI strings through the humanizer. Bio content isn't changed | unslop §4, humanizer, taste (CTA rules) | ☑ |
+| B5 | Type | Sentence case instead of 53 uppercase and 36 wide-tracked labels; weights 400–500; Jost wordmark (rollback: §3.3); mono for the signature only | unslop §5, taste (type) | ☑ |
+| B6a | Layout: hero | Photo full-bleed and static, title placed on the calm part of the image, one CTA. No glass letters, no parallax (rollback: §3.1). Uses the current boat image until a real one arrives | unslop §6, §8 | ☑ |
+| B6b | Layout: gallery | Masonry that fills **in reading order**, computed from the stored `aspectRatio` so the Studio drag order is what visitors see | unslop §6, mobile-principles | ☑ |
+| B6c | Layout: mobile filters | Pills that fit or wrap at 360–390px, or a visible scroll cue; 44px touch targets | mobile-principles | ☑ |
+| B6d | Layout: footer | Remove "Studio Access" (rollback: §3.2); align with the content container | decision 4 | ☑ |
+| B6e | Layout: About, Contact, 404, lightbox | Labels above inputs on Contact (no placeholder-as-label); lightbox caption from the signature line; same container everywhere | taste (forms), unslop §6 | ☑ |
+| B7 | Details | Radii that nest instead of pills everywhere; visible focus rings (only 2 today); signature frame numbers; no "Nature … NATURE" duplication | unslop §7, design-audit (a11y) | ☑ |
+| B8 | Visuals | Photos only, no generated imagery; image edges blend with the page; fixed dimensions so nothing shifts on load | unslop §8 | ☑ |
+| B9 | Motion | Remove parallax, `hover:scale` and `transition-all`; blur-free reveals with at most one entrance per page; one curve; reduced-motion kept | unslop §9, motion-principles, framer-motion, design-audit | ☑ |
+| B10 | Moment: grid → lightbox | The clicked photo grows into the lightbox using native View Transitions, falling back to an instant switch | genjutsu css-native, cast (one-sentence thesis first) | ☑ |
+| B11 | *Optional experiment:* lightbox frame change | A WebGL dissolve between photos (three.js shader), behind a flag. Built only if B10 feels flat; dropped if it costs more than it adds (bundle, battery, reduced-motion) | threejs-shaders, -textures, -animation | ✕ not built (see log) |
+| B✓ | Verify | Unslop checklist; screenshots at 375, 768, 1024 and 1440 against `redesign-before/`; contrast and keyboard sweep; `tsc`/`eslint`/`build` clean | unslop checklist, design-audit, ui-ux-pro-max pre-delivery list | ☑ |
 
 ### Phase C: Studio
 | ID | Task | Done when | Skills | Status |
@@ -192,7 +192,7 @@ Each phase is its own approval gate. A task is done only when its "done when" ch
 | D1 | Next security headers: CSP (nonce via middleware), `frame-ancestors 'none'`, `nosniff`, Referrer-Policy, Permissions-Policy, `poweredByHeader: false` | A02:2025 / A05:2021 | ☐ |
 | D2 | Express: disable `x-powered-by`; security headers on API responses | A02:2025 | ☐ |
 | D3 | Rate limits on `POST /api/auth/login` and `POST /api/contact`; login runs `bcrypt.compare` on every request (no timing side-channel) | A07 | ☐ |
-| D4 | Server-side validation: `aboutImageUrl` must be `https:`; contact honeypot field; length caps confirmed | A05:2025 / A03:2021, A06:2025 | ☐ |
+| D4 | Server-side validation: `aboutImageUrl` must be `https:`; contact honeypot field; **add server-side length caps to the Contact model (none exist; found in Phase B), matching the client's 100 / 254 / 5000** | A05:2025 / A03:2021, A06:2025 | ☐ |
 | D5 | Token lifetime 30d → shorter; plan the httpOnly-cookie move (decision, not code, in this phase) | A07, A04:2021 | ☐ |
 | D6 | `npm audit` on both packages; decide on `multer-storage-cloudinary` (unmaintained since 2020) | A03:2025 / A06:2021 | ☐ |
 | D7 | `/api/health` reports DB state while still returning 200, so the cron keeps working; `connectDB` retries instead of exiting, so it doesn't crash-loop | A10:2025 | ☐ |
@@ -287,3 +287,51 @@ Newest last. One entry per task: what changed, how it was verified, and anything
   - **Checks.** `tsc` clean. `eslint src backend` **0 errors, 2 warnings** (down from 4).
   - **Still open, not Phase A:** the Studio login background is still broken (C5); `lh3.googleusercontent.com` is still contacted for the placeholder hero and portrait (content swap).
   - **Note for E4:** a Vercel preview of this branch will serve public pages fine, but its Studio and contact form will be blocked by CORS. The backend only allows `the-shutter-bug.vercel.app`, not preview domains.
+- **2026-11-14 · Phase A committed** as `5ae40b3f` and pushed to `origin/redesign/unslop`. `main` is untouched.
+- **2026-11-14 · Phase B: unslop the public site.** Following unslop's rule for near-total rewrites, all nine passes were planned first and each screen was written once with every pass applied, then checked.
+  - **B0 tokens.**
+    - Warm paper-black ramp: `paper` #100f0d, `card`, `raised`, `fg` / `fg-2` / `fg-3`, hairline `line` at 9%. Measured contrast on paper: 15.4 / 7.6 / 5.3; the weakest pairing is fg-3 on raised at 4.6.
+    - 28 unused Stitch tokens deleted. The Material names the Studio still uses are now aliases of the ramp, so the Studio shifted tone without its markup changing (screenshot-checked).
+    - New public type tokens (`meta`, `label`, `lead`, `heading`, `title-sm`, `title`), semantic radii (`photo` 4, `control` 10, `panel` 16), and one easing curve `cubic-bezier(0.22,1,0.36,1)` with 160 / 200 / 420 ms durations (the global default is now 160 ms; it was 300).
+    - **Deliberate deviation:** the 90% root font size stays (owner's earlier choice), so unslop's 4px grid is a consistent 3.6px rem grid in practice.
+  - **B1 spacing.** `.site-container` widened to 90rem, and every public section (nav, headings, grids, footer) now shares it, which fixes the gallery/footer edge mismatch.
+  - **B2 colour.**
+    - Accent only for the current page, focus and the frame line on hover. Primary buttons are off-white with paper text.
+    - Glass survives on the navbar only (`.site-nav`, a dark tint).
+    - Film-grain overlay removed.
+  - **B3 icons.** lucide at 16–20px in text colours.
+  - **B4 copy.**
+    - Sentence case throughout; no trailing periods on short strings.
+    - Em dashes removed from rendered UI copy (humanizer).
+    - "Enter the gallery", "Browse the gallery", "Show all" etc.
+    - The contact success line ("I'll be in touch within a couple of days") is **left unchanged pending the owner's decision**; it still implies a reply will arrive.
+  - **B5 type.** Wordmark in Jost 500 (Playwrite VN kept only for the Studio and for rollback). Weights 400/500. No uppercase or tracked labels on the public site (scan: 0 left).
+  - **B6a hero.** New server component `Hero.tsx`:
+    - Static full-bleed photo; title, subtitle and one CTA on the sky above the boat.
+    - Two tonal scrims in the page colour instead of a glow.
+    - `HeroParallax.tsx` deleted (restore: `git show 9585aa65:src/components/HeroParallax.tsx`).
+    - Subtitle contrast measured against the **brightest pixel behind it**: 5.55 desktop, 5.48 mobile. The first attempt measured 4.37 and the scrim was strengthened.
+  - **B6b gallery.**
+    - New `FrameGrid` with **justified rows** (pure CSS: `flex-grow ∝ aspect ratio`). Every row shares one height, widths follow each photo's ratio, and the order is reading order.
+    - A nearly full last row stretches edge to edge; a short one keeps its natural size.
+    - Measured: every row ends at the container edge (1368/1368) at 1440px; phones get one full-width photo per row.
+    - **Note:** this replaced masonry *columns* with justified *rows* — closer to a contact sheet, and the only pure-CSS layout that keeps reading order at every width.
+  - **B6c filters.** Text tabs with an accent underline (`aria-pressed`), left-aligned beside the title. They wrap at 390px instead of overflowing.
+  - **B6d footer.** One line, "The Shutter Bug · 2026". The "Studio Access" link is removed (decision 4).
+  - **B6e other pages.**
+    - **Lightbox:** the photo gets all the space; caption and controls sit in their own bar below it, so nothing overlaps the photo on phones. Controls are solid circles with no blur.
+    - **About:** 5/7 split; the portrait is a plain print.
+    - **Contact:** split layout, labels above the fields, `autocomplete`, client `maxLength` 100/254/5000.
+    - **404 and error:** left-aligned, using the frame line ("404 · Empty frame").
+  - **B7 details.** Frame line `001 · Nature · 2026` in IBM Plex Mono (now preloaded) under every photo, turning accent on hover/focus. No more "Nature … NATURE" duplication. Keyboard: Tab reaches each photo with a 2px accent ring (measured).
+  - **B8 visuals.** Photographs only, no generated imagery. Hero has fixed dimensions and `fetchPriority="high"`.
+  - **B9 motion.**
+    - Removed parallax, hover-zoom, blur-in reveals, `transition-all`, the grain, and the Framer page fade.
+    - One CSS entrance per page (`.enter`: fade plus 8px rise, 60ms stagger), collapsed by reduced motion.
+    - `Reveal.tsx` and `PageTransition.tsx` deleted. Framer Motion remains only for the Studio's mobile menu.
+  - **B10 grid → lightbox.** `experimental.viewTransition` plus React canary `<ViewTransition name="photo-{id}">` on both the grid card and the lightbox image (types via `src/types/react-canary.d.ts`). Verified in Chrome: clicking a card started a view transition, and mid-flight the browser was animating `::view-transition-group(photo-…)`, i.e. the photo itself morphing into place. Reduced motion disables it.
+  - **B11 (three.js dissolve): not built.** The plan made it conditional on B10 feeling flat, and B10 works as intended. A WebGL lightbox would add roughly 150 KB of three.js and GPU work to the one view where the photograph should be untouched. The three.js skills were read and judged not to fit; it's offered to the owner as an opt-in instead.
+  - **A4 regression found and fixed here.** The codemod had turned Material's filled icons into `fill="currentColor"`, which in lucide paints the inner check/"!" the same colour as the disc, so the symbol vanished. `CircleCheck`, `CircleAlert` and `MapPin` no longer fill. `Star` and `LayoutGrid` are fine filled.
+  - **Security finding for D4.** The backend `Contact` model has **no length limits** on any field. Only Express's 100 KB body cap bounds it. The new client `maxLength`s are UX only; D4 must add server limits to match (100 / 254 / 5000).
+  - **Verification.** Clean production build against the real API. `tsc` clean. `eslint src backend` **0 problems** (was 2 warnings; the last two `<img>`s now carry documented disable comments). Token validator: 0 hardcoded colours (was 2). Sweep of 11 routes × 1440 / 390: all correct statuses, no horizontal overflow, no glyph leaks. The Studio renders unchanged apart from the tone.
+  - **Unverified:** the frame line's accent on *keyboard* focus read as still muted in the probe, most likely sampled inside its 160ms colour transition. Hover is visually confirmed; keyboard focus needs a human look.
