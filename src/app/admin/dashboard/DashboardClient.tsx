@@ -4,17 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
+  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type KeyboardCoordinateGetter,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { ApiPhoto } from "@/lib/data";
+import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
 import { apiUrl } from "@/lib/api";
 import { STUDIO_FILTERS, categoryLabel } from "@/lib/categories";
 import { useAdminToken } from "@/lib/useAdminToken";
@@ -28,6 +31,35 @@ import PhotoCard from "./PhotoCard";
 import UploadModal from "./UploadModal";
 import EditModal from "./EditModal";
 import { ChevronDown, CircleAlert, Images, Plus, RefreshCw, Trash2 } from "lucide-react";
+
+/**
+ * Keyboard reordering in READING order. dnd-kit's stock getter is spatial:
+ * an arrow moves to the nearest card in that direction, which in justified
+ * rows means a photo at the start of a row can't move left at all, and
+ * Right can jump it to the end of the row above (found in the Phase C
+ * check). Here Left/Up always mean "one frame earlier" and Right/Down "one
+ * frame later", matching the order visitors read. The dragged card is
+ * centred on the target so closestCenter picks exactly that slot.
+ */
+const readingOrderCoordinates: KeyboardCoordinateGetter = (event, { context }) => {
+  const steps: Record<string, number> = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
+  const step = steps[event.code];
+  if (!step) return undefined;
+  event.preventDefault();
+
+  const { active, over, collisionRect, droppableRects } = context;
+  if (!active || !collisionRect) return undefined;
+
+  const items = (active.data.current?.sortable?.items ?? []) as UniqueIdentifier[];
+  const target = items[items.indexOf(over?.id ?? active.id) + step];
+  const rect = target === undefined ? undefined : droppableRects.get(target);
+  if (!rect) return undefined;
+
+  return {
+    x: rect.left + rect.width / 2 - collisionRect.width / 2,
+    y: rect.top + rect.height / 2 - collisionRect.height / 2,
+  };
+};
 
 export default function DashboardClient() {
   // ── Auth state ──────────────────────────────────────────────────────────
@@ -57,7 +89,10 @@ export default function DashboardClient() {
 
   // ── dnd-kit sensors ─────────────────────────────────────────────────────
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Keyboard reordering: focus a card's handle, Space to lift, arrows to
+    // move, Space to drop, Escape to cancel. Drag used to be pointer-only.
+    useSensor(KeyboardSensor, { coordinateGetter: readingOrderCoordinates })
   );
 
   // ── Fetch photos ────────────────────────────────────────────────────────
@@ -260,11 +295,33 @@ export default function DashboardClient() {
   }
 
   // ── Render ──────────────────────────────────────────────────────────────
+  const categorySelect = (id: string) => (
+    <div className="relative">
+      <label htmlFor={id} className="sr-only">
+        Filter by category
+      </label>
+      <select
+        id={id}
+        value={activeCategory}
+        onChange={(e) => setActiveCategory(e.target.value)}
+        className="field h-11 cursor-pointer appearance-none py-0 pl-3 pr-9 text-label"
+      >
+        {STUDIO_FILTERS.map((c) => (
+          <option key={c} value={c}>
+            {c === "all" ? "All categories" : categoryLabel(c)}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        aria-hidden="true"
+        size={16}
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-3"
+      />
+    </div>
+  );
+
   return (
     <StudioShell>
-      {/* One page heading, in the bar. This page used to print "Curated
-          Gallery" here and "Portfolio Management / Gallery" again 80px
-          below it, with the item count as a third element off to the side. */}
       <StudioTopBar
         title="Gallery"
         count={
@@ -275,110 +332,71 @@ export default function DashboardClient() {
             : `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`
         }
       >
-        {/* Category filter — working functionality, kept alongside the restyle.
-            The label used to sit visibly off-centre in its pill: `px-4 pr-8`
-            reserved 32px on the right for a dropdown arrow, but
-            `appearance-none` had removed the native arrow and nothing was
-            drawn in its place, so the reserved space read as 16px of padding
-            on one side and 32px on the other. Both sides are equal now and
-            the chevron is drawn explicitly, outside the text's box, so the
-            text is centred against the whole pill. py-2.5 to match the Upload
-            button beside it (both 42px tall; this was 38px). */}
-        <div className="hidden sm:block relative">
-          <select
-            value={activeCategory}
-            onChange={(e) => setActiveCategory(e.target.value)}
-            aria-label="Filter by category"
-            className="btn-outline appearance-none w-full px-9 py-2.5 text-center text-on-surface font-label-sm text-label-sm uppercase cursor-pointer focus:ring-0"
-          >
-            {STUDIO_FILTERS.map((c) => (
-              <option key={c} value={c}>
-                {c === "all" ? "All categories" : categoryLabel(c)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden="true"
-            size={18}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
-          />
-        </div>
-
+        <div className="hidden sm:block">{categorySelect("category-filter")}</div>
         <button
+          type="button"
           onClick={() => setShowUpload(true)}
-          className="btn-accent flex items-center gap-2 px-5 py-2.5"
+          className="btn btn-primary h-11 px-3 sm:px-4"
+          aria-label="Upload photo"
         >
           <Plus size={18} aria-hidden="true" />
-          <span className="hidden sm:inline font-label-sm text-label-sm uppercase">
-            Upload photo
-          </span>
+          <span className="hidden sm:inline">Upload</span>
         </button>
       </StudioTopBar>
 
-      {/* Content Area */}
-      <div className="px-margin-mobile md:px-margin-desktop py-10 min-h-full">
-        {/* ── Photo Grid / Empty state ──────────────────────────────── */}
+      <div className="px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        {/* Phones: the filter was simply missing below `sm`. */}
+        <div className="mb-6 sm:hidden">{categorySelect("category-filter-mobile")}</div>
+
         {actionError && !error && (
           <p
             role="alert"
-            className="mb-6 rounded-xl border border-error/30 bg-error/10 px-4 py-3 font-body-md text-body-md text-error"
+            className="mb-6 rounded-control border border-error/30 bg-error/10 px-4 py-3 text-body-md text-error"
           >
             {actionError}
           </p>
         )}
+
         {loading ? (
           <PhotoGridSkeleton />
         ) : error ? (
-          <div
-            role="alert"
-            className="flex flex-col items-center justify-center py-32 gap-4 text-center"
-          >
-            <CircleAlert className="text-error/60" size={48} aria-hidden="true" />
-            <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">
-              {error}
-            </p>
+          <div role="alert" className="flex flex-col items-center px-6 py-24 text-center">
+            <CircleAlert size={32} className="mb-5 text-fg-3" aria-hidden="true" />
+            <p className="max-w-sm text-body-md text-fg-2">{error}</p>
             <button
+              type="button"
               onClick={() => {
                 setLoading(true);
                 fetchPhotos();
               }}
-              className="btn-outline flex items-center gap-2 px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase"
+              className="btn btn-quiet mt-6"
             >
               <RefreshCw size={16} aria-hidden="true" />
               Retry
             </button>
           </div>
         ) : photos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <Images className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
-            <h3 className="font-headline-md text-headline-md text-on-surface mb-3">
-              No photos yet
-            </h3>
-            <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed mb-6">
-              Upload your first photo to start building your curated
-              gallery.
+          <div className="flex flex-col items-center px-6 py-24 text-center">
+            <Images size={32} className="mb-5 text-fg-3" aria-hidden="true" />
+            <h2 className="text-heading font-medium text-fg">No photographs yet</h2>
+            <p className="mt-3 max-w-sm text-body-md text-fg-2">
+              {activeCategory === "all"
+                ? "Upload the first one to start the gallery."
+                : `Nothing in ${categoryLabel(activeCategory)} yet.`}
             </p>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="btn-accent flex items-center gap-2 px-6 py-3"
-            >
+            <button type="button" onClick={() => setShowUpload(true)} className="btn btn-primary mt-6">
               <Plus size={18} aria-hidden="true" />
-              <span className="font-label-sm text-label-sm uppercase font-bold">
-                Upload Photo
-              </span>
+              Upload photo
             </button>
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={photos.map((p) => p._id)}
-              strategy={rectSortingStrategy}
-            >
-              <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-gutter space-y-gutter">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={photos.map((p) => p._id)} strategy={rectSortingStrategy}>
+              {/* Same justified rows as the public gallery (task C2), so the
+                  drag order here is the reading order there. */}
+              {/* A shorter row than the public grid: the Studio is for overview,
+                  so about four frames fit per row at 1440px instead of two. */}
+              <ul className="justified [--row:11rem]" aria-label="Photographs, in gallery order">
                 {photos.map((photo) => (
                   <PhotoCard
                     key={photo._id}
@@ -388,15 +406,12 @@ export default function DashboardClient() {
                     onToggleFeatured={handleToggleFeatured}
                   />
                 ))}
-              </div>
+              </ul>
             </SortableContext>
           </DndContext>
         )}
       </div>
 
-      {/* ── Modals ─────────────────────────────────────────────────────── */}
-
-      {/* Upload Modal */}
       {showUpload && token && (
         <UploadModal
           token={token}
@@ -410,7 +425,6 @@ export default function DashboardClient() {
         />
       )}
 
-      {/* Edit Modal */}
       {editingPhoto && token && (
         <EditModal
           photo={editingPhoto}
@@ -425,48 +439,33 @@ export default function DashboardClient() {
         />
       )}
 
-      {/* Delete Confirmation */}
       {deletingPhoto && (
-        /* dismissible={!deleting} preserves the existing rule that a delete
-           in flight can't be dismissed — now enforced for Escape as well as
-           for the backdrop click. */
-        <StudioModal
-          size="sm"
-          className="text-center"
-          dismissible={!deleting}
-          onClose={closeDeleteDialog}
-        >
-          <Trash2 className="text-error mx-auto" size={48} aria-hidden="true" />
-          <h3 className="font-headline-md text-headline-md text-on-surface">
-            Delete photo?
-          </h3>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            This will permanently remove the image from Cloudinary and the
-            database. This action cannot be undone.
+        /* dismissible={!deleting}: a delete in flight can't be dismissed by
+           Escape or a backdrop click. */
+        <StudioModal size="sm" title="Delete photo?" dismissible={!deleting} onClose={closeDeleteDialog}>
+          <div className="frame-media mx-auto max-h-40 w-fit">
+            {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
+            <img
+              src={cloudinaryUrl(deletingPhoto.imageUrl, 480)}
+              alt=""
+              className="max-h-40 w-auto"
+            />
+          </div>
+          <p className="text-body-md text-fg-2">
+            This permanently removes the photograph from the gallery and from
+            Cloudinary. It can&apos;t be undone.
           </p>
           {deleteError && (
-            <p role="alert" className="font-body-md text-body-md text-error">
+            <p role="alert" className="text-body-md text-error">
               {deleteError}
             </p>
           )}
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={closeDeleteDialog}
-              disabled={deleting}
-              className="btn-outline px-6 py-3 text-on-surface font-label-sm text-label-sm uppercase"
-            >
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={closeDeleteDialog} disabled={deleting} className="btn btn-quiet">
               Cancel
             </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="btn-danger px-6 py-3 font-label-sm text-label-sm uppercase flex items-center gap-2"
-            >
-              {deleting ? (
-                <Spinner />
-              ) : (
-                <Trash2 size={16} aria-hidden="true" />
-              )}
+            <button type="button" onClick={handleDelete} disabled={deleting} className="btn btn-danger">
+              {deleting ? <Spinner /> : <Trash2 size={16} aria-hidden="true" />}
               Delete
             </button>
           </div>

@@ -59,7 +59,7 @@ export default function AccountClient() {
         if (cancelled) return;
 
         if (!res.ok) {
-          setError("Couldn't load the current About copy — showing defaults.");
+          setError("Couldn't load the current About copy, so the defaults are shown.");
           return;
         }
 
@@ -73,7 +73,7 @@ export default function AccountClient() {
         if (data.aboutImageUrl) setImageUrl(data.aboutImageUrl);
       } catch {
         if (!cancelled) {
-          setError("Network error loading About copy — showing defaults.");
+          setError("Couldn't reach the server, so the defaults are shown.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -129,7 +129,7 @@ export default function AccountClient() {
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
     } catch {
-      setError("Network error — is the backend running?");
+      setError("Couldn't reach the server. Please try again.");
       setSaving(false);
     }
   }
@@ -142,20 +142,24 @@ export default function AccountClient() {
     <StudioShell>
       <StudioTopBar title="Account" />
 
-      {/* Content Area */}
-      <div className="px-margin-mobile md:px-margin-desktop py-10 min-h-full max-w-2xl">
-        <p className="font-body-md text-body-md text-on-surface-variant mb-10">
-          Signed in as <span className="text-on-surface font-medium">{email}</span>
+      <div className="max-w-2xl px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        {email && (
+          <p className="mb-8 text-body-md text-fg-2">
+            Signed in as <span className="text-fg">{email}</span>
+          </p>
+        )}
+
+        <h2 className="mb-1 text-heading font-medium text-fg">About page</h2>
+        <p className="mb-6 text-body-md text-fg-2">
+          What visitors read on /about. Saving updates the page immediately.
         </p>
 
-        <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-4">
-          About page
-        </h2>
-
-        <div className="flex flex-col gap-4">
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="account-quote">
-              Quote
+        {/* Labels above every field (task C4). They were sr-only, so the
+            page showed three unlabelled boxes. */}
+        <div className="flex flex-col gap-5">
+          <div>
+            <label htmlFor="account-quote" className="field-label">
+              Heading
             </label>
             <input
               id="account-quote"
@@ -163,12 +167,13 @@ export default function AccountClient() {
               value={quote}
               onChange={(e) => setQuote(e.target.value)}
               disabled={saving}
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 disabled:opacity-60"
+              maxLength={200}
+              className="field"
             />
           </div>
 
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="account-bio">
+          <div>
+            <label htmlFor="account-bio" className="field-label">
               Bio
             </label>
             <textarea
@@ -176,55 +181,57 @@ export default function AccountClient() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               disabled={saving}
-              rows={6}
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 resize-none disabled:opacity-60"
+              rows={8}
+              maxLength={5000}
+              aria-describedby="account-bio-hint"
+              className="field resize-y"
             />
+            <p id="account-bio-hint" className="mt-2 text-label text-fg-3">
+              Separate paragraphs with a blank line.
+            </p>
           </div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant/60 -mt-2">
-            Separate paragraphs with a blank line.
-          </p>
 
-          <div className="studio-field px-4 py-3">
-            <label className="sr-only" htmlFor="account-image">
-              About page image URL
+          <div>
+            <label htmlFor="account-image" className="field-label">
+              Portrait image URL
             </label>
+            {/* type=url is a browser-side hint only; the server is what has
+                to refuse a non-https value (REDESIGN.md task D4). */}
             <input
               id="account-image"
-              type="text"
+              type="url"
+              inputMode="url"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               disabled={saving}
-              placeholder="https://…"
-              className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 disabled:opacity-60"
+              placeholder="https://"
+              className="field"
             />
           </div>
 
-          {error && <p className="text-error text-sm">{error}</p>}
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="btn-glass mt-2 w-fit px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center gap-3"
-          >
-            {saving ? (
-              <>
-                <Spinner />
-                <span>Saving…</span>
-              </>
-            ) : (
-              <span>Save Changes</span>
-            )}
-          </button>
-
-          {saved && (
-            <p
-              role="status"
-              className="font-label-sm text-label-sm text-on-surface-variant -mt-2"
-            >
-              Saved — the About page is updated.
+          {error && (
+            <p role="alert" className="text-body-md text-error">
+              {error}
             </p>
           )}
+
+          <div className="flex flex-wrap items-center gap-4">
+            <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary">
+              {saving ? (
+                <>
+                  <Spinner />
+                  Saving…
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </button>
+            {saved && (
+              <p role="status" className="text-label text-fg-2">
+                Saved. The About page is updated.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </StudioShell>

@@ -2,180 +2,81 @@
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/container-queries";
 
-/* ─── Design tokens ──────────────────────────────────────────────────────
-   Redesign Phase B (REDESIGN.md §4). One warm-neutral ramp — "paper-black"
-   from the darkroom world, saturation kept low enough that no surface reads
-   as a colour on its own, so photographs keep their own colour. Measured
-   contrast (WCAG): fg 15.4, fg-2 7.6, fg-3 5.3 on paper; fg-3 is still 4.6
-   on the raised surface, the weakest pairing.
+/* ═══ The Shutter Bug — stylesheet ═════════════════════════════════════════
+   Rebuilt in Redesign Phase C (REDESIGN.md) after the public site (Phase B)
+   and the Studio (Phase C) both moved to one token system. Everything the
+   Stitch exports brought in — 50 Material colour tokens, the glass recipes,
+   the hero glass-letter layers, the admin overlay styles — is gone; the
+   pre-redesign file is `git show 9585aa65:src/app/globals.css`.
 
-   The previous 50 Material tokens came verbatim from the Stitch exports; 28
-   were referenced nowhere and are gone (list in REDESIGN.md §3.8). The ones
-   the Studio still uses are kept below as ALIASES of the ramp, so the whole
-   app shifts tone together while the Studio's own markup waits for Phase C. */
+   Direction (REDESIGN.md §4): a darkroom and a contact sheet. Quiet chrome,
+   all richness in the photographs. Glass on exactly one surface (the public
+   navbar). One accent, safelight gold, for "you are here", focus and the
+   frame line under a hovered photo.
+
+   NOTE for anyone adding glass: do NOT hand-write -webkit-backdrop-filter
+   next to the standard property. Lightning CSS (Tailwind v4's minifier)
+   prefixes it itself; when both are present it collapses the pair to the
+   -webkit- form only, which silently drops the blur in Firefox. */
+
+/* ─── Tokens ─────────────────────────────────────────────────────────────── */
 @theme {
-  /* Ramp */
-  --color-paper-deep: #0b0a09;   /* deepest — sidebars, wells */
-  --color-paper: #100f0d;        /* page background */
-  --color-card: #171614;         /* one step up */
-  --color-raised: #201e1b;       /* inputs, quiet buttons, active rows */
+  /* Warm paper-black ramp. Saturation low enough that no surface reads as a
+     colour on its own, so photographs keep theirs. Measured contrast (WCAG):
+     fg 15.4, fg-2 7.6, fg-3 5.3 on paper; fg-3 on raised 4.6 (the weakest
+     pairing still in use). */
+  --color-paper-deep: #0b0a09;   /* deepest — Studio sidebar, menu sheet */
+  --color-paper: #100f0d;        /* page */
+  --color-card: #171614;         /* panels, fields, photo placeholders */
+  --color-raised: #201e1b;       /* focused fields, quiet buttons, active rows */
   --color-fg: #ece6dc;           /* primary text */
   --color-fg-2: #a9a297;         /* secondary text */
-  --color-fg-3: #8c867c;         /* muted — meta, captions only */
+  --color-fg-3: #8c867c;         /* muted — meta and captions only */
   --color-line: rgb(236 230 220 / 0.09);  /* hairline: fg at 9% */
 
-  /* Material aliases still used by the Studio (Phase C migrates them). */
-  --color-primary-container: var(--color-paper);
-  --color-surface: var(--color-paper);
-  --color-surface-container-lowest: var(--color-paper-deep);
-  --color-surface-container-low: var(--color-card);
-  --color-surface-container: #1b1a17;
-  --color-surface-container-high: var(--color-raised);
-  --color-surface-variant: #2a2824;
-  --color-on-surface: var(--color-fg);
-  --color-on-surface-variant: var(--color-fg-2);
-  --color-primary: #cdc6bb;
-  --color-secondary: #c9c2b7;
-  --color-on-secondary: #31302d;
-  --color-secondary-container: #46433e;
-  --color-on-secondary-container: #b9b2a7;
-  --color-tertiary: #c0c7ce;
-  --color-on-tertiary: #2a3137;
-
-  /* Semantic — error only. Toned to sit inside the ramp. */
-  --color-error: #ffb4ab;
-  --color-error-container: #93000a;
-  --color-on-error-container: #ffdad6;
-
-  /* Single site-wide accent — every interactive/active state uses this.
-     Registered as a theme token so `text-accent`, `border-accent/40`,
-     `hover:text-accent` etc. all generate with full variant support. */
+  /* The one accent. Text on it is paper (9.1:1). */
   --color-accent: #d4af37;
 
-  /* Foreground for anything sitting ON the accent (the Studio's solid
-     upload button, the skip link). This value was previously written as a
-     bare `text-[#1c1b1b]` in four files. It happens to equal
-     --color-surface-container-low and --color-on-primary-fixed, but reusing
-     either of those would name the wrong relationship — this is the
-     accent's on-color, and it should say so. Same hex, no palette change. */
-  --color-on-accent: #1c1b1b;
+  /* Semantic: errors only. */
+  --color-error: #ffb4ab;
+  --color-error-container: #8a1c14;
+  --color-on-error-container: #ffdad6;
 
-  /* Families are self-hosted by next/font (app/layout.tsx), which exposes
-     each as a CSS variable on <html>. Mono is the contact-sheet signature
-     face (frame numbers, meta). Nothing else uses it. */
+  /* Families are self-hosted by next/font (app/layout.tsx) and exposed as
+     CSS variables on <html>. Mono is the contact-sheet signature face. */
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  /* Border radius.
-
-     The Stitch export overrode only `lg` (2rem) and `xl` (3rem) and left the
-     rest of Tailwind's ladder alone, which made the scale non-monotonic:
-     lg 32px -> xl 48px -> 2xl 16px -> 3xl 24px. So `rounded-2xl` was *less*
-     round than `rounded-lg`, and every "use a bigger step" choice made
-     things smaller. Defined as a full ascending ladder now, so the class
-     name and the visual weight finally agree:
-       sm 4 · md 6 · lg 12 · xl 16 · 2xl 24 · 3xl 32 · full
-     (`--radius-DEFAULT` is dropped — v4 reads `--radius` for the bare
-     `rounded` utility, so that token was never doing anything.) */
-  --radius-lg: 0.75rem;   /* 12px — fields, small controls */
-  --radius-xl: 1rem;      /* 16px — nav rows, image previews */
-  --radius-2xl: 1.5rem;   /* 24px — cards, photo media, modals */
-  --radius-3xl: 2rem;     /* 32px — large containers */
-  --radius-full: 9999px;
-
-  /* Semantic radii for the public site (Phase B). Not everything is a pill:
-     photographs are prints with a small corner, controls share one radius,
-     panels nest around them (inner = outer − padding). */
+  /* Radii. Not everything is a pill: photographs are prints with a small
+     corner, controls share one radius, panels nest around them
+     (inner = outer − padding). */
   --radius-photo: 0.25rem;    /* 4 → 3.6 rendered */
   --radius-control: 0.625rem; /* 10 → 9 */
   --radius-panel: 1rem;       /* 16 → 14.4 */
 
-  /* Spacing — rem, not px, so the 90% root font-size below scales them.
-     Values are the original px / 16, so at a 100% root they render
-     byte-identically to the previous px values. */
-  --spacing-gutter: 1.5rem;        /* 24px */
-  --spacing-margin-desktop: 4rem;  /* 64px */
-  --spacing-section-gap: 7.5rem;   /* 120px */
-  --spacing-margin-mobile: 1.25rem;/* 20px */
-  --spacing-element-gap: 1rem;     /* 16px */
+  /* Page gutters. rem, so the 90% root scales them. */
+  --spacing-margin-mobile: 1.25rem; /* 20 → 18 */
+  --spacing-margin-desktop: 4rem;   /* 64 → 57.6 */
 
-  /* Type scale.
-
-     THE NAMESPACE IS LOAD-BEARING. Tailwind v4 generates utilities from the
-     variable's namespace prefix, not from its name:
-
-       --text-X        → `text-X`  (font-size, plus the paired sub-properties
-                                    --text-X--line-height and
-                                    --text-X--letter-spacing)
-       --font-weight-X → `font-X`  (font-weight)
-
-     These were authored as `--font-size-X` / `--line-height-X` /
-     `--letter-spacing-X`, which are not v4 namespaces. Every `text-headline-lg`
-     in the JSX was therefore an unknown utility and was dropped, leaving all
-     headings at the 14.4px root while `font-headline-lg` still applied weight
-     600 — headings that looked bold and measured the same as body copy.
-     Measured before this pass: `main h1` on /work computed to 14.4px.
-     Renaming them here is what turns the authored scale on.
-
-     There were also six `--font-family-*` tokens, all reading
-     `"Jost", sans-serif`. They are gone. `body` already sets that face (see
-     below), so they carried nothing — and renaming them to `--font-*` would
-     have collided with `--font-weight-*` over the same `font-headline-md`
-     utility name. Jost is a variable geometric sans, wght 100-900, x-height
-     0.460em and cap 0.700em (ratio 0.657), which is why it stays readable at
-     the 0.75rem label size the site uses heavily; it replaced Inter and Space
-     Grotesk, neither of which is referenced anywhere.
-
-     Weights stay in --font-weight-*, deliberately not folded in as
-     --text-X--font-weight: the JSX pairs `font-headline-md text-headline-md`
-     everywhere, and one property should have one source.
-
-     The px annotations below are the nominal values at a 16px root. This site
-     sets `html { font-size: 90% }`, so what actually renders is 0.9x each of
-     them — headline-lg lands at 43.2px, label-sm at 10.8px. */
-  --text-headline-lg-mobile: 2rem;                    /* 32px */
-  --text-headline-lg-mobile--line-height: 2.5rem;     /* 40px */
-  --text-headline-lg-mobile--letter-spacing: -0.02em;
-  --font-weight-headline-lg-mobile: 600;
-
-  --text-body-lg: 1.125rem;                /* 18px */
-  --text-body-lg--line-height: 1.75rem;    /* 28px */
-  --font-weight-body-lg: 400;
-
-  --text-label-sm: 0.75rem;                /* 12px */
-  --text-label-sm--line-height: 1rem;      /* 16px */
-  --text-label-sm--letter-spacing: 0.1em;
-  --font-weight-label-sm: 500;
-
-  --text-body-md: 1rem;                    /* 16px */
-  --text-body-md--line-height: 1.5rem;     /* 24px */
-  --font-weight-body-md: 400;
-
-  --text-headline-md: 1.5rem;              /* 24px */
-  --text-headline-md--line-height: 2rem;   /* 32px */
-  --text-headline-md--letter-spacing: -0.01em;
-  --font-weight-headline-md: 500;
-
-  --text-headline-lg: 3rem;                /* 48px */
-  --text-headline-lg--line-height: 3.5rem; /* 56px */
-  --text-headline-lg--letter-spacing: -0.02em;
-  --font-weight-headline-lg: 600;
-
-  /* Public type scale (Phase B). Sentence case everywhere, weights 400-500,
-     no tracking on small text, tight tracking only on large display text.
-     Hierarchy comes from size and colour, not weight. The tokens above stay
-     until the Studio migrates in Phase C.
-     Rendered sizes are 0.9x the nominal (root is 90%). */
-  --text-meta: 0.8125rem;                  /* 13 → 11.7 rendered; mono */
+  /* Type. THE NAMESPACE IS LOAD-BEARING: Tailwind v4 builds `text-X` from
+     `--text-X` (with --text-X--line-height / --letter-spacing). A token
+     named `--font-size-X` generates nothing, silently — that's what left
+     every heading at 14.4px until Stage 3. Sentence case everywhere, weights
+     400–500, no tracking on small text. Rendered sizes are 0.9× nominal
+     (the root is 90%). */
+  --text-meta: 0.8125rem;                  /* 13 → 11.7; mono frame lines */
   --text-meta--line-height: 1.125rem;
   --text-meta--letter-spacing: 0.02em;
 
-  --text-label: 0.9375rem;                 /* 15 → 13.5; nav, buttons, filters */
+  --text-label: 0.9375rem;                 /* 15 → 13.5; nav, buttons, labels */
   --text-label--line-height: 1.25rem;
+
+  --text-body-md: 1rem;                    /* 16 → 14.4; body */
+  --text-body-md--line-height: 1.5rem;
 
   --text-lead: 1.125rem;                   /* 18 → 16.2; intro paragraphs */
   --text-lead--line-height: 1.8rem;
 
-  --text-heading: 1.625rem;                /* 26 → 23.4; section h2 */
+  --text-heading: 1.625rem;                /* 26 → 23.4; section / Studio titles */
   --text-heading--line-height: 2.125rem;
   --text-heading--letter-spacing: -0.01em;
 
@@ -187,626 +88,103 @@
   --text-title--line-height: 3.25rem;
   --text-title--letter-spacing: -0.02em;
 
-  /* (The display-lg scale that used to sit here — family, size, line-height,
-     tracking, weight — is gone. It came over in the Stitch export and was
-     referenced by exactly zero files; the largest type on the site is the
-     hero wordmark, which is SVG sized against the photograph, not a token.) */
-
-  /* Motion tokens.
-
-     Tailwind's own default timing function is cubic-bezier(0.4, 0, 0.2, 1) —
-     an ease-in-out. Every bare `transition-colors` / `transition-all` on this
-     site was silently inheriting it, so the site had two motion languages: the
-     considered expo-out curve on anything Framer Motion drove, and a generic
-     ease-in-out on every hover. Overriding the default here fixes all ~20 of
-     them at once, without touching a single component.
-
-     One curve, three durations (Phase B: unslop motion tokens). Hover and
-     press are fast feedback; entrances are the only slow motion on the site.
-     The 700ms "image scale on hover" duration is gone with the effect. */
+  /* Motion: one curve, three durations. Hover/press are fast feedback;
+     entrances are the only slow motion on the site. Overriding Tailwind's
+     default timing here means every bare `transition-colors` uses it too. */
   --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   --default-transition-duration: 160ms;
-
   --ease-brand: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-micro: 160ms;   /* hover, press, toggles */
-  --duration-base: 200ms;    /* menus, popovers */
+  --duration-base: 200ms;    /* menus, dialogs */
   --duration-reveal: 420ms;  /* the one entrance per page */
-
-  /* Elevation.
-
-     Two shadows, both tinted rather than black. A pure rgba(0,0,0,x) shadow
-     on a #0a0a0a ground is invisible — there's nothing darker to cast onto —
-     which is why every surface on this site read as flat regardless of how
-     much box-shadow it carried. These carry the background's own warm-neutral
-     hue and lean on a wide, low-opacity ambient term plus a tight contact
-     term, which is what actually separates an object from its ground on a
-     dark surface.
-
-     Light direction is top-down and consistent: every y-offset is positive,
-     matching the inset top highlights the glass surfaces already use. */
-  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4),
-                 0 12px 32px -12px rgba(20, 16, 10, 0.85);
-  --shadow-lift-hover: 0 2px 4px rgba(0, 0, 0, 0.45),
-                       0 24px 56px -16px rgba(20, 16, 10, 0.95);
 }
 
-/* ─── Base styles ───────────────────────────────────────────────────────── */
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 
-/* Renders the whole site at ~90%, the way browser zoom does, by shrinking
-   the rem basis that every size token above resolves against. This only
-   works because those tokens are rem — as px they ignored the root
-   entirely and only Tailwind's built-in utilities would have scaled,
-   giving a half-scaled layout. Deliberately NOT transform: scale(), which
-   blurs text and doesn't reflow.
-   Anything that must track the viewport rather than the type scale (the
-   hero title, sized against the boat in the photo) uses vw/vh and is
-   intentionally unaffected by this. */
+/* The whole site renders at ~90%, like browser zoom, by shrinking the rem
+   basis every token resolves against (owner's choice). Not transform:
+   scale(), which blurs text and doesn't reflow. Consequence, recorded in
+   REDESIGN.md: the 4px spacing grid is a consistent 3.6px grid in practice. */
 html {
     font-size: 90%;
+    scroll-behavior: smooth;
 }
 
 body {
     background-color: var(--color-paper);
     color: var(--color-fg);
-    /* Base body face. Every `font-*` utility resolves to Jost too (tokens
-       above); this covers anything that carries no font utility at all. */
     font-family: var(--font-jost), "Jost", sans-serif;
     font-weight: 400;
 }
 
-/* Scrollbar hidden site-wide — purely visual. No overflow value changes,
-   so wheel, trackpad, touch and keyboard scrolling (arrows, space, PgUp/
-   PgDn, Home/End) all behave exactly as before; the bar just isn't
-   painted. Applied with `*` rather than only html/body because the Studio
-   shell scrolls in its own `overflow-y-auto` <main>, not on the document. */
+/* Scrollbar hidden site-wide — visual only. Overflow is untouched, so
+   wheel, touch and keyboard scrolling all still work. `*` because the
+   Studio scrolls inside its own <main>, not the document. */
 * {
-    scrollbar-width: none;      /* Firefox */
-    -ms-overflow-style: none;   /* legacy Edge / IE */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
-
-*::-webkit-scrollbar {          /* Chrome, Safari, Edge */
+*::-webkit-scrollbar {
     width: 0;
     height: 0;
     display: none;
 }
 
-/* Keyboard focus, site-wide, in the site accent. Hiding the scrollbar makes
-   a visible focus ring more important, not less — it's often the only cue
-   left that keyboard navigation has moved. */
+/* Keyboard focus, site-wide, in the accent. With no scrollbar, a visible
+   focus ring is often the only cue that keyboard navigation has moved. */
 :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
-html {
-    scroll-behavior: smooth;
+/* Typeset, not generated: balance short headings, no orphans in body copy.
+   In the BASE layer on purpose. `text-wrap` is a shorthand that also sets
+   text-wrap-mode, so as unlayered CSS it beat Tailwind's `truncate`
+   (white-space: nowrap) on every <p> — found in Phase C when "005 · Objects"
+   wrapped inside a narrow Studio card. In a layer, utilities win again. */
+@layer base {
+    h1, h2, h3 { text-wrap: balance; }
+    p { text-wrap: pretty; }
 }
 
-/* Orphan control. Headings were breaking with a single word stranded on the
-   last line ("Selected / frames"), which is one of the tells that separates a
-   typeset page from a generated one. `balance` evens the line lengths of short
-   headings; `pretty` only prevents the last-line orphan, which is the right
-   trade for body copy where balancing every paragraph is expensive. */
-h1, h2, h3 {
-    text-wrap: balance;
-}
-
-p {
-    text-wrap: pretty;
-}
-
-/* Reduced motion, site-wide. This covers everything CSS drives; the Framer
-   Motion layers (hero parallax, scroll reveals, page fade) are gated
-   separately in JS via useReducedMotion, because inline transforms are not
-   CSS transitions and this block cannot reach them.
-   The hero parallax is the reason this matters — a large image tracking the
-   scroll position is the single most vestibular-triggering thing here. */
+/* Reduced motion, site-wide, for everything CSS drives (which is now all
+   motion on the site — Framer Motion is gone). */
 @media (prefers-reduced-motion: reduce) {
-    html {
-        scroll-behavior: auto;
-    }
-
-    *,
-    *::before,
-    *::after {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
 }
 
-/* ─── Utility classes (verbatim from Stitch exports) ────────────────────── */
-
-/* Icons — lucide-react, inline SVG (replaced the Material Symbols icon font,
-   REDESIGN.md §3.4).
-
-   One stroke for every icon. The CSS property beats the SVG's own
-   stroke-width attribute, so no call site has to pass `strokeWidth`. 1.5 is
-   lighter than lucide's default 2, for the same reason the old icon font ran
-   at wght 250: a stock stroke sits at the optical weight of the labels beside
-   it and pulls the eye off the photographs.
-
-   Size per call site with the `size` prop. A filled state (featured star,
-   active gallery icon) is `fill="currentColor"`. */
+/* Icons — lucide-react. One stroke for every icon; the CSS property beats
+   the SVG's own stroke-width attribute, so no call site passes one. Size
+   per call site with `size`. Filled states use fill="currentColor" — only
+   on glyphs with no inner mark (Star, LayoutGrid); on CircleCheck or
+   CircleAlert it paints the mark out. */
 svg.lucide {
     stroke-width: 1.5;
     flex-shrink: 0;
 }
 
-/* Contact page — liquid glass form styles.
-
-   NOTE, and it applies to every glass rule in this file: do NOT hand-write
-   the -webkit- prefixed backdrop-filter next to the standard one. Lightning
-   CSS (Tailwind v4's minifier) auto-prefixes from the project's browser
-   targets, but when both are already present it collapses the pair and keeps
-   only the -webkit- form — which silently drops the blur in Firefox, where
-   only the unprefixed property exists. Authoring the standard property alone
-   emits both, correctly. */
-.liquid-glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    /* Inner highlight plus the shared tinted elevation. These are all
-       floating surfaces — the four modals and the Studio login card — and
-       they previously sat on their backdrop with no cast shadow at all,
-       which on a near-black ground left them looking pasted rather than
-       lifted. */
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-lift);
-}
-
-/* ─── Admin page styles (from design-reference/admin-*.html) ────────────── */
-
-/* Admin login — moody background gradient */
-.bg-moody-overlay {
-    background: linear-gradient(to bottom, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0.95) 100%);
-}
-
-/* Admin dashboard — glass overlay on photo cards (hover reveal) */
-.glass-overlay {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(8px);
-    border: 1px solid transparent;
-    border-top-color: rgba(255, 255, 255, 0.15);
-    border-left-color: rgba(255, 255, 255, 0.15);
-}
-
-.liquid-hover .glass-overlay {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.liquid-hover:hover .glass-overlay,
-/* Keyboard parity. Every control on a photo card — star, edit, delete and
-   (since the drag handle moved inside the overlay) reorder — lives in a layer
-   that only hover reveals. Without this, tabbing to any of them moves focus
-   onto something the user cannot see. */
-.liquid-hover:focus-within .glass-overlay {
-    opacity: 1;
-}
-
-/* Admin dashboard — image scale on card hover */
-
-/* Admin — modal backdrop */
-.admin-modal-backdrop {
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-}
-
-/* Admin — modal enter animation */
-@keyframes modalIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-.admin-modal-enter {
-    animation: modalIn 0.25s ease-out;
-}
-
-/* Admin — loading spinner */
-@keyframes adminSpin {
-    to { transform: rotate(360deg); }
-}
-
-.admin-spinner {
-    width: 32px;
-    height: 32px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #c9c6c5;
-    border-radius: 50%;
-    animation: adminSpin 0.7s linear infinite;
-}
-
-/* Admin — drag overlay styles */
-
-/* ─── Stage 1 — Shared restructure additions ────────────────────────────── */
-
-/* Shared content column. Since Phase B EVERY public section sits inside it —
-   nav, headings, photo grids and footer — so their edges line up. The
-   gallery used to run full-bleed under a 72rem footer, which left the two
-   visibly misaligned. 90rem renders at 1296px. */
+/* One content column for every public section — nav, headings, photo grids
+   and footer — so their edges line up. 90rem renders at 1296px. */
 .site-container {
     width: 100%;
     max-width: 90rem;
     margin-inline: auto;
 }
 
-/* One primary pill button for the whole site. Before this the hero CTA used
-   .nav-pill, the contact submit and the Studio submits used .liquid-glass,
-   and between them they had four different padding pairs and three different
-   hover treatments — two of which didn't use the accent at all. */
-.btn-glass {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-full);
-    transition: color 0.3s ease, background-color 0.3s ease,
-                border-color 0.3s ease, transform 0.3s ease;
-}
-
-.btn-glass:hover:not(:disabled) {
-    color: var(--color-accent);
-    border-color: rgba(212, 175, 55, 0.4);
-    background: rgba(212, 175, 55, 0.08);
-}
-
-.btn-glass:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.btn-glass:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Trailing-icon nest. An arrow sitting naked beside the label is the single
-   most generic CTA shape there is; seating it in its own circle, flush with
-   the button's right inner edge, is what makes the button read as machined
-   rather than typed. Shared by all four glass CTAs (hero, 404, contact
-   submit, Studio login) so they stay one button.
-
-   It also solves the loading-state jump those buttons had: the spinner now
-   swaps into this circle instead of replacing the arrow with a differently
-   sized element, so the button's box never changes.
-
-   Use on a parent carrying Tailwind's `group` marker class. */
-.btn-icon-nest {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    flex-shrink: 0;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.1);
-    transition: transform 0.3s ease, background-color 0.3s ease;
-}
-
-.group:hover .btn-icon-nest {
-    transform: translateX(2px);
-    background: rgba(212, 175, 55, 0.16);
-}
-
-/* ── The other three button roles ───────────────────────────────────────────
-   .btn-glass above is the default (form submits, the hero CTA). These three
-   cover the rest. Before this the outline treatment was inline-duplicated
-   four times at three different paddings (px-6 py-3, px-6 py-2.5, px-5 py-2)
-   and the destructive one existed in two opacities, so "the same button"
-   was measurably not the same button from page to page.
-
-   Padding deliberately stays on the element rather than in these classes —
-   a 12px icon button and a 32px CTA share the surface treatment but not the
-   box, and baking one padding in here would just force overrides. */
-
-/* Solid accent — the ONE primary action on a page, and only in the Studio.
-   Nothing on the public site uses it: a filled accent block would compete
-   with the photographs, which is the whole reason the public CTAs are glass.
-   The Studio is an app surface, so the hierarchy is allowed to be louder. */
-.btn-accent {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    border-radius: var(--radius-full);
-    font-weight: 700;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.btn-accent:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-accent) 88%, #ffffff);
-}
-
-.btn-accent:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.btn-accent:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Secondary / dismissive — cancel, retry, reply. Deliberately NOT glass:
-   these sit inside modals and cards that are already glass, and stacking a
-   blur inside a blur reads as mud. Flat surface, hairline, accent on hover
-   so it belongs to the same family as everything else. */
-.btn-outline {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-full);
-    transition: color 0.3s ease, background-color 0.3s ease,
-                border-color 0.3s ease, transform 0.3s ease;
-}
-
-.btn-outline:hover:not(:disabled) {
-    color: var(--color-accent);
-    border-color: rgba(212, 175, 55, 0.4);
-    background: rgba(212, 175, 55, 0.08);
-}
-
-.btn-outline:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.btn-outline:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Destructive. One opacity, not two. */
-.btn-danger {
-    background: var(--color-error-container);
-    color: var(--color-on-error-container);
-    border-radius: var(--radius-full);
-    transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.btn-danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-error-container) 82%, #ffffff);
-}
-
-.btn-danger:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.btn-danger:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* ── Circular icon buttons ──────────────────────────────────────────────────
-   The one treatment for every icon-only control: card hover overlays, modal
-   closes, the Studio hamburger, the lightbox chrome.
-
-   Width and height are set explicitly and equally. That is the whole point of
-   this class. Every icon button on the site was previously `p-2 rounded-full`
-   on a *block* element, which is not a circle: the glyph is 1em wide but the
-   line box it sits in is taller than 1em (the strut's descent is added below
-   the inline-block), so the box came out 38.4 x 45 — a visible oval under a
-   `rounded-full` that promised otherwise. Padding alone cannot fix that; a
-   fixed box and centred content can.
-
-   Surface is the same recipe as .btn-glass so an icon button and a labelled
-   button read as the same object at two sizes.
-
-   IN `@layer components`, unlike every other custom class in this file, and
-   it has to be. Unlayered CSS beats everything Tailwind emits, layers
-   included — so with these rules at the top level, `display: inline-flex`
-   here outranked `md:hidden` on the Studio hamburger and the mobile menu
-   button appeared on desktop. Measured: a 43.2px button visible at a
-   1440px viewport where it had never rendered before. Putting the class in
-   the components layer restores the normal order (utilities win), which is
-   also what lets `w-11 h-11` or `hidden` override it at a call site without
-   `!important`. */
-@layer components {
-.btn-icon-glass,
-.btn-icon-glass-lg {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    padding: 0;
-    line-height: 1;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transition: color 0.3s ease, background-color 0.3s ease,
-                border-color 0.3s ease, transform 0.3s ease;
-}
-
-.btn-icon-glass {
-    width: 2.5rem;
-    height: 2.5rem;
-}
-
-/* Lightbox chrome — the same button one step up, because it is the only
-   control on a full-bleed image and has to survive at arm's length. */
-.btn-icon-glass-lg {
-    width: 3rem;
-    height: 3rem;
-}
-
-.btn-icon-glass:hover:not(:disabled):not([data-inactive]),
-.btn-icon-glass-lg:hover:not(:disabled):not([data-inactive]) {
-    color: var(--color-accent);
-    border-color: rgba(212, 175, 55, 0.4);
-    background: rgba(212, 175, 55, 0.08);
-}
-
-.btn-icon-glass:active:not(:disabled),
-.btn-icon-glass-lg:active:not(:disabled) {
-    transform: scale(0.94);
-}
-
-.btn-icon-glass:disabled,
-.btn-icon-glass-lg:disabled,
-.btn-icon-glass[data-inactive],
-.btn-icon-glass-lg[data-inactive] {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-/* On/selected state — the featured star. Solid accent, same box. */
-.btn-icon-glass-on {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: var(--color-on-accent);
-}
-
-.btn-icon-glass-on:hover:not(:disabled) {
-    color: var(--color-on-accent);
-    border-color: var(--color-accent);
-    background: color-mix(in srgb, var(--color-accent) 88%, #ffffff);
-}
-
-/* Studio — the count beside a page title ("12 frames"). A quiet chip rather
-   than loose text, so the title reads as a title and the count as metadata
-   without needing to be shrunk into illegibility to say so. */
-.studio-count-pill {
-    display: inline-flex;
-    align-items: center;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--color-on-surface);
-    padding: 0.25rem 0.75rem;
-    white-space: nowrap;
-}
-} /* end @layer components */
-
-/* Script wordmark — Playwrite VN, wght 100-400 only (no bold, no italic).
-   Since Phase B the public site sets its wordmark in Jost (REDESIGN.md §2,
-   decision 3); this survives for the Studio until Phase C and for rollback
-   (§3.3). */
-.font-title {
-    font-family: var(--font-playwrite), "Playwrite VN", cursive;
-    font-weight: 400;
-}
-
-/* Shared navbar (SiteNav) — glass pill, longer + thinner than the old
-   per-page navs */
-.nav-pill {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(30px);
-    border: 0.5px solid rgba(255, 255, 255, 0.15);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-/* Gallery filter pills — single segmented-control container */
-.filter-group {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Studio — sidebar shell */
-.studio-sidebar {
-    background: #0e0e0e;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* Studio — page header bar (StudioTopBar). Same white-tint glass family as
-   .nav-pill and .filter-group rather than the dark `bg-surface/10` tint the
-   three copies of this bar each carried. It's sticky, so backdrop-filter is
-   legitimate here — the cost is one composited layer that never reflows. */
-.studio-topbar {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(30px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Studio — content card (message rows, and anything else that repeats down
-   a scrolling list).
-
-   This exists specifically so those things stop using .liquid-glass. A real
-   backdrop-filter on every row of a list means N composited blur layers all
-   re-rasterising on each scroll frame, inside a container that scrolls — the
-   one case both context.md's design philosophy ("not per-card") and the
-   perf guidance rule out. An opaque surface one step up from the background
-   is visually near-identical at rest and costs nothing to scroll. */
-.studio-card {
-    background: var(--color-surface-container);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Studio — rounded filled inputs (upload modal, account page) */
-.studio-field {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    /* Same 12px as rounded-lg, via the token rather than a loose literal, so
-       fields track the ladder if it ever moves. */
-    border-radius: var(--radius-lg);
-    transition: all 0.3s ease;
-}
-
-/* Focus lands on the accent, matching the :focus-visible ring above, so a
-   focused field reads the same as every other focused/active thing on the
-   site instead of an unrelated white. */
-.studio-field:focus-within {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(212, 175, 55, 0.5);
-}
-
-/* Invalid field. Border only — no red fill, no icon: the message underneath
-   already says what's wrong, and a filled error state on a dark surface
-   turns into a second accent colour competing with the gold. */
-.studio-field-error {
-    border-color: rgba(255, 180, 171, 0.55);
-}
-
-/* Focus still wins over the error border, so a field being corrected reads
-   as active rather than as still-broken. */
-.studio-field-error:focus-within {
-    border-color: rgba(212, 175, 55, 0.5);
-}
-
-/* ─── Skeletons ─────────────────────────────────────────────────────────────
-   Loading placeholders shaped like the content that's coming, replacing the
-   bare centred spinners the Studio used. A spinner says "something is
-   happening"; a skeleton says "a grid of photographs is arriving here",
-   which is the difference between a page that looks stalled and one that
-   looks composed. The sheen is a background-position animation, so it never
-   touches layout — and the global prefers-reduced-motion block already
-   collapses its duration. */
-@keyframes skeletonSheen {
-    from { background-position: 200% 0; }
-    to   { background-position: -200% 0; }
-}
-
-.skeleton {
-    background-image: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.03) 0%,
-        rgba(255, 255, 255, 0.08) 50%,
-        rgba(255, 255, 255, 0.03) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeletonSheen 1.6s ease-in-out infinite;
-    border-radius: var(--radius-2xl);
-}
-
-/* Studio — drive-style drop zone active/dragging state */
-.studio-dropzone-active {
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.04);
-}
-
-/* ═══ Public site components — Redesign Phase B ═══════════════════════════
-   Unslop direction (REDESIGN.md §4): quiet chrome, all richness in the
-   photographs. Glass survives on exactly one public surface, the navbar.
-   Everything here lives in the components layer so a utility at the call
-   site can still override it without !important. */
+/* ═══ Components ═══════════════════════════════════════════════════════════
+   In the components layer so a utility at the call site can still override
+   them without !important. */
 @layer components {
 
-/* Navbar — the one glass surface on the public site. A dark tint rather
-   than a white wash, so it never brightens whatever photograph it floats
-   over; the hairline does the edge work. */
+/* ── Surfaces ──────────────────────────────────────────────────────────── */
+
+/* The public navbar — the one glass surface on the site. A dark tint so it
+   never brightens a photograph it floats over; the hairline does the edge. */
 .site-nav {
     background: rgb(16 15 13 / 0.6);
     backdrop-filter: blur(18px) saturate(1.15);
@@ -814,7 +192,14 @@ svg.lucide {
     border-radius: var(--radius-panel);
 }
 
-/* Buttons. One radius, one height, three roles. Not pills. */
+/* Solid panel — Studio cards, dialogs, message rows, the sign-in card. */
+.panel {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+}
+
+/* ── Buttons: one radius, one height, four roles ───────────────────────── */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -835,8 +220,8 @@ svg.lucide {
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Primary: off-white from the ramp with paper-black text (15.4:1). On a dark
-   page this reads as deliberate without spending the accent. */
+/* Primary: off-white from the ramp, paper text (15.4:1). Reads as
+   deliberate on a dark page without spending the accent. */
 .btn-primary { background: var(--color-fg); color: var(--color-paper); }
 .btn-primary:hover:not(:disabled) { background: #fffaf2; }
 
@@ -852,15 +237,25 @@ svg.lucide {
 .btn-text { color: var(--color-fg-2); padding-inline: 0.75rem; }
 .btn-text:hover { color: var(--color-fg); }
 
-/* Icon-only control (lightbox). A true circle: fixed box, centred glyph.
-   Solid raised surface, no blur: it sits on the page, never on the photo. */
+/* Destructive — only inside a confirm dialog, never on a card. */
+.btn-danger {
+    background: var(--color-error-container);
+    color: var(--color-on-error-container);
+}
+.btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-error-container) 85%, #ffffff);
+}
+
+/* Icon-only control, public lightbox. A true circle (fixed box, centred
+   glyph), solid raised surface, no blur: it sits on the page, never on the
+   photograph. */
 .icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 3rem;
     height: 3rem;
-    border-radius: var(--radius-full);
+    border-radius: 9999px;
     background: var(--color-raised);
     border: 1px solid var(--color-line);
     color: var(--color-fg);
@@ -872,7 +267,27 @@ svg.lucide {
 .icon-btn:active:not([data-inactive]) { transform: scale(0.96); }
 .icon-btn[data-inactive] { opacity: 0.35; cursor: default; }
 
-/* Form fields: label ABOVE the input, never placeholder-as-label. */
+/* Studio tool button — the quiet square icon button on photo cards, dialog
+   closes and the top bar. Muted at rest, a surface step on hover. The
+   pressed state (a featured photo) takes the accent. */
+.tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;                /* 36px rendered */
+    height: 2.5rem;
+    border-radius: var(--radius-control);
+    color: var(--color-fg-2);
+    transition-property: background-color, color, transform;
+    transition-duration: var(--duration-micro);
+    transition-timing-function: var(--ease-brand);
+}
+.tool-btn:hover:not(:disabled) { background: var(--color-raised); color: var(--color-fg); }
+.tool-btn:active:not(:disabled) { transform: scale(0.96); }
+.tool-btn[aria-pressed="true"] { color: var(--color-accent); }
+.tool-btn-danger:hover:not(:disabled) { color: var(--color-error); }
+
+/* ── Forms: label ABOVE the field, never placeholder-as-label ──────────── */
 .field-label {
     display: block;
     margin-bottom: 0.5rem;
@@ -895,9 +310,12 @@ svg.lucide {
     transition-duration: var(--duration-micro);
 }
 .field::placeholder { color: var(--color-fg-3); }
-.field:hover { border-color: rgb(236 230 220 / 0.16); }
+.field:hover:not(:disabled) { border-color: rgb(236 230 220 / 0.16); }
 .field:focus { background: var(--color-raised); box-shadow: none; }
+.field:disabled { opacity: 0.6; }
 .field[aria-invalid="true"] { border-color: rgb(255 180 171 / 0.6); }
+/* A <select> styled as a field: native options take the ramp too. */
+select.field option { background: var(--color-card); color: var(--color-fg); }
 .field-error {
     margin-top: 0.5rem;
     font-size: var(--text-label);
@@ -905,9 +323,38 @@ svg.lucide {
     color: var(--color-error);
 }
 
+.checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 0.3rem;
+    border: 1px solid rgb(236 230 220 / 0.3);
+    background-color: var(--color-card);
+    color: var(--color-accent);   /* @tailwindcss/forms paints `checked` in currentColor */
+}
+.checkbox:focus { box-shadow: none; }
+
+/* Upload drop zone. The file input inside is sr-only but focusable, so the
+   ring is drawn on the zone itself. */
+.dropzone {
+    display: block;
+    cursor: pointer;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1.5px dashed rgb(236 230 220 / 0.18);
+    border-radius: var(--radius-panel);
+    background: var(--color-paper);
+    transition-property: border-color, background-color;
+    transition-duration: var(--duration-micro);
+}
+.dropzone:hover,
+.dropzone-active { border-color: rgb(236 230 220 / 0.4); background: var(--color-card); }
+.dropzone:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* ── Photographs ───────────────────────────────────────────────────────── */
+
 /* Signature: the contact-sheet frame line, "014 · Nature · 2026". Mono,
-   muted, tabular figures. The one place the accent touches a photograph's
-   surroundings: like a safelight on the frame you are about to pull. */
+   muted, tabular. The accent touches it on hover/focus — a safelight on
+   the frame you're about to pull. */
 .frame-meta {
     font-family: var(--font-mono);
     font-size: var(--text-meta);
@@ -920,7 +367,7 @@ svg.lucide {
 .group:hover .frame-meta,
 .group:focus-visible .frame-meta { color: var(--color-accent); }
 
-/* Filter tabs: text with an accent underline on the active one. */
+/* Gallery filter tabs: text with an accent underline on the active one. */
 .tab {
     position: relative;
     display: inline-flex;
@@ -945,14 +392,13 @@ svg.lucide {
     background: var(--color-accent);
 }
 
-/* Justified rows: the gallery layout, like a contact sheet. Every photo in
-   a row shares one height, widths follow each photo's own aspect ratio, and
-   the order is reading order, left to right, top to bottom. Pure CSS: each
-   frame carries --r (width / height), and flex-grow proportional to --r keeps
-   a row's heights equal as it stretches to fill the line. Replaced CSS
-   `columns` masonry, which filled column by column, so the order the owner
-   dragged in the Studio was not the order a visitor read (REDESIGN.md §3.6,
-   task B6b). */
+/* Justified rows — the gallery layout, public and Studio alike, like a
+   contact sheet. Every photo in a row shares one height, widths follow each
+   photo's own aspect ratio (--r = width / height), and the order is reading
+   order. Pure CSS: flex-grow ∝ --r keeps a row's heights equal as it
+   stretches to fill the line. Because the Studio uses the same layout, the
+   order the owner drags is exactly the order visitors read (tasks B6b, C2;
+   it replaced CSS `columns`, which filled column by column). */
 .justified {
     --row: 15rem;
     --gap: 1.25rem;
@@ -970,10 +416,10 @@ svg.lucide {
         flex-basis: calc(var(--r) * var(--row));
         min-width: 0;
     }
-    /* Last row. The filler takes the slack so a SHORT last row keeps its
-       natural size. Its basis is about one landscape frame: when the last
-       row is nearly full (another frame would not fit), the filler wraps to
-       a line of its own and the row stretches edge to edge like the rest. */
+    /* Last row: the filler takes the slack so a SHORT last row keeps its
+       natural size. Its basis is about one landscape frame — when the last
+       row is nearly full the filler wraps to a line of its own and the row
+       stretches edge to edge like the rest. */
     .justified::after {
         content: "";
         flex-grow: 9999;
@@ -995,11 +441,80 @@ svg.lucide {
     object-fit: cover;
 }
 
-} /* end @layer components (Phase B) */
+/* ── Studio ────────────────────────────────────────────────────────────── */
 
-/* One entrance per page: a short fade and 8px rise for the main content,
-   staggered by --i. Pure CSS (no JS on the critical path), and the global
-   reduced-motion block above collapses it to an instant appearance. */
+/* Navigation row (sidebar and mobile sheet). Unslop app spacing: 2.25rem
+   rows with a 2px gap, icons in one column. Active = a surface step plus a
+   hairline highlight, the accent only on the icon. */
+.studio-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    height: 2.25rem;
+    padding-inline: 0.75rem;
+    border-radius: var(--radius-control);
+    font-size: var(--text-label);
+    font-weight: 500;
+    color: var(--color-fg-2);
+    text-align: left;
+    transition-property: background-color, color;
+    transition-duration: var(--duration-micro);
+}
+.studio-nav-row:hover { color: var(--color-fg); background: rgb(236 230 220 / 0.04); }
+.studio-nav-row[aria-current="page"] {
+    color: var(--color-fg);
+    background: var(--color-raised);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+.studio-nav-row[aria-current="page"] svg { color: var(--color-accent); }
+
+/* Dialog backdrop — solid enough that nothing behind competes. No blur. */
+.studio-backdrop { background: rgb(11 10 9 / 0.8); }
+
+} /* end @layer components */
+
+/* ─── Loading ────────────────────────────────────────────────────────────── */
+
+/* Skeletons: shaped like what's arriving. The sheen is a loop, but loading
+   is a live state — and it's a background-position animation, so it never
+   touches layout; reduced motion collapses it. */
+@keyframes skeletonSheen {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+}
+.skeleton {
+    background-image: linear-gradient(
+        90deg,
+        rgb(236 230 220 / 0.03) 0%,
+        rgb(236 230 220 / 0.07) 50%,
+        rgb(236 230 220 / 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonSheen 1.6s ease-in-out infinite;
+}
+
+/* Spinner, drawn in currentColor so it reads on any button. */
+@keyframes adminSpin { to { transform: rotate(360deg); } }
+.admin-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    color: var(--color-fg-2);
+    animation: adminSpin 0.7s linear infinite;
+}
+.btn .admin-spinner,
+.admin-spinner-sm { color: inherit; }
+.admin-spinner-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 1.5px;
+}
+
+/* ─── Motion ─────────────────────────────────────────────────────────────── */
+
+/* One entrance per page: fade and an 8px rise, staggered by --i. */
 @keyframes enter {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: none; }
@@ -1009,9 +524,16 @@ svg.lucide {
     animation-delay: calc(var(--i, 0) * 60ms);
 }
 
-/* Route transitions (B10): React <ViewTransition> plus Next's experimental
-   flag. The page itself crossfades briefly; a photograph tagged with a shared
-   name morphs from its grid card into the lightbox. Reduced motion: none. */
+/* Dialogs and the mobile menu sheet: a short fade and rise from where they
+   open. They close instantly (no exit animation to keep in sync). */
+.studio-dialog { animation: enter var(--duration-base) var(--ease-brand) both; }
+.studio-sheet  { animation: enter var(--duration-base) var(--ease-brand) both; }
+.studio-backdrop { animation: fade var(--duration-base) var(--ease-brand) both; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Route transitions (task B10): React <ViewTransition> plus Next's
+   experimental flag. The page crossfades briefly; a photograph with a shared
+   name morphs from its grid card into the lightbox. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
     animation-duration: 180ms;

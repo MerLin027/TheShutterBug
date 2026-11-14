@@ -178,13 +178,13 @@ Each phase is its own approval gate. A task is done only when its "done when" ch
 ### Phase C: Studio
 | ID | Task | Done when | Skills | Status |
 |---|---|---|---|---|
-| C1 | `PhotoCard`: photo never blurred; controls in a solid bar, always visible on touch (`@media (hover: none)`); Delete becomes a quiet icon that confirms; drag handle kept | Card works at 390px with touch emulation; nothing covers the photo | mobile-principles, unslop, desktop-principles | ☐ |
-| C2 | Studio grid in the same reading order as the public gallery (shares B6b) | Drag order = public order | — | ☐ |
-| C3 | Modals solid, not translucent; the 25 MB label from A5 shows | No photo visible through the dropzone | unslop §2 | ☐ |
-| C4 | Account: visible labels above the quote, bio and URL fields | Labels visible, not `sr-only` | taste (forms) | ☐ |
-| C5 | Login: remove the broken background; title and button copy follow the direction | No 0×0 image; one clear action | unslop | ☐ |
-| C6 | Shell: sidebar, top bar and mobile menu get the B passes (sentence case, ramp, icons, nav row 32–36px) | Measured nav rhythm; matches the public site | unslop §1, §6 | ☐ |
-| C✓ | Verify: upload, edit, feature, reorder and delete each run against the real API with **one probe photo** (created and deleted via the real routes); messages untouched | Mongo and Cloudinary counts back to baseline | secure-coding | ☐ |
+| C1 | `PhotoCard`: photo never blurred; controls in a solid bar, always visible on touch (`@media (hover: none)`); Delete becomes a quiet icon that confirms; drag handle kept | Card works at 390px with touch emulation; nothing covers the photo | mobile-principles, unslop, desktop-principles | ☑ |
+| C2 | Studio grid in the same reading order as the public gallery (shares B6b) | Drag order = public order | — | ☑ |
+| C3 | Modals solid, not translucent; the 25 MB label from A5 shows | No photo visible through the dropzone | unslop §2 | ☑ |
+| C4 | Account: visible labels above the quote, bio and URL fields | Labels visible, not `sr-only` | taste (forms) | ☑ |
+| C5 | Login: remove the broken background; title and button copy follow the direction | No 0×0 image; one clear action | unslop | ☑ |
+| C6 | Shell: sidebar, top bar and mobile menu get the B passes (sentence case, ramp, icons, nav row 32–36px) | Measured nav rhythm; matches the public site | unslop §1, §6 | ☑ |
+| C✓ | Verify: upload, edit, feature, reorder and delete each run against the real API with **one probe photo** (created and deleted via the real routes); messages untouched | Mongo and Cloudinary counts back to baseline | secure-coding | ☑ |
 
 ### Phase D: Security (OWASP Top 10 2017 / 2021 / 2025)
 | ID | Task | OWASP | Status |
@@ -335,3 +335,48 @@ Newest last. One entry per task: what changed, how it was verified, and anything
   - **Security finding for D4.** The backend `Contact` model has **no length limits** on any field. Only Express's 100 KB body cap bounds it. The new client `maxLength`s are UX only; D4 must add server limits to match (100 / 254 / 5000).
   - **Verification.** Clean production build against the real API. `tsc` clean. `eslint src backend` **0 problems** (was 2 warnings; the last two `<img>`s now carry documented disable comments). Token validator: 0 hardcoded colours (was 2). Sweep of 11 routes × 1440 / 390: all correct statuses, no horizontal overflow, no glyph leaks. The Studio renders unchanged apart from the tone.
   - **Unverified:** the frame line's accent on *keyboard* focus read as still muted in the probe, most likely sampled inside its 160ms colour transition. Hover is visually confirmed; keyboard focus needs a human look.
+- **2026-11-14 · Phase B committed** as `1730cd44` and pushed to `origin/redesign/unslop`. `main` is untouched.
+- **2026-11-14 · Contact success message.** Owner decision: "Message sent. I'll be in touch within a couple of days." → **"Message sent. Thank you."** Nothing notifies the owner of new messages, so the site no longer promises a reply anywhere. This closes the item HANDOFF §6 left open.
+- **2026-11-14 · Phase C: the Studio.** All 13 Studio files rewritten on the Phase B token system, with unslop's app rules on top.
+  - **Shell.**
+    - Sidebar on `paper-deep`: Jost wordmark plus a muted "Studio" line.
+    - Navigation rows 2.25rem tall with a 2px gap, sentence case. The active row is a surface step plus a hairline highlight, with the accent only on the icon.
+    - The top bar is opaque with a hairline, its title **kept centred per the owner's earlier Studio UX request** (unslop prefers left), and the count is a mono line instead of a pill.
+    - Mobile menu sheet rewritten **without Framer Motion**: CSS fade/rise, Escape closes, focus moves in and back out, the page behind is scroll-locked. **`framer-motion` uninstalled**; nothing else used it.
+  - **C1 photo card.**
+    - The photo is never touched (measured: `filter: none`, `transform: none` on hover).
+    - A solid tool row under it is always visible: reorder handle, caption and frame line, feature / edit / delete as equal 36px icon buttons. Delete stays behind the confirm dialog, which now shows a thumbnail.
+    - Phone with touch emulation (no hover at all): all four controls visible, and tapping Edit opens the dialog.
+  - **C2 order.**
+    - The Studio grid uses the same `.justified` rows as the public gallery, with a shorter row (`--row: 11rem`), measured at 4 per row at 1440 instead of 2.
+    - dnd-kit's transform is translate-only, so photos aren't squashed mid-drag.
+    - **New: keyboard reordering** (handle → Space → arrows → Space) with a custom `readingOrderCoordinates`. ←/↑ mean one frame earlier and →/↓ one later. The stock dnd-kit getter is spatial and misbehaved in wrapped rows (found in this check; see the data note below).
+    - Verified with the probe: ← moved it 6 → 5, the public `/work` reading order matched the API, → restored it, and every real photo's position was unchanged.
+  - **C3 dialogs.**
+    - Solid `.panel` on an 80% backdrop with no blur (measured `backdrop-filter: none`).
+    - Escape closes, and focus returns to the opener (measured: back on "Edit …").
+    - Upload and Edit have labels above every field and mark optional fields as optional.
+    - The drop zone's real file input is sr-only but focusable: Tab from the dialog's close button lands on it, and the zone shows the focus ring. It used to be a clickable `<div>` no keyboard could reach.
+    - The edit preview reserves its box from the stored aspect ratio (416×230 measured), so the form doesn't jump.
+    - "max 25 MB" shown.
+  - **C4 Account.** Visible labels (Heading, Bio, Portrait image URL). Bio hint linked via `aria-describedby`. The portrait field is `type="url"`; the real https enforcement is D4.
+  - **C5 sign-in.**
+    - Broken 0×0 background removed, not replaced (measured: 0 `<img>` on the page).
+    - Solid card, h1 "Sign in", `autocomplete="username"` / `"current-password"` so a password manager can fill a long password (D8). A real sign-in through the UI reaches the dashboard.
+    - Errors stay generic (the server's "Invalid email or password").
+    - "Network error — is the backend running?" replaced in all four Studio forms with wording meant for a person.
+  - **Messages.** Rows are `.panel`s with `aria-expanded` / `aria-controls`. The sender's email is plain secondary text, not the accent, and still not a link (no-email rule). Delete is a quiet button that opens the confirm dialog. The body is still rendered as escaped text.
+  - **C6 cleanup.**
+    - `globals.css` rebuilt from scratch on one token system: 1,029 → 551 lines.
+    - Removed: every Material colour alias, the old type tokens, the custom radius ladder, every glass/overlay/button recipe from the Stitch era, `.font-title`, and the Playwrite VN font load (decision 3, restorable from git).
+    - Spinner and skeletons draw in `currentColor`.
+    - Scan: no TSX references any removed token.
+  - **Bug found and fixed.** The base rules `h1,h2,h3 { text-wrap: balance }` / `p { text-wrap: pretty }` were unlayered, so they beat Tailwind utilities. `text-wrap` is a shorthand that also sets wrap mode, so it **silently cancelled `truncate` on every `<p>`** ("005 · Objects" wrapped in a narrow card). Moved into `@layer base`; measured: every frame line is now a single line.
+  - **Data note (owner's real data).** The first keyboard-reorder run, before `readingOrderCoordinates` existed, swapped the probe with real photo `…2b9d`, then the probe was deleted, leaving `2b9d` at position 6 instead of 5. Visible order was unaffected. Restored immediately with one `PUT position:5`. Final state is identical to baseline (`2b98@0* 2b99@1* 2b9a@2* 2b9c@3 2b9b@4 2b9d@5`), confirmed after the re-run. The probe photo was created and deleted through the real routes; Atlas and Cloudinary are back to 6/6. The real contact message was only viewed.
+  - **Verification.**
+    - Production build against the real API; `tsc` clean; `eslint src backend` 0 problems.
+    - Sweep of 11 routes × 1440 / 390 with no overflow.
+    - Public-site measurements identical to Phase B after the stylesheet rebuild: row geometry, hero contrast 5.55 / 5.48, focus ring, and the view transition still morphing `photo-{id}`.
+  - **Harness notes.**
+    - The heredoc-plus-`rm -rf` safety block and the shell eating Windows backslashes are both known traps (HANDOFF §7). Scripts now go in files.
+    - The owner cleared their temp folder mid-phase; the harness in this session's scratchpad was unaffected.

@@ -167,141 +167,126 @@ export default function UploadModal({
 
       onSuccess();
     } catch {
-      setError("Network error — is the backend running?");
+      setError("Couldn't reach the server. Please try again.");
       setUploading(false);
     }
   }
 
   return (
-    <StudioModal title="Upload new photo" onClose={onClose}>
+    <StudioModal title="Upload photo" onClose={onClose}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-        {/* Drop zone / file picker — Drive-style, visual only */}
-        <div
-          className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
-            dragActive
-              ? "studio-dropzone-active"
-              : "border-white/15 hover:border-white/30"
-          }`}
+        {/* Drop zone. The real file input sits inside it, visually hidden but
+            focusable, so keyboard users can Tab to it and press Enter/Space —
+            the old drop zone was a clickable <div> that no keyboard could
+            reach. The focus ring is drawn on the zone (:focus-within). */}
+        <label
+          className={`dropzone ${dragActive ? "dropzone-active" : ""}`}
           onDragOver={(e) => {
             e.preventDefault();
             setDragActive(true);
           }}
           onDragLeave={() => setDragActive(false)}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
         >
           {preview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={preview}
-              alt="Preview"
-              className="max-h-48 mx-auto rounded-xl object-contain"
-            />
+            // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
+            <img src={preview} alt="Selected photograph" className="mx-auto max-h-48 rounded-photo object-contain" />
           ) : (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <CloudUpload className="text-on-surface-variant" size={44} aria-hidden="true" />
-              <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">
-                Drop an image here, or click to browse
-              </p>
-              <p className="font-body-md text-xs text-on-surface-variant/70">
-                Images only · max {MAX_FILE_SIZE_MB} MB
-              </p>
-            </div>
+            <span className="flex flex-col items-center gap-3 py-4">
+              <CloudUpload size={28} className="text-fg-3" aria-hidden="true" />
+              <span className="text-label font-medium text-fg">Drop an image here, or choose a file</span>
+              <span className="frame-meta">Images only · up to {MAX_FILE_SIZE_MB} MB</span>
+            </span>
           )}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            className="hidden"
+            className="sr-only"
+            aria-label="Choose an image file"
           />
-        </div>
+        </label>
 
-        {/* Title — writes to the `caption` field, which the frontend
-            already surfaces as each photo's display title */}
-        <div className="studio-field px-4 py-3">
-          <label className="sr-only" htmlFor="upload-title">
-            Title
+        {/* Title writes the `caption` field, which the site shows as the
+            photo's title. */}
+        <div>
+          <label htmlFor="upload-title" className="field-label">
+            Title <span className="font-normal text-fg-3">· optional</span>
           </label>
           <input
             id="upload-title"
             type="text"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            placeholder="Title"
-            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
+            maxLength={200}
+            className="field"
           />
         </div>
 
-        {/* Genre */}
-        <div className="studio-field px-4 py-3">
-          <label className="sr-only" htmlFor="upload-genre">
-            Genre
-          </label>
-          <select
-            id="upload-genre"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 cursor-pointer"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c} className="bg-surface-container-high">
-                {CATEGORY_LABELS[c]}
-              </option>
-            ))}
-          </select>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="upload-category" className="field-label">
+              Category
+            </label>
+            <select
+              id="upload-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="field cursor-pointer"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_LABELS[c]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="upload-location" className="field-label">
+              Location <span className="font-normal text-fg-3">· optional</span>
+            </label>
+            <input
+              id="upload-location"
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              maxLength={200}
+              className="field"
+            />
+          </div>
         </div>
 
-        {/* Location */}
-        <div className="studio-field px-4 py-3">
-          <label className="sr-only" htmlFor="upload-location">
-            Location
-          </label>
-          <input
-            id="upload-location"
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Location"
-            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
-          />
-        </div>
-
-        {/* Tags */}
-        <div className="studio-field px-4 py-3">
-          <label className="sr-only" htmlFor="upload-tags">
-            Tags, comma separated
+        <div>
+          <label htmlFor="upload-tags" className="field-label">
+            Tags <span className="font-normal text-fg-3">· comma separated, optional</span>
           </label>
           <input
             id="upload-tags"
             type="text"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="Tags, comma separated"
-            className="w-full bg-transparent border-0 text-on-surface font-body-md focus:ring-0 focus:outline-none p-0 placeholder:text-on-surface-variant/50"
+            maxLength={500}
+            className="field"
           />
         </div>
 
-        {/* Error */}
         {error && (
-          <p className="text-error text-sm text-center">{error}</p>
+          <p role="alert" className="text-body-md text-error">
+            {error}
+          </p>
         )}
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={uploading || !file}
-          className="btn-glass mt-2 px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
-        >
+        <button type="submit" disabled={uploading || !file} className="btn btn-primary w-full">
           {uploading ? (
             <>
               <Spinner />
-              <span>Uploading…</span>
+              Uploading…
             </>
           ) : (
             <>
-              <CloudUpload size={16} aria-hidden="true" />
-              Add to Archive
+              <CloudUpload size={18} aria-hidden="true" />
+              Upload photo
             </>
           )}
         </button>

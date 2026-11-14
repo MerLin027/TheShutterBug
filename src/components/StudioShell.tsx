@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { ArrowLeft, Images, LogOut, Mail, User } from "lucide-react";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioMenu, { type StudioNavItem } from "./StudioMenu";
-import { ArrowLeft, Images, LogOut, Mail, User } from "lucide-react";
 
 const NAV_ITEMS: StudioNavItem[] = [
   { href: "/admin/dashboard", label: "Gallery", icon: Images },
@@ -14,9 +14,13 @@ const NAV_ITEMS: StudioNavItem[] = [
 ];
 
 /**
- * Shared Studio chrome (§1.5, §1.6): sidebar on desktop, hamburger menu on
- * mobile. Used by the Gallery dashboard, Messages, and Account pages so
- * there's one nav implementation instead of three copies.
+ * Studio chrome (Redesign Phase C): sidebar on desktop, menu sheet on
+ * mobile, shared by Gallery, Messages and Account.
+ *
+ * App proportions per unslop: a 16rem (≈230px) sidebar on the deepest
+ * surface, navigation rows 2.25rem tall with a 2px gap, icons in one column,
+ * labels in sentence case. The active row is a surface step plus a hairline
+ * highlight, with the accent only on its icon — not a gold wash.
  */
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -28,77 +32,53 @@ export default function StudioShell({ children }: { children: ReactNode }) {
   const { signOut } = useAdminToken({ redirectWhenMissing: false });
 
   return (
-    <div className="bg-primary-container text-on-surface font-body-md min-h-[100dvh] antialiased selection:bg-surface-variant selection:text-on-surface">
+    <div className="min-h-[100dvh] bg-paper text-fg antialiased">
       <div className="flex h-[100dvh] overflow-hidden">
-        {/* ─── Sidebar (desktop) ──────────────────────────────────────────── */}
-        <nav className="studio-sidebar hidden md:flex flex-col h-full p-4 gap-element-gap fixed left-0 top-0 w-64 z-40">
-          {/* Wordmark + "Studio" read as one stacked lockup: both centred on
-              the sidebar's axis, with the wordmark dropped off the very top
-              edge so it sits in the panel rather than against its corner. */}
-          <Link
-            href="/"
-            className="font-title text-[1.4rem] leading-none text-on-surface hover:text-accent transition-colors block text-center px-2 mt-4 mb-2"
-          >
-            The Shutter Bug
+        <nav
+          aria-label="Studio"
+          className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-line bg-paper-deep px-3 py-5 md:flex"
+        >
+          <Link href="/" className="mb-8 block px-3">
+            <span className="block text-lead font-medium leading-tight text-fg">
+              The Shutter Bug
+            </span>
+            <span className="mt-0.5 block text-label text-fg-3">Studio</span>
           </Link>
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-center px-2 mb-8">
-            Studio
-          </p>
 
-          <div className="flex-1 flex flex-col gap-2">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
-              return (
+          <ul className="flex flex-col gap-0.5">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>
                 <Link
-                  key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all group ${
-                    active
-                      ? "bg-accent/10 text-accent font-bold"
-                      : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
-                  }`}
+                  aria-current={pathname === item.href ? "page" : undefined}
+                  className="studio-nav-row"
                 >
-                  <item.icon
-                    aria-hidden="true"
-                    size={20}
-                    className="group-hover:scale-110 transition-transform"
-                  />
-                  <span className="font-label-sm text-label-sm uppercase">
-                    {item.label}
-                  </span>
+                  <item.icon size={18} aria-hidden="true" />
+                  {item.label}
                 </Link>
-              );
-            })}
-          </div>
+              </li>
+            ))}
+          </ul>
 
-          <div className="flex flex-col gap-2 mt-auto border-t border-white/5 pt-4">
-            <Link
-              href="/"
-              className="flex items-center gap-4 px-4 py-3 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all group"
-            >
-              <ArrowLeft className="group-hover:scale-110 transition-transform" size={20} aria-hidden="true" />
-              <span className="font-label-sm text-label-sm uppercase">
-                Back to Site
-              </span>
-            </Link>
-            <button
-              onClick={signOut}
-              className="flex items-center gap-4 px-4 py-3 rounded-xl text-error hover:text-error/80 hover:bg-surface-container-high transition-all group w-full text-left"
-            >
-              <LogOut className="group-hover:scale-110 transition-transform" size={20} aria-hidden="true" />
-              <span className="font-label-sm text-label-sm uppercase">
-                Sign Out
-              </span>
-            </button>
-            {/* The logged-in address used to print here (and at the foot of
-                the mobile menu). Removed by request: this is a single-admin
-                Studio, so it identified nothing the person reading it didn't
-                already know, and it put an email address on screen in every
-                screenshot and screen-share of the dashboard. */}
-          </div>
+          <ul className="mt-auto flex flex-col gap-0.5 border-t border-line pt-4">
+            <li>
+              <Link href="/" className="studio-nav-row">
+                <ArrowLeft size={18} aria-hidden="true" />
+                Back to site
+              </Link>
+            </li>
+            <li>
+              <button type="button" onClick={signOut} className="studio-nav-row w-full">
+                <LogOut size={18} aria-hidden="true" />
+                Sign out
+              </button>
+            </li>
+          </ul>
+          {/* No signed-in address here, by the owner's earlier request: in a
+              single-admin Studio it identified nothing, and it put an email
+              address in every screenshot and screen-share. */}
         </nav>
 
-        {/* ─── Hamburger menu (mobile) ────────────────────────────────────── */}
         <StudioMenu
           navItems={NAV_ITEMS}
           pathname={pathname}
@@ -107,11 +87,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
           onSignOut={signOut}
         />
 
-        {/* ─── Main content ───────────────────────────────────────────────── */}
-        <main
-          id="main"
-          className="flex-1 md:ml-64 relative h-full overflow-y-auto overflow-x-hidden"
-        >
+        <main id="main" className="relative h-full flex-1 overflow-y-auto overflow-x-hidden md:ml-64">
           {children}
         </main>
       </div>

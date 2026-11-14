@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Jost, Playwrite_VN } from "next/font/google";
+import { IBM_Plex_Mono, Jost } from "next/font/google";
 import "./globals.css";
 
 // Self-hosted at build time by next/font: no request to Google at runtime,
@@ -10,16 +10,6 @@ import "./globals.css";
 const jost = Jost({
   subsets: ["latin"],
   variable: "--font-jost",
-  display: "swap",
-});
-
-/**
- * Script wordmark (.font-title). Google lists no subsets for this family,
- * so next/font never preloads it (its types don't even accept `preload`).
- * Kept for rollback (REDESIGN.md §3.3).
- */
-const playwrite = Playwrite_VN({
-  variable: "--font-playwrite",
   display: "swap",
 });
 
@@ -57,7 +47,7 @@ export default function RootLayout({
     // smooth scroll to the top underneath the route transition.
     <html
       lang="en"
-      className={`dark ${jost.variable} ${playwrite.variable} ${plexMono.variable}`}
+      className={`dark ${jost.variable} ${plexMono.variable}`}
       data-scroll-behavior="smooth"
     >
       <body className="bg-paper antialiased">

@@ -73,165 +73,119 @@ export default function EditModal({
 
       onSuccess();
     } catch {
-      setError("Network error — is the backend running?");
+      setError("Couldn't reach the server. Please try again.");
       setSaving(false);
     }
   }
 
   return (
     <StudioModal title="Edit photo" onClose={onClose}>
-      {/* Preview.
-
-          The photo now fills the width it's given and the frame follows the
-          photo, instead of the photo being pinned to 144px tall inside a
-          401px-wide box. That box was doing exactly what it was told —
-          `object-contain` was working, the image measured 256x144 at its
-          true 16:9 — but a picture floating in the middle of a grey slab
-          with 72px of dead space on each side reads as a broken thumbnail,
-          not as a preview.
-
-          `w-full` with `h-auto` is how the gallery card renders the same
-          image; `max-h-64` and `object-contain` keep a tall portrait from
-          pushing the form off the screen, and letterbox it rather than
-          crop it if it hits that ceiling. */}
-      {/* shrink-0 because this sits in a `flex flex-col max-h-[90vh]`
-          column: without it the preview is the thing that gives when the
-          form is taller than the viewport, and `overflow-hidden` then crops
-          the bottom off the photo. Measured at 1440x900: the image wanted
-          225.7px and the frame had been squeezed to 208.8px. The modal
-          already scrolls (`overflow-y-auto`) — let it. */}
-      <div className="shrink-0 rounded-2xl overflow-hidden bg-surface-container">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Preview fills the width and the frame follows the photo; max-h keeps
+          a tall portrait from pushing the form off screen (letterboxed, not
+          cropped). shrink-0 so it isn't what gives in the scrolling column. */}
+      {/* The box is reserved from the stored aspect ratio, so the form
+          doesn't jump when the photo arrives. Capped at 16rem tall; a
+          portrait letterboxes inside it rather than being cropped. */}
+      <div
+        className="frame-media max-h-64 w-full shrink-0"
+        style={{ aspectRatio: photo.aspectRatio > 0 ? photo.aspectRatio : 1.5 }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
         <img
           src={cloudinaryUrl(photo.imageUrl, 1200)}
-          alt={photo.caption || "Photo"}
-          className="block w-full h-auto max-h-64 object-contain"
+          alt={photo.caption || "Photograph being edited"}
+          className="!object-contain"
         />
       </div>
 
-      {/* All four controls use .studio-field, the same filled treatment as
-          the Contact form, the Account page and the Studio login. This
-          modal previously carried two more field styles of its own — a
-          bordered select and underlined inputs — and placeholder text at
-          white/10, which was effectively invisible. */}
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-        {/* Category */}
-        <div className="space-y-2">
-          <label
-            htmlFor="edit-category"
-            className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
-          >
-            Category
+        <div>
+          <label htmlFor="edit-caption" className="field-label">
+            Title <span className="font-normal text-fg-3">· optional</span>
           </label>
-          <div className="studio-field px-4 py-3">
+          <input
+            id="edit-caption"
+            type="text"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            maxLength={200}
+            className="field"
+          />
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="edit-category" className="field-label">
+              Category
+            </label>
             <select
               id="edit-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none"
+              className="field cursor-pointer"
             >
               {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="bg-surface-container">
+                <option key={c} value={c}>
                   {CATEGORY_LABELS[c]}
                 </option>
               ))}
             </select>
           </div>
-        </div>
-
-        {/* Caption */}
-        <div className="space-y-2">
-          <label
-            htmlFor="edit-caption"
-            className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
-          >
-            Caption
-          </label>
-          <div className="studio-field px-4 py-3">
-            <input
-              id="edit-caption"
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="A brief description…"
-              className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-on-surface-variant/40"
-            />
-          </div>
-        </div>
-
-        {/* Location */}
-        <div className="space-y-2">
-          <label
-            htmlFor="edit-location"
-            className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
-          >
-            Location
-          </label>
-          <div className="studio-field px-4 py-3">
+          <div>
+            <label htmlFor="edit-location" className="field-label">
+              Location <span className="font-normal text-fg-3">· optional</span>
+            </label>
             <input
               id="edit-location"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Mumbai, India"
-              className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-on-surface-variant/40"
+              maxLength={200}
+              className="field"
             />
           </div>
         </div>
 
-        {/* Tags */}
-        <div className="space-y-2">
-          <label
-            htmlFor="edit-tags"
-            className="block font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant px-1"
-          >
-            Tags (comma-separated)
+        <div>
+          <label htmlFor="edit-tags" className="field-label">
+            Tags <span className="font-normal text-fg-3">· comma separated, optional</span>
           </label>
-          <div className="studio-field px-4 py-3">
-            <input
-              id="edit-tags"
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="landscape, golden hour, coast"
-              className="w-full bg-transparent border-0 p-0 text-on-surface font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-on-surface-variant/40"
-            />
-          </div>
+          <input
+            id="edit-tags"
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            maxLength={500}
+            className="field"
+          />
         </div>
 
-        {/* Featured toggle */}
-        <label className="flex items-center gap-3 cursor-pointer">
+        <label className="flex cursor-pointer items-center gap-3">
           <input
             type="checkbox"
             checked={isFeatured}
             onChange={(e) => setIsFeatured(e.target.checked)}
-            className="rounded border-white/20 bg-surface-container-high text-accent focus:ring-0 focus:ring-offset-0"
+            className="checkbox"
           />
-          <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">
-            Featured Photo
-          </span>
+          <span className="text-label text-fg">Feature in Selected frames</span>
         </label>
 
-        {/* Error */}
         {error && (
-          <p className="text-error text-sm text-center">{error}</p>
+          <p role="alert" className="text-body-md text-error">
+            {error}
+          </p>
         )}
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-glass mt-2 px-8 py-3 font-label-sm text-label-sm uppercase tracking-widest text-on-surface flex items-center justify-center gap-3"
-        >
+        <button type="submit" disabled={saving} className="btn btn-primary w-full">
           {saving ? (
             <>
               <Spinner />
-              <span>Saving…</span>
+              Saving…
             </>
           ) : (
             <>
-              <Save size={16} aria-hidden="true" />
-              Save Changes
+              <Save size={18} aria-hidden="true" />
+              Save changes
             </>
           )}
         </button>

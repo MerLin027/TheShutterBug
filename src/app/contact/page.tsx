@@ -180,11 +180,11 @@ export default function Contact() {
                 className="mb-8 flex items-start gap-3 rounded-control border border-line bg-card px-4 py-3"
               >
                 <CircleCheck size={20} className="mt-0.5 text-accent" aria-hidden="true" />
-                {/* Unchanged pending the owner's decision: this still implies
-                    a reply will arrive (REDESIGN.md, Phase B report). */}
-                <p className="text-body-md text-fg">
-                  Message sent. I&apos;ll be in touch within a couple of days.
-                </p>
+                {/* Owner's decision (2026-11-14): no reply promise. Nothing
+                    behind this form notifies anyone, so the old "I'll be in
+                    touch within a couple of days" was a promise the system
+                    could not keep. */}
+                <p className="text-body-md text-fg">Message sent. Thank you.</p>
               </div>
             )}
 
@@ -247,7 +247,7 @@ export default function Contact() {
                     button doesn't change width mid-submit. */}
                 <span className="inline-flex size-[18px] items-center justify-center">
                   {isLoading ? (
-                    <Spinner className="!border-paper/25 !border-t-paper" />
+                    <Spinner />
                   ) : (
                     <ArrowRight size={18} aria-hidden="true" />
                   )}

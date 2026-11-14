@@ -1,23 +1,24 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 /**
- * The Studio's modal shell, extracted from the three hand-rolled copies in
- * UploadModal, EditModal and DashboardClient's delete confirmation. All three
- * carried the same backdrop, the same `admin-modal-enter liquid-glass` panel
- * and the same `e.target === e.currentTarget` dismissal test — and all three
- * were missing the same two things:
+ * The Studio's dialog shell, used by Upload, Edit and the delete
+ * confirmations.
  *
- *   1. Escape. The lightbox has full keyboard control (LightboxKeys); the
- *      Studio's dialogs could only be dismissed by clicking the backdrop or
- *      hitting a close button. That was drift, not a decision.
- *   2. A body scroll lock. Scrolling the page behind an open dialog moves the
- *      content out from under it while the dialog stays pinned.
+ * Phase C: a solid card panel on a dark backdrop. It was a translucent
+ * `liquid-glass` panel, so the photographs behind it showed through the
+ * upload drop zone and the form (REDESIGN.md §3.9, task C3).
  *
- * `dismissible` covers the delete confirmation's existing rule: while the
- * delete is in flight, neither the backdrop nor Escape should close it.
+ * Behaviour kept from Stage 3, plus focus handling:
+ *   - Escape closes, unless `dismissible` is false (an irreversible action
+ *     is running — e.g. a delete in flight).
+ *   - A click on the backdrop itself closes; one that bubbles out of the
+ *     panel doesn't.
+ *   - The page behind cannot scroll.
+ *   - Focus moves into the dialog on open and returns to whatever had it
+ *     on close, so keyboard users aren't dropped at the top of the page.
  */
 export default function StudioModal({
   title,
@@ -37,59 +38,60 @@ export default function StudioModal({
   className?: string;
   children: ReactNode;
 }) {
-  // Escape closes — unless the dialog is mid-action.
+  const panel = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
   useEffect(() => {
     if (!dismissible) return;
-
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
       }
     }
-
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [dismissible, onClose]);
 
-  // Scroll lock. Restores whatever was there before rather than assuming "",
-  // so this stays correct if anything else ever sets it.
   useEffect(() => {
     const previous = document.body.style.overflow;
+    const opener = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
+    // First focusable control in the panel, else the panel itself.
+    const first = panel.current?.querySelector<HTMLElement>(
+      "input, select, textarea, button, [href], [tabindex]:not([tabindex='-1'])"
+    );
+    (first ?? panel.current)?.focus();
     return () => {
       document.body.style.overflow = previous;
+      opener?.focus?.();
     };
   }, []);
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center admin-modal-backdrop"
+      className="studio-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4"
       onClick={(e) => {
-        // Only a click on the backdrop itself — not one that bubbled up out
-        // of the panel — counts as a dismissal.
         if (e.target === e.currentTarget && dismissible) onClose();
       }}
     >
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
-        className={`admin-modal-enter liquid-glass rounded-2xl w-full ${
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
+        className={`studio-dialog panel flex max-h-[90dvh] w-full flex-col gap-6 overflow-y-auto p-6 ${
           size === "sm" ? "max-w-sm" : "max-w-lg"
-        } mx-4 p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto ${className}`.trim()}
+        } ${className}`.trim()}
       >
         {title && (
-          <div className="flex items-center justify-between">
-            <h2 className="font-headline-md text-headline-md text-on-surface">
+          <div className="flex items-center justify-between gap-4">
+            <h2 id={titleId} className="text-heading font-medium text-fg">
               {title}
             </h2>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="btn-icon-glass text-on-surface"
-            >
-              <X size={24} aria-hidden="true" />
+            <button type="button" onClick={onClose} aria-label="Close" className="tool-btn -mr-2">
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         )}

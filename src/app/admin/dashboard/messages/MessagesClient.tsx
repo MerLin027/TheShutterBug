@@ -8,7 +8,7 @@ import StudioTopBar from "@/components/StudioTopBar";
 import StudioModal from "@/components/StudioModal";
 import Spinner from "@/components/Spinner";
 import { MessageListSkeleton, StudioBoot } from "@/components/StudioSkeletons";
-import { ChevronDown, CircleAlert, Clock, Mail, RefreshCw, Trash2, User } from "lucide-react";
+import { ChevronDown, CircleAlert, Mail, RefreshCw, Trash2 } from "lucide-react";
 
 interface ContactMessage {
   _id: string;
@@ -123,209 +123,155 @@ export default function MessagesClient() {
 
   return (
     <StudioShell>
-      {/* One heading, in the bar — this page used to print "Messages" here
-          and "Inbox / All Submissions" again directly below it. */}
       <StudioTopBar
         title="Messages"
         count={
-          loading
+          loading || error
             ? undefined
             : `${messages.length} ${messages.length === 1 ? "message" : "messages"}`
         }
       >
         <button
+          type="button"
           onClick={fetchMessages}
-          className="btn-icon-glass text-on-surface"
+          className="tool-btn size-11"
           title="Refresh"
           aria-label="Refresh messages"
         >
-          <RefreshCw size={24} aria-hidden="true" />
+          <RefreshCw size={18} aria-hidden="true" />
         </button>
       </StudioTopBar>
 
-      {/* Content Area */}
-      <div className="px-margin-mobile md:px-margin-desktop py-10 min-h-full">
-        {/* Loading */}
+      <div className="max-w-4xl px-4 pb-16 pt-6 md:px-8 md:pt-8">
         {loading && <MessageListSkeleton />}
 
-        {/* Error */}
         {!loading && error && (
-          <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
-            <CircleAlert className="text-error/60" size={48} aria-hidden="true" />
-            <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">
-              {error}
-            </p>
-            <button
-              onClick={fetchMessages}
-              className="btn-outline flex items-center gap-2 px-6 py-2.5 text-on-surface font-label-sm text-label-sm uppercase"
-            >
+          <div role="alert" className="flex flex-col items-center px-6 py-24 text-center">
+            <CircleAlert size={32} className="mb-5 text-fg-3" aria-hidden="true" />
+            <p className="max-w-sm text-body-md text-fg-2">{error}</p>
+            <button type="button" onClick={fetchMessages} className="btn btn-quiet mt-6">
               <RefreshCw size={16} aria-hidden="true" />
               Retry
             </button>
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && !error && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <Mail className="text-on-surface-variant/30 mb-6" size={64} aria-hidden="true" />
-            <h3 className="font-headline-md text-headline-md text-on-surface mb-3">
-              No messages yet
-            </h3>
-            <p className="font-body-md text-body-md text-on-surface-variant/70 max-w-xs leading-relaxed">
-              When visitors submit the contact form their messages will
-              appear here.
+          <div className="flex flex-col items-center px-6 py-24 text-center">
+            <Mail size={32} className="mb-5 text-fg-3" aria-hidden="true" />
+            <h2 className="text-heading font-medium text-fg">No messages yet</h2>
+            <p className="mt-3 max-w-sm text-body-md text-fg-2">
+              Messages sent from the contact form appear here.
             </p>
           </div>
         )}
 
-        {/* Messages List */}
         {!loading && !error && messages.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-2">
             {messages.map((msg) => {
               const isOpen = expanded === msg._id;
+              const bodyId = `message-${msg._id}`;
               return (
-                /* .studio-card, not .liquid-glass: one blur layer per row
-                   inside a scrolling container is the exact per-card glass
-                   the design philosophy rules out. */
-                <div
-                  key={msg._id}
-                  className="studio-card rounded-2xl overflow-hidden"
-                >
-                  {/* Row header — always visible */}
+                <li key={msg._id} className="panel overflow-hidden">
                   <button
+                    type="button"
                     onClick={() => setExpanded(isOpen ? null : msg._id)}
-                    className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-white/5 transition-colors"
+                    aria-expanded={isOpen}
+                    aria-controls={bodyId}
+                    className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-raised/60"
                   >
-                    {/* Avatar initial */}
-                    <div className="shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-sm text-label-sm uppercase font-bold">
-                      {msg.name.charAt(0)}
-                    </div>
+                    <span
+                      aria-hidden="true"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-raised text-label font-medium text-fg-2"
+                    >
+                      {msg.name.charAt(0).toUpperCase()}
+                    </span>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                        <span className="font-body-md text-body-md text-on-surface font-bold truncate">
-                          {msg.name}
-                        </span>
-                        <span className="font-label-sm text-label-sm text-accent truncate">
-                          {msg.email}
-                        </span>
-                      </div>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-baseline gap-x-3">
+                        <span className="truncate text-body-md font-medium text-fg">{msg.name}</span>
+                        <span className="truncate text-label text-fg-2">{msg.email}</span>
+                      </span>
                       {!isOpen && (
-                        <p className="font-body-md text-body-md text-on-surface-variant truncate mt-0.5">
-                          {msg.message}
-                        </p>
+                        <span className="mt-0.5 block truncate text-body-md text-fg-3">{msg.message}</span>
                       )}
-                    </div>
+                    </span>
 
-                    <div className="shrink-0 flex items-center gap-3">
-                      <span className="hidden sm:block font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">
+                    <span className="flex shrink-0 items-center gap-3">
+                      <span className="frame-meta hidden whitespace-nowrap sm:block">
                         {formatDate(msg.createdAt)}
                       </span>
                       <ChevronDown
                         aria-hidden="true"
                         size={18}
-                        className={`text-on-surface-variant transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                        className={`text-fg-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
-                    </div>
+                    </span>
                   </button>
 
-                  {/* Expanded message body */}
                   {isOpen && (
-                    <div className="px-5 pb-5 border-t border-white/5">
-                      <div className="flex flex-col gap-4 pt-4">
-                        {/* Metadata row */}
-                        <div className="flex flex-wrap gap-4 text-on-surface-variant">
-                          <div className="flex items-center gap-1.5">
-                            <User size={16} aria-hidden="true" />
-                            <span className="font-label-sm text-label-sm uppercase">
-                              {msg.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Mail size={16} aria-hidden="true" />
-                            {/* Plain text, not a mailto: link — this app sends
-                                no email and hands off to no mail client. The
-                                address is here to be read and copied. */}
-                            <span className="font-label-sm text-label-sm uppercase text-accent select-all">
-                              {msg.email}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 sm:hidden">
-                            <Clock size={16} aria-hidden="true" />
-                            <span className="font-label-sm text-label-sm uppercase">
-                              {formatDate(msg.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-                        {/* Message body */}
-                        <p className="font-body-md text-body-md text-on-surface leading-relaxed whitespace-pre-wrap">
-                          {msg.message}
-                        </p>
-                        {/* Row actions. There was a "Reply via Email" mailto:
-                            button here; removed on request. Nothing in this
-                            project sends or composes email. */}
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            onClick={() => {
-                              setDeleteError("");
-                              setDeletingMessage(msg);
-                            }}
-                            className="btn-danger inline-flex items-center gap-2 px-6 py-2.5 font-label-sm text-label-sm uppercase"
-                          >
-                            <Trash2 size={16} aria-hidden="true" />
-                            Delete
-                          </button>
-                        </div>
+                    <div id={bodyId} className="border-t border-line px-4 pb-4 pt-4">
+                      <p className="frame-meta mb-3 sm:hidden">{formatDate(msg.createdAt)}</p>
+                      {/* Plain, selectable text — not a mailto: link. Nothing
+                          in this project sends or composes email (owner's
+                          standing rule); the address is here to be copied. */}
+                      <p className="mb-4 select-all text-label text-fg-2">{msg.email}</p>
+                      {/* React escapes this; whitespace-pre-wrap keeps the
+                          sender's line breaks. Never rendered as HTML. */}
+                      <p className="whitespace-pre-wrap text-body-md leading-relaxed text-fg">
+                        {msg.message}
+                      </p>
+                      <div className="mt-5 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError("");
+                            setDeletingMessage(msg);
+                          }}
+                          className="btn btn-quiet h-10 text-error"
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </div>
 
-      {/* Delete confirmation — same shape as the photo delete in
-          DashboardClient, including dismissible={!deleting} so a delete in
-          flight can't be dismissed by Escape or a backdrop click. */}
+      {/* Delete confirmation — dismissible={!deleting} so a delete in flight
+          can't be dismissed by Escape or a backdrop click. */}
       {deletingMessage && (
         <StudioModal
           size="sm"
-          className="text-center"
+          title="Delete message?"
           dismissible={!deleting}
           onClose={() => setDeletingMessage(null)}
         >
-          <Trash2 className="text-error mx-auto" size={48} aria-hidden="true" />
-          <h3 className="font-headline-md text-headline-md text-on-surface">
-            Delete message?
-          </h3>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            This will permanently remove {deletingMessage.name}&rsquo;s message
-            from the database. This action cannot be undone.
+          <p className="text-body-md text-fg-2">
+            This permanently removes {deletingMessage.name}&rsquo;s message. It
+            can&apos;t be undone.
           </p>
           {deleteError && (
-            <p className="font-body-md text-body-md text-error">{deleteError}</p>
+            <p role="alert" className="text-body-md text-error">
+              {deleteError}
+            </p>
           )}
-          <div className="flex gap-3 justify-center">
+          <div className="flex justify-end gap-2">
             <button
+              type="button"
               onClick={() => setDeletingMessage(null)}
               disabled={deleting}
-              className="btn-outline px-6 py-3 text-on-surface font-label-sm text-label-sm uppercase"
+              className="btn btn-quiet"
             >
               Cancel
             </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="btn-danger px-6 py-3 font-label-sm text-label-sm uppercase flex items-center gap-2"
-            >
-              {deleting ? (
-                <Spinner />
-              ) : (
-                <Trash2 size={16} aria-hidden="true" />
-              )}
+            <button type="button" onClick={handleDelete} disabled={deleting} className="btn btn-danger">
+              {deleting ? <Spinner /> : <Trash2 size={16} aria-hidden="true" />}
               Delete
             </button>
           </div>
