@@ -11,6 +11,19 @@
 
 ## 1. How to roll something back
 
+**The redesign is LIVE** (merged to `main` as `f644be73` on 2026-11-14, deployed by Vercel within ~45 s). To undo the whole thing:
+
+1. **Fastest, no code:** Vercel dashboard → the project → Deployments → the deployment before `f644be73` → **Instant Rollback**. The live site reverts in seconds; `main` is unchanged, so the next push redeploys the redesign.
+2. **Permanent, in git:** this creates one new commit that reverses all of Phases A–C. Vercel deploys it automatically. Nothing is rewritten, and the redesign can be re-applied later by reverting the revert.
+   ```bash
+   git switch main
+   git pull
+   git revert -m 1 f644be73
+   git push
+   ```
+
+To undo just one piece instead, use the per-file commands below.
+
 Everything listed in §3 exists unchanged on `main` at `9585aa65`.
 
 ```bash
@@ -381,3 +394,4 @@ Newest last. One entry per task: what changed, how it was verified, and anything
     - The heredoc-plus-`rm -rf` safety block and the shell eating Windows backslashes are both known traps (HANDOFF §7). Scripts now go in files.
     - The owner cleared their temp folder mid-phase; the harness in this session's scratchpad was unaffected.
 - **2026-11-14 · Phase C committed** as `1a25e9e3` and pushed to `origin/redesign/unslop`. `main` is untouched.
+- **2026-11-14 · Merged to `main` and live** (owner request: "merge to main for now"). Merge commit `f644be73` (`--no-ff`, so one `git revert -m 1` undoes Phases A–C). Vercel deployed it in ~45 s. Live check against the-shutter-bug.vercel.app at 1440 and 390 px: every route returns the right page and status; all 6 photos load from Render on `/`, `/work` and the Studio dashboard; every image loads; no overflow. The only console error is the intended 404. Backend unchanged, so no Render deploy was needed. Rollback steps are in §1.
