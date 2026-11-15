@@ -9,15 +9,7 @@ import { useAdminToken } from "@/lib/useAdminToken";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
 
-/** The one photograph beside the form — only what the page needs. */
-export type SignInPhoto = {
-  src: string;
-  srcSet: string;
-  alt: string;
-  title: string;
-  /** Photographer credit for a photo that isn't the owner's own. */
-  credit?: { name: string; url: string };
-};
+import type { SignInPhoto } from "./signInPhotos";
 
 /**
  * Studio sign-in (Redesign Phase C, task C5; editorial since the Studio
@@ -35,7 +27,40 @@ export type SignInPhoto = {
  * long random password, which is the practical fix for the short one the
  * account currently has (REDESIGN.md task D8). Rate limiting is Phase D.
  */
-export default function SignInClient({ photo }: { photo: SignInPhoto | null }) {
+/** Remembers the last photo shown, so a refresh always brings a new one. */
+const LAST_PHOTO_KEY = "studio-signin-photo";
+
+export default function SignInClient({
+  photos,
+  initialIndex,
+}: {
+  photos: SignInPhoto[];
+  /** The server's random pick. */
+  initialIndex: number;
+}) {
+  const [index, setIndex] = useState(initialIndex);
+  const photo: SignInPhoto | null = photos[index] ?? null;
+
+  // The server picks at random, so 1 visit in 10 would repeat the photo just
+  // seen. If it did, step to the next one — before the image has faded in
+  // (it settles over ~2.6 s), so the switch isn't noticeable. Storage can be
+  // unavailable (private mode, blocked): then the random pick simply stands.
+  useEffect(() => {
+    if (photos.length < 2) return;
+    let shown = initialIndex;
+    try {
+      const last = Number(sessionStorage.getItem(LAST_PHOTO_KEY) ?? localStorage.getItem(LAST_PHOTO_KEY));
+      if (last === initialIndex) {
+        shown = (initialIndex + 1) % photos.length;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time correction after reading storage
+        setIndex(shown);
+      }
+      localStorage.setItem(LAST_PHOTO_KEY, String(shown));
+    } catch {
+      /* storage unavailable — keep the server's pick */
+    }
+  }, [initialIndex, photos.length]);
+
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -99,15 +124,17 @@ export default function SignInClient({ photo }: { photo: SignInPhoto | null }) {
         <figure className="relative hidden overflow-hidden lg:block">
           {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition; no next/image by decision */}
           <img
+            key={photo.src}
             src={photo.src}
             srcSet={photo.srcSet}
-            sizes="55vw"
+            sizes="(min-width: 1024px) 55vw, 100vw"
+            fetchPriority="high"
             alt={photo.alt}
             className="hero-img absolute inset-0"
           />
-          {/* A gentle darkening wash (owner: the first photo read too bright),
+          {/* A gentle darkening wash (owner found the first photo too bright),
               then the usual scrim at the foot for the caption. */}
-          <div aria-hidden="true" className="absolute inset-0 bg-[rgb(11_10_9/0.28)]" />
+          <div aria-hidden="true" className="absolute inset-0 bg-[rgb(11_10_9/0.22)]" />
           <div
             aria-hidden="true"
             className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-paper/85 to-transparent"
