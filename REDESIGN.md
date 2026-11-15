@@ -543,3 +543,8 @@ Owner: "rework the pages and sections in the admin resource, decide what goes wh
 - Served from `images.unsplash.com` at 800/1200/1600/2400 with `auto=format`; all sizes verified 200.
 - **Phase D note:** the CSP (D1) must allow `img-src https://images.unsplash.com`.
 - Verified: the image loads (800w chosen at 1440×900, DPR 1); the credit link is present; no page errors.
+- **Swapped the same day.** The owner said Reine read "kind of bright and the northern lights are not in abundance".
+  - Compared the free candidates by eye from downloaded previews: the Flakstad beach shot has the aurora filling the sky and mirrored in the water, with no town lights; Rafael Peier's cliffs are darker but have a single swirl; David Becker's forest has bright snow in the foreground.
+  - Now **"Northern lights over Flakstad beach" by Johny Goerend** (https://unsplash.com/photos/northern-lights-over-flakstad-beach-U_diPCXCBxU), Unsplash License, credited.
+  - Added a gentle 28% dark wash over the photo for a moodier panel. It is a solid darkening layer, not glass, and leaves the photo untouched.
+  - Verified: all four sizes 200, loads at 1440×900, credit present, no page errors.
