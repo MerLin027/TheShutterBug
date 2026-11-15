@@ -18,7 +18,7 @@ export default function SelectedFrames({ photos }: { photos: Photo[] }) {
         <div className="reveal mb-12 flex flex-col gap-4 md:mb-16 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="caps">Featured</p>
-            <h2 id="selected-work" className="section-title mt-3">Selected work</h2>
+            <h2 id="selected-work" className="section-title mt-3">Selected Work</h2>
           </div>
           <Link href="/work" className="text-link self-start md:self-auto">
             View the full gallery

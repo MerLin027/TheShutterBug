@@ -31,7 +31,7 @@ export default function Error({
         <div role="alert" className="site-container">
           <p className="caps enter">Couldn&apos;t load</p>
           <h1 className="display-title enter mt-5 max-w-[14ch]" style={{ "--i": 1 } as CSSProperties}>
-            The darkroom door is stuck
+            The Darkroom Door Is Stuck
           </h1>
           <p className="lede enter mt-6 max-w-[32rem]" style={{ "--i": 2 } as CSSProperties}>
             The server didn&apos;t answer in time. It may be waking up, so try

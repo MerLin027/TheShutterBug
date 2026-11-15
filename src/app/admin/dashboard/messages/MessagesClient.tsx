@@ -159,7 +159,7 @@ export default function MessagesClient() {
         {!loading && !error && messages.length === 0 && (
           <div className="flex flex-col items-center px-6 py-24 text-center">
             <Mail size={32} className="mb-5 text-fg-3" aria-hidden="true" />
-            <h2 className="studio-heading">No messages yet</h2>
+            <h2 className="studio-heading">No Messages Yet</h2>
             <p className="lede mt-3 max-w-sm">
               Messages sent from the contact form appear here.
             </p>
@@ -242,7 +242,7 @@ export default function MessagesClient() {
       {deletingMessage && (
         <StudioModal
           size="sm"
-          title="Delete message?"
+          title="Delete Message?"
           dismissible={!deleting}
           onClose={() => setDeletingMessage(null)}
         >

@@ -111,7 +111,7 @@ export default function OverviewClient() {
         <div className="enter flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="caps">Studio</p>
-            <h2 className="section-title mt-2">The site at a glance</h2>
+            <h2 className="section-title mt-2">The Site at a Glance</h2>
           </div>
           <Link href="/" className="text-link self-start md:self-auto">
             View the site
@@ -124,7 +124,7 @@ export default function OverviewClient() {
           <section aria-labelledby="attention" className="enter mt-12" style={{ "--i": 1 } as CSSProperties}>
             <h3 id="attention" className="caps mb-3 flex items-center gap-2 !text-accent">
               <CircleAlert size={14} aria-hidden="true" />
-              Needs attention
+              Needs Attention
             </h3>
             <ul className="border-t border-line">
               {attention.map((a) => (
@@ -207,7 +207,7 @@ export default function OverviewClient() {
         {/* ── Latest messages ─────────────────────────────────────────── */}
         {latest.length > 0 && (
           <section aria-labelledby="ov-latest" className="enter mt-16" style={{ "--i": 3 } as CSSProperties}>
-            <h3 id="ov-latest" className="caps mb-3">Latest messages</h3>
+            <h3 id="ov-latest" className="caps mb-3">Latest Messages</h3>
             <ul className="border-t border-line">
               {latest.map((m) => (
                 <li key={m._id}>
@@ -231,7 +231,7 @@ export default function OverviewClient() {
         {featured.length > 0 && (
           <section aria-labelledby="ov-featured" className="enter mt-16" style={{ "--i": 4 } as CSSProperties}>
             <div className="mb-4 flex items-baseline justify-between">
-              <h3 id="ov-featured" className="caps">Selected work on Home</h3>
+              <h3 id="ov-featured" className="caps">Selected Work on Home</h3>
               <Link href="/admin/dashboard/photos?filter=featured" className="nav-link !h-auto">Edit</Link>
             </div>
             <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6">

@@ -17,7 +17,7 @@ export default function NotFound() {
         <div className="site-container">
           <p className="caps enter">404 · Empty frame</p>
           <h1 className="display-title enter mt-5 max-w-[14ch]" style={{ "--i": 1 } as CSSProperties}>
-            Nothing in this frame
+            Nothing in This Frame
           </h1>
           <p className="lede enter mt-6 max-w-[32rem]" style={{ "--i": 2 } as CSSProperties}>
             The page you were looking for isn&apos;t here. It may have moved, or

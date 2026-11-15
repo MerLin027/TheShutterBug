@@ -586,3 +586,12 @@ Owner: "rework the pages and sections in the admin resource, decide what goes wh
   - Contact: focus moves the gold rule and the label brightens.
   - Studio: About and the Upload dialog.
   - Busy button opacity is 1; unavailable is 0.45. No errors.
+
+## Title case for headings (owner request, 2026-11-15)
+
+- Owner: capitalise the second word of titles (e.g. "Sign in" → "Sign In"), everywhere.
+- **Applied standard title case:** main words capitalised; a/an/the/and/but/or/for/nor/at/by/in/of/on/to/as/up stay lower-case unless first.
+- **Public pages:** Say Hello; Selected Work; Nothing in This Frame (404); The Darkroom Door Is Stuck (error); The Gallery Couldn't Load; No Photographs Yet; `No {Category} Photographs Yet`.
+- **Studio:** Sign In; The Site at a Glance; Needs Attention; Latest Messages; Selected Work on Home; Background Photograph; The Work; Selected Work; The About Page; No Messages Yet; Nothing Featured Yet / No Photographs Yet; dialog titles Upload Photo, Edit Photo, Delete Photo?, Delete Message?.
+- **Deliberately unchanged:** button labels and sentences; the owner's own About heading (content they edit); small-caps labels (already all capitals on screen); single-word titles.
+- A sweep of every `<h1>`–`<h4>`, StudioModal/Notice/StudioTopBar title finds no lower-case main word left. tsc, eslint and the build are clean.
