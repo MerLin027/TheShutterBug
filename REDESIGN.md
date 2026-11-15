@@ -441,3 +441,12 @@ Owner verdict on the live Phase B/C design: "hideous", the gallery "takes too mu
   - A shared `?photo=` link reopened the viewer on every filter change.
 - **Reduced motion:** every Phase R effect is off.
 - **Checks:** `tsc` clean, `eslint src backend` 0 problems, production build against the real API, sweep of 11 routes × 2 widths with no overflow.
+- **2026-11-15 · Phase R live.**
+  - Merged as `7223b89b` (`--no-ff`; undo with `git revert -m 1 7223b89b` or Vercel Instant Rollback). Vercel deployed it in ~30 s.
+  - Live check: title animates (13 letters), boxless nav shows Gallery/About/Contact, 3 masonry columns, the viewer opens in 35 ms, 4 quick Next clicks = +4, Back closes it, /about /contact /admin all 200, no page errors.
+- **2026-11-15 · "Backend showed a failure ~20 h ago" (owner report).**
+  - Backend is healthy now: `/api/health` and `/api/photos` 200 in under 0.5 s. A local boot is clean (Cloudinary OK, MongoDB connected), and Atlas resolves.
+  - No `backend/` or `render.yaml` change since 2026-11-13, so nothing from the redesign touched it. All Vercel statuses on GitHub are success (Render doesn't report to GitHub).
+  - Most likely cause: the 2026-11-14 outage. After Render was resumed while Atlas was still paused, `connectDB` hit `querySrv ENOTFOUND` and called `process.exit(1)`, so the service crash-looped until Atlas was resumed.
+  - Render's own event log (dashboard → service → Events/Logs) would confirm the exact error; it isn't reachable from here.
+  - Fix queued as **D7**: retry the DB connection instead of exiting, and have `/api/health` report DB state.
