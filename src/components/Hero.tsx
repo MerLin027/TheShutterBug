@@ -8,8 +8,10 @@ import { ArrowRight } from "lucide-react";
  * - The photograph settles in on load (slow zoom-out from a soft, bright
  *   blur) and then drifts slower than the page as you scroll (parallax).
  * - The title "develops": each letter surfaces from a blurred, over-exposed
- *   smudge into a sharp print, one after another, and a single band of
- *   light then sweeps across it — the darkroom, not a template fade.
+ *   smudge into a sharp print, one after another, while the whole title
+ *   pulls into focus (wide tracking drawing in); then a band of amber
+ *   safelight sweeps through the letters — the darkroom, not a template
+ *   fade. Gold hairlines draw out either side of the eyebrow.
  * - Eyebrow, subtitle and link rise in around it; the whole block lifts
  *   away as you scroll; a scroll cue invites the first scroll.
  * Reduced motion: all of it off (globals.css).
