@@ -211,7 +211,7 @@ Each phase is its own approval gate. A task is done only when its "done when" ch
 | D7 | `/api/health` reports DB state while still returning 200, so the cron keeps working; `connectDB` retries instead of exiting, so it doesn't crash-loop | A10:2025 | ☑ |
 | D8 | **Owner action:** set a strong admin password (the current one is 7 characters) through `seedAdmin` / Render | A07 | ☐ |
 | D9 | `revalidatePublicPages` is a Server Action, so it's a public POST endpoint. Anyone can call it and purge the cache (no input, low impact: forces re-fetches from Render). Gate it on a token the backend verifies, or rate-limit it | A01 / A04:2021 | ☑ |
-| D10 | **Owner directive (2026-11-15): stop anyone downloading the photographs, whether by right-click, dev tools or any other route.** A browser can't show an image without sending its pixels, so anything on screen can still be screenshotted or pulled from the network tab. The goal is to make downloading hard and the result low-value: (a) never serve the original. Cap delivery to display sizes through Cloudinary transforms, and move originals to `type: authenticated` / signed URLs so a guessed or edited URL returns nothing bigger. (b) A visible watermark on public deliveries (Cloudinary overlay), if the owner wants one. (c) No right-click save or drag: `contextmenu` / `dragstart` blocked on photos, `draggable=false`, `-webkit-touch-callout: none` for long-press. (d) Photos painted as CSS backgrounds or `<canvas>` behind a transparent layer, so "Open image in new tab" and Inspect show no image URL. (e) Strip EXIF/GPS from deliveries. (f) Hotlink protection: Cloudinary strict transformations plus an allowed-referrer list, so other sites can't embed or proxy the photos. (g) Studio's "Download current" (owner-only) stays, behind auth. Plan this with the owner before building: (b) and (d) change how the site looks and behaves. | A01 / A04:2021 | ◐ code done; existing photos await the migration |
+| D10 | **Owner directive (2026-11-15): stop anyone downloading the photographs, whether by right-click, dev tools or any other route.** A browser can't show an image without sending its pixels, so anything on screen can still be screenshotted or pulled from the network tab. The goal is to make downloading hard and the result low-value: (a) never serve the original. Cap delivery to display sizes through Cloudinary transforms, and move originals to `type: authenticated` / signed URLs so a guessed or edited URL returns nothing bigger. (b) A visible watermark on public deliveries (Cloudinary overlay), if the owner wants one. (c) No right-click save or drag: `contextmenu` / `dragstart` blocked on photos, `draggable=false`, `-webkit-touch-callout: none` for long-press. (d) Photos painted as CSS backgrounds or `<canvas>` behind a transparent layer, so "Open image in new tab" and Inspect show no image URL. (e) Strip EXIF/GPS from deliveries. (f) Hotlink protection: Cloudinary strict transformations plus an allowed-referrer list, so other sites can't embed or proxy the photos. (g) Studio's "Download current" (owner-only) stays, behind auth. Plan this with the owner before building: (b) and (d) change how the site looks and behaves. | A01 / A04:2021 | ☑ |
 | D✓ | Verify: headers checked with curl on the build; CSP breaks nothing (no console violations on any route); rate limit trips at the threshold | | ☐ |
 
 ### Phase E: Close-out
@@ -681,6 +681,16 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 - Browser sweep of `/`, `/work`, `/about`, `/contact`, `/lightbox/:id`, `/admin` and three Studio pages: all headers present; **0 CSP violations**; 0 console errors; 0 broken images; every Cloudinary image signed; **0 visible photos hit-testable**.
 - lint 0 errors, `tsc` clean, build OK.
 
-**Owner actions:**
+**Live (merge `54996aca`):**
+- Vercel Production succeeded and Render picked up the new API (`/api/health` reports `db`).
+- The live API sends no `imageUrl`/`cloudinaryId`, and the live headers are as above.
+- Live sweep of every route: 0 CSP violations, 0 broken images, 0 hit-testable photos; the Studio loads all thumbnails.
+
+**Migration (owner approved, 2026-11-15):** `scripts/protectImages.js --apply` → 6 moved, 0 failed.
+- All 6 pre-migration public original URLs now answer **404**.
+- The new signed `authenticated` URLs answer 200.
+- After the 60 s ISR refresh, `/work` serves only `/image/authenticated/` addresses, and the live sweep is still clean.
+- Undo: `scripts/protectImages.js --revert`.
+
+**Owner action:**
 - **D8:** set a strong admin password.
-- Approve the photo migration (D10).
