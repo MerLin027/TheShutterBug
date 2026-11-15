@@ -575,9 +575,44 @@ one, and nothing in Stage 4 addresses it:
   without actually running it — headings can be correctly sized and still be
   wrong against the reference.
 
-### Stages 5–6: not started
-Each stage is gated on its own planning prompt. Do not open Stage 5 off
-the back of Stage 4 being closed.
+### Stage 5 — Linkage Reaudit: **COMPLETE** (2026-11-15)
+
+Run after the redesign (REDESIGN.md, Phases A–D), so the audit first
+re-checked the original findings L1–L8 against the current code:
+
+- **Already fixed** by the redesign and Phase D:
+  - L1: one API URL, in `src/lib/api.ts`.
+  - L2: cache tags plus path revalidation, via `updateTag`.
+  - L3: every authed Studio fetch handles 401 and `!res.ok`.
+  - L4 (partly): 20 s fetch timeouts and `error.tsx`.
+  - L5: 25 MB on both sides.
+  - L6: signed Cloudinary deliveries.
+  - L7: lightbox filter normalised.
+  - L8: one fetch per lightbox.
+- **New links from Phase D checked:**
+  - Sign-in, contact and About show the server's message (429, https-only).
+  - Upload, edit and featured responses carry signed `images`.
+  - The revalidate gate calls `/api/auth/me` from the server, so CORS doesn't apply.
+
+**Changed:**
+- `src/app/work/loading.tsx` + `src/components/GallerySkeleton.tsx`: a contact-sheet skeleton in the gallery's own layout. /work renders per request against a free-tier API that takes 20–50 s to wake, and a visitor saw a blank or frozen page.
+  - Measured through an 8 s delaying proxy: skeleton at 1.2 s, gallery at 9.7 s.
+  - Title position identical to the real page at 1440 (189 px) and 390 (160 px); 3 columns on desktop, 1 on a phone; no overflow.
+- **Regression caught and fixed:** a `loading.tsx` on `/lightbox/[id]` made the response stream, so the status was committed as 200 before `redirect()` / `notFound()` ran. Old links answered 200 instead of 307, and a deleted photo 200 instead of 404 (measured live). That route has no loading state; it only redirects to /work.
+  - **Rule:** never give a route that redirects or 404s a `loading.tsx`.
+
+**Verified live** (one probe photo through the real Studio UI, removed at the end; 6 photos before and after):
+- Upload → on /work in 0.8 s.
+- Star → in Home's Selected Work in 2.2 s.
+- Caption edit → on /work in 2.0 s.
+- Old lightbox link → 307 to `/work?photo=<id>`.
+- Delete → gone from /work in 2.5 s and from Home in 0.4 s; lightbox link → 404 in 0.7 s.
+- No page errors. This also proves the Phase D9 revalidate gate works with a real session.
+
+**Not changed, deliberately:** Vercel preview deployments can't reach the API (CORS allows the production site only), so previews show the gallery's load-failed state.
+
+### Stage 6 — Security Audit: **covered by REDESIGN.md Phase D** (2026-11-15)
+Its checklist (auth handling, JWT storage and expiry, CORS scope, input validation, exposed secrets) is Phase D's D1–D10. The only open item is owner action D8: a strong admin password.
 
 ## The six-stage plan (see plan.md for the actual task breakdown)
 1. Visual/structural restructure (Lovable reference) — layout,
