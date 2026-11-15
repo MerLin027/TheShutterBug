@@ -105,6 +105,9 @@ export default function SignInClient({ photo }: { photo: SignInPhoto | null }) {
             alt={photo.alt}
             className="hero-img absolute inset-0"
           />
+          {/* A gentle darkening wash (owner: the first photo read too bright),
+              then the usual scrim at the foot for the caption. */}
+          <div aria-hidden="true" className="absolute inset-0 bg-[rgb(11_10_9/0.28)]" />
           <div
             aria-hidden="true"
             className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-paper/85 to-transparent"
