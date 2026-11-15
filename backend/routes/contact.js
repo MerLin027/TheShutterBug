@@ -1,5 +1,6 @@
 import express from 'express';
-import Contact, { EMAIL_REGEX } from '../models/Contact.js';
+import Contact, { EMAIL_REGEX, CONTACT_MAX } from '../models/Contact.js';
+import { contactLimiter } from '../middleware/rateLimit.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -7,25 +8,45 @@ const router = express.Router();
 // @route   POST /api/contact
 // @desc    Submit a new contact message
 // @access  Public
-router.post('/', async (req, res) => {
-  const { name, email, message } = req.body;
+router.post('/', contactLimiter, async (req, res) => {
+  const { name, email, message, website } = req.body;
 
-  // Checked here as well as in the schema so the caller gets one clear
-  // message instead of a joined list of Mongoose validator output. A
-  // ValidationError that slips past this is still mapped to a 400 by
-  // middleware/errorHandler.js.
-  if (!name || !email || !message) {
+  // Honeypot (D4). The form has a `website` field that people never see or
+  // fill; form-filling bots do. Answer exactly as a success would, so the bot
+  // learns nothing, and store nothing.
+  if (typeof website === 'string' && website.trim() !== '') {
+    return res.status(201).json({ message: 'Message received' });
+  }
+
+  // Strings only. An object or array here used to reach Mongoose, which
+  // either cast it oddly or threw a 500.
+  if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string') {
     return res.status(400).json({ message: 'Name, email, and message are required' });
   }
 
+  const fields = { name: name.trim(), email: email.trim(), message: message.trim() };
+
+  // Checked here as well as in the schema so the caller gets one clear
+  // message instead of a joined list of Mongoose validator output.
+  if (!fields.name || !fields.email || !fields.message) {
+    return res.status(400).json({ message: 'Name, email, and message are required' });
+  }
+  for (const [key, max] of Object.entries(CONTACT_MAX)) {
+    if (fields[key].length > max) {
+      return res.status(400).json({ message: `${key[0].toUpperCase()}${key.slice(1)} must be ${max} characters or fewer` });
+    }
+  }
+
   // Same regex object the schema validates with — see models/Contact.js.
-  if (!EMAIL_REGEX.test(email)) {
+  if (!EMAIL_REGEX.test(fields.email)) {
     return res.status(400).json({ message: 'Please enter a valid email address' });
   }
 
-  const newContact = await Contact.create({ name, email, message });
+  await Contact.create(fields);
 
-  res.status(201).json(newContact);
+  // Only an acknowledgement goes back — echoing the stored document handed
+  // its _id and timestamps to an anonymous caller for no reason.
+  res.status(201).json({ message: 'Message received' });
 });
 
 // @route   GET /api/contact

@@ -202,16 +202,16 @@ Each phase is its own approval gate. A task is done only when its "done when" ch
 ### Phase D: Security (OWASP Top 10 2017 / 2021 / 2025)
 | ID | Task | OWASP | Status |
 |---|---|---|---|
-| D1 | Next security headers: CSP (nonce via middleware), `frame-ancestors 'none'`, `nosniff`, Referrer-Policy, Permissions-Policy, `poweredByHeader: false` | A02:2025 / A05:2021 | ☐ |
-| D2 | Express: disable `x-powered-by`; security headers on API responses | A02:2025 | ☐ |
-| D3 | Rate limits on `POST /api/auth/login` and `POST /api/contact`; login runs `bcrypt.compare` on every request (no timing side-channel) | A07 | ☐ |
-| D4 | Server-side validation: `aboutImageUrl` must be `https:`; contact honeypot field; **add server-side length caps to the Contact model (none exist; found in Phase B), matching the client's 100 / 254 / 5000** | A05:2025 / A03:2021, A06:2025 | ☐ |
-| D5 | Token lifetime 30d → shorter; plan the httpOnly-cookie move (decision, not code, in this phase) | A07, A04:2021 | ☐ |
-| D6 | `npm audit` on both packages; decide on `multer-storage-cloudinary` (unmaintained since 2020) | A03:2025 / A06:2021 | ☐ |
-| D7 | `/api/health` reports DB state while still returning 200, so the cron keeps working; `connectDB` retries instead of exiting, so it doesn't crash-loop | A10:2025 | ☐ |
+| D1 | Next security headers: CSP (nonce via middleware), `frame-ancestors 'none'`, `nosniff`, Referrer-Policy, Permissions-Policy, `poweredByHeader: false` | A02:2025 / A05:2021 | ☑ |
+| D2 | Express: disable `x-powered-by`; security headers on API responses | A02:2025 | ☑ |
+| D3 | Rate limits on `POST /api/auth/login` and `POST /api/contact`; login runs `bcrypt.compare` on every request (no timing side-channel) | A07 | ☑ |
+| D4 | Server-side validation: `aboutImageUrl` must be `https:`; contact honeypot field; **add server-side length caps to the Contact model (none exist; found in Phase B), matching the client's 100 / 254 / 5000** | A05:2025 / A03:2021, A06:2025 | ☑ |
+| D5 | Token lifetime 30d → shorter; plan the httpOnly-cookie move (decision, not code, in this phase) | A07, A04:2021 | ☑ |
+| D6 | `npm audit` on both packages; decide on `multer-storage-cloudinary` (unmaintained since 2020) | A03:2025 / A06:2021 | ☑ |
+| D7 | `/api/health` reports DB state while still returning 200, so the cron keeps working; `connectDB` retries instead of exiting, so it doesn't crash-loop | A10:2025 | ☑ |
 | D8 | **Owner action:** set a strong admin password (the current one is 7 characters) through `seedAdmin` / Render | A07 | ☐ |
-| D9 | `revalidatePublicPages` is a Server Action, so it's a public POST endpoint. Anyone can call it and purge the cache (no input, low impact: forces re-fetches from Render). Gate it on a token the backend verifies, or rate-limit it | A01 / A04:2021 | ☐ |
-| D10 | **Owner directive (2026-11-15): stop anyone downloading the photographs, whether by right-click, dev tools or any other route.** A browser can't show an image without sending its pixels, so anything on screen can still be screenshotted or pulled from the network tab. The goal is to make downloading hard and the result low-value: (a) never serve the original. Cap delivery to display sizes through Cloudinary transforms, and move originals to `type: authenticated` / signed URLs so a guessed or edited URL returns nothing bigger. (b) A visible watermark on public deliveries (Cloudinary overlay), if the owner wants one. (c) No right-click save or drag: `contextmenu` / `dragstart` blocked on photos, `draggable=false`, `-webkit-touch-callout: none` for long-press. (d) Photos painted as CSS backgrounds or `<canvas>` behind a transparent layer, so "Open image in new tab" and Inspect show no image URL. (e) Strip EXIF/GPS from deliveries. (f) Hotlink protection: Cloudinary strict transformations plus an allowed-referrer list, so other sites can't embed or proxy the photos. (g) Studio's "Download current" (owner-only) stays, behind auth. Plan this with the owner before building: (b) and (d) change how the site looks and behaves. | A01 / A04:2021 | ☐ |
+| D9 | `revalidatePublicPages` is a Server Action, so it's a public POST endpoint. Anyone can call it and purge the cache (no input, low impact: forces re-fetches from Render). Gate it on a token the backend verifies, or rate-limit it | A01 / A04:2021 | ☑ |
+| D10 | **Owner directive (2026-11-15): stop anyone downloading the photographs, whether by right-click, dev tools or any other route.** A browser can't show an image without sending its pixels, so anything on screen can still be screenshotted or pulled from the network tab. The goal is to make downloading hard and the result low-value: (a) never serve the original. Cap delivery to display sizes through Cloudinary transforms, and move originals to `type: authenticated` / signed URLs so a guessed or edited URL returns nothing bigger. (b) A visible watermark on public deliveries (Cloudinary overlay), if the owner wants one. (c) No right-click save or drag: `contextmenu` / `dragstart` blocked on photos, `draggable=false`, `-webkit-touch-callout: none` for long-press. (d) Photos painted as CSS backgrounds or `<canvas>` behind a transparent layer, so "Open image in new tab" and Inspect show no image URL. (e) Strip EXIF/GPS from deliveries. (f) Hotlink protection: Cloudinary strict transformations plus an allowed-referrer list, so other sites can't embed or proxy the photos. (g) Studio's "Download current" (owner-only) stays, behind auth. Plan this with the owner before building: (b) and (d) change how the site looks and behaves. | A01 / A04:2021 | ◐ code done; existing photos await the migration |
 | D✓ | Verify: headers checked with curl on the build; CSP breaks nothing (no console violations on any route); rate limit trips at the threshold | | ☐ |
 
 ### Phase E: Close-out
@@ -627,3 +627,60 @@ The glint was "too feeble". Replaced it with a **lens split** (chromatic aberrat
 The lens split was "not a techfest website". Replaced it with a **swell**: from 2.0s the letters lift 0.12em one after another, brightening slightly to #fffaf2 at the top, and settle back. It's like a slow ripple across the still water in the hero photo. 1.4s per letter, 80ms stagger, finished by about 4.4s. Frozen frames show a clear wave at 2.9s and identity transforms at 5s. Title box unchanged, and no layout change at any of the nine widths. Reduced motion turns it off.
 
 **Settled.** The owner rejected the swell and then a set of switchable candidates (exposure, depth, shutter, focus lock). They kept the **gold hairlines**: two 1px rules draw out from either side of the eyebrow at 2.0s and stay at 0.7 opacity. The hairlines are hidden at ≤30rem, because between 360 and 430px they pushed the eyebrow onto two lines (measured). For the title they asked for the amber idea back, "like the sweep but using the letters". Final: a **safelight sweep**. From 2.0s each letter warms to #f2a65a, passes through #f4d2a8 and cools to `--color-fg`, 1.3s per letter, with a tight 38ms stagger. Neighbours overlap, so it reads as one travelling band of warm light inside the glyphs. Finished by about 3.8s. Frozen frames: band mid-title at 2.55s, all letters back to plain white at 6s. The temporary `#fx-*` switch is removed. Reduced motion turns off both the sweep and the hairlines.
+
+
+## Phase D: Security (owner: "proceed with phase d", 2026-11-15)
+
+Owner answers for D10: **no watermark**; **hide image URLs** from right-click and drag.
+
+**Audit findings, before fixing:**
+- `GET /api/photos` returned every photo's raw `secure_url`, the full-size **original**, to anyone.
+- Login skipped bcrypt for an unknown email (the timing showed which emails exist).
+- Contact accepted any type and any length.
+- `connectDB` exited on failure (crash loop).
+- The purge action was callable by anyone.
+- npm audit: backend 7 (2 critical: mongoose, proxy-addr); frontend 5 (Next critical).
+
+**What changed:**
+- **D1**, `next.config.ts`:
+  - CSP: `default-src 'self'`, no third-party scripts, `object-src`/`frame-src 'none'`, `frame-ancestors 'none'`, `base-uri`/`form-action 'self'`, connect only to self and the API.
+  - Also nosniff, `X-Frame-Options DENY`, Referrer-Policy, Permissions-Policy, HSTS, COOP, and `poweredByHeader: false`.
+  - Trade-offs: `script-src` keeps `'unsafe-inline'`, because a nonce CSP forces every page dynamic and loses ISR. `img-src https:`, because the About portrait is a free-text URL.
+- **D2**, Express: `x-powered-by` off; CSP `default-src 'none'`, nosniff, DENY, `no-referrer` and HSTS on every response; `trust proxy` 1; JSON bodies capped at 100 kB.
+- **D3**:
+  - Login: 5 per 15 min per IP. Contact: 5 per hour per IP. In memory (`middleware/rateLimit.js`), with `Retry-After`.
+  - bcrypt runs against a dummy hash for an unknown email (measured 532 ms vs 528 ms).
+  - Email capped at 254 characters and password at 200.
+- **D4**:
+  - Contact: strings only, trimmed, caps 100/254/5000 in the route and the model.
+  - Honeypot field `website` (off-screen, `tabIndex -1`, `aria-hidden`): a filled one gets a 201 and stores nothing.
+  - POST answers with an acknowledgement, not the stored document.
+  - `aboutImageUrl` must be `https:`.
+- **D5**: JWT 30 days → **7 days**; `algorithms: ['HS256']` pinned on verify (an `alg:none` token is rejected). Follow-up, not done: an httpOnly cookie needs the API and site on one domain.
+- **D6**:
+  - Backend: `npm audit fix` → 0 vulnerabilities.
+  - `multer-storage-cloudinary` (unmaintained, pinned to the vulnerable Cloudinary v1) replaced by multer memory storage plus an explicit `upload_stream`. Cloudinary SDK 1 → 2.
+  - Frontend: Next 16.2.12 → **16.4.6** and eslint-config-next to match; 0 vulnerabilities.
+- **D7**: `connectDB` retries with backoff (5 s doubling, capped at 5 min) instead of exiting. `/api/health` → `{status:'ok', db:'connected'|...}`, still 200.
+- **D9**: `revalidatePublicPages(token)` purges only after `GET /api/auth/me` (new) accepts the token. Every Studio caller passes it.
+- **D10**, image protection:
+  - New uploads are stored as Cloudinary `authenticated` assets: no public URL, and any unsigned or edited URL answers 401.
+  - The API's `toJSON` drops `imageUrl`/`cloudinaryId` and sends `images`: signed `c_limit,f_auto,q_auto` URLs at 320–2400 px. Same for an uploaded hero (`heroImages`).
+  - Studio "Download current" goes through `GET /api/site-content/hero/download` (`protect`), which returns a 5-minute private download link.
+  - Global `img { pointer-events:none; user-select:none; -webkit-user-drag:none; -webkit-touch-callout:none }`: no "Save image as", copy, open-in-tab, drag or long-press save on any photo.
+  - `data.ts` falls back to the old fields if the API hasn't deployed yet.
+  - Existing photos remain public `upload` assets until `node --env-file=.env scripts/protectImages.js --apply` runs (dry run without `--apply`; `--revert` undoes it). It must run **after** Render has the new backend.
+  - Note: for an `authenticated` asset, the stored `secure_url` is itself a working signed link to the original. It stays in the DB and must never be returned by any route.
+
+**Limits, stated plainly:** anything a browser shows can still be screenshotted or taken from the network tab. Nothing on the web prevents that. What someone can get now is a compressed display copy (≤2400 px, metadata stripped), never the original.
+
+**Verified (local backend on the real Atlas/Cloudinary, production build at :3000):**
+- 21/21 API assertions, among them: originals hidden; six signed widths; signed URL serves; `alg:none` rejected; owner download 401 without a token; `javascript:` and `http:` portraits refused; object or overlong contact fields refused; honeypot stored nothing (contacts 2 → 2); the 6th contact and 6th login give 429; a 200 kB body gives 413.
+- Probe photo, uploaded and deleted through the real routes: stored `authenticated`; signed 1200 → 200; `w_4000` edit → 401; signature stripped → 401; `f_auto` swapped → 401; public `upload` path → 404; deleted → 404.
+- Probe hero: signed `heroImages` only; owner download → 200 attachment. Restored to the placeholder: a first restore wrote `heroImageUrl: null` (the field had been absent), corrected by unsetting it; the live API is back on the placeholder.
+- Browser sweep of `/`, `/work`, `/about`, `/contact`, `/lightbox/:id`, `/admin` and three Studio pages: all headers present; **0 CSP violations**; 0 console errors; 0 broken images; every Cloudinary image signed; **0 visible photos hit-testable**.
+- lint 0 errors, `tsc` clean, build OK.
+
+**Owner actions:**
+- **D8:** set a strong admin password.
+- Approve the photo migration (D10).

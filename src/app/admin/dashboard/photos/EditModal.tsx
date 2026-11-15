@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
+import { photoImage, type ApiPhoto } from "@/lib/data";
 import { apiUrl } from "@/lib/api";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/categories";
 import StudioModal from "@/components/StudioModal";
@@ -92,7 +92,7 @@ export default function EditModal({
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
         <img
-          src={cloudinaryUrl(photo.imageUrl, 1200)}
+          src={photoImage(photo, 1200)}
           alt={photo.caption || "Photograph being edited"}
           className="!object-contain"
         />

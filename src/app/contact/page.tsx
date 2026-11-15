@@ -103,6 +103,9 @@ export default function Contact() {
       email: String(data.get("email") ?? ""),
       message: String(data.get("message") ?? ""),
     };
+    // Honeypot: people never see this field; a form-filling bot does. Sent
+    // as-is, and the API quietly drops any message that fills it.
+    const website = String(data.get("website") ?? "");
 
     const errors = validate(payload);
     if (Object.keys(errors).length > 0) {
@@ -128,7 +131,7 @@ export default function Contact() {
       const res = await fetch(apiUrl("/api/contact"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, website }),
       });
 
       if (res.ok) {
@@ -190,6 +193,12 @@ export default function Contact() {
             )}
 
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-10" noValidate>
+              {/* Honeypot (Phase D4): off-screen, out of the tab order and
+                  hidden from assistive tech, so only a bot fills it. */}
+              <div aria-hidden="true" className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+              </div>
               <div className="grid gap-10 sm:grid-cols-2">
                 <Field id="name" label="Name" error={fieldErrors.name}>
                   <input

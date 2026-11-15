@@ -21,8 +21,13 @@ import { GALLERY_FILTERS } from "@/lib/categories";
 /** Raw shape returned by the Express API (mirrors the Mongoose schema). */
 export type ApiPhoto = {
   _id: string;
-  imageUrl: string;
-  cloudinaryId: string;
+  /**
+   * Signed, size-capped delivery URLs keyed by width ("320" … "2400")
+   * (Phase D10). The API no longer sends the stored original's URL or id.
+   */
+  images?: ImageSet | null;
+  /** Pre-D10 API only; kept so a deploy-order gap can't blank the gallery. */
+  imageUrl?: string;
   /** lowercase enum: 'nature' | 'objects' | 'monochrome' | 'urban' */
   category: string;
   tags: string[];
@@ -36,6 +41,9 @@ export type ApiPhoto = {
   updatedAt: string;
 };
 
+/** Width ("320", "800", …) → signed delivery URL. */
+export type ImageSet = Record<string, string>;
+
 /**
  * Editable About-page copy, served by GET /api/site-content.
  * `bio` holds paragraphs separated by a blank line.
@@ -44,8 +52,10 @@ export type SiteContent = {
   quote: string;
   bio: string;
   aboutImageUrl: string;
-  /** Home hero photograph (Studio → Home page). */
+  /** Home hero photograph (Studio → Home page). For an uploaded hero the API
+   *  sends `heroImages` (signed sizes) instead; this is the placeholder. */
   heroImageUrl: string;
+  heroImages?: ImageSet | null;
   heroImageAlt: string;
   /** Home's "The work" section: shown or not, and its text ("" = use bio ¶2). */
   showWorkStatement: boolean;
@@ -172,6 +182,38 @@ function cloudinarySrcSet(src: string): string {
   return THUMB_WIDTHS.map((w) => `${cloudinaryUrl(src, w)} ${w}w`).join(", ");
 }
 
+/** The signed widths in a set, ascending. */
+function widthsOf(set: ImageSet): number[] {
+  return Object.keys(set)
+    .map(Number)
+    .filter((w) => Number.isFinite(w) && w > 0)
+    .sort((a, b) => a - b);
+}
+
+/** The smallest signed width that covers `width` (else the largest there is). */
+export function pickImage(set: ImageSet, width: number): string {
+  const widths = widthsOf(set);
+  const w = widths.find((x) => x >= width) ?? widths[widths.length - 1];
+  return w === undefined ? "" : set[String(w)];
+}
+
+/** `srcset` from a signed set, limited to `min`…`max` px. */
+export function imageSetSrcSet(set: ImageSet, min = 0, max = Infinity): string {
+  return widthsOf(set)
+    .filter((w) => w >= min && w <= max)
+    .map((w) => `${set[String(w)]} ${w}w`)
+    .join(", ");
+}
+
+/**
+ * One rendition of a photo for the Studio's own thumbnails and previews:
+ * the signed set when the API sent one, the pre-D10 transform otherwise.
+ */
+export function photoImage(photo: Pick<ApiPhoto, "images" | "imageUrl">, width: number): string {
+  if (photo.images) return pickImage(photo.images, width);
+  return photo.imageUrl ? cloudinaryUrl(photo.imageUrl, width) : "";
+}
+
 // ---------------------------------------------------------------------------
 // Adapter helpers
 // ---------------------------------------------------------------------------
@@ -208,9 +250,9 @@ function toPhoto(raw: ApiPhoto): Photo {
   const ratio = Number.isFinite(raw.aspectRatio) && raw.aspectRatio > 0 ? raw.aspectRatio : 1.5;
   return {
     id: raw._id,
-    src: cloudinaryUrl(raw.imageUrl, 2400),
-    thumb: cloudinaryUrl(raw.imageUrl, 800),
-    srcSet: cloudinarySrcSet(raw.imageUrl),
+    src: raw.images ? pickImage(raw.images, 2400) : cloudinaryUrl(raw.imageUrl ?? "", 2400),
+    thumb: raw.images ? pickImage(raw.images, 800) : cloudinaryUrl(raw.imageUrl ?? "", 800),
+    srcSet: raw.images ? imageSetSrcSet(raw.images, 480, 1200) : cloudinarySrcSet(raw.imageUrl ?? ""),
     alt: raw.caption || `${capitalise(raw.category)} photograph`,
     aspect: aspectClass(ratio),
     ratio,
@@ -390,6 +432,7 @@ export async function fetchSiteContent(): Promise<SiteContent> {
       bio: raw.bio || DEFAULT_SITE_CONTENT.bio,
       aboutImageUrl: raw.aboutImageUrl || DEFAULT_SITE_CONTENT.aboutImageUrl,
       heroImageUrl: raw.heroImageUrl || DEFAULT_SITE_CONTENT.heroImageUrl,
+      heroImages: raw.heroImages && typeof raw.heroImages === "object" ? raw.heroImages : null,
       heroImageAlt: raw.heroImageAlt || DEFAULT_SITE_CONTENT.heroImageAlt,
       // Explicit boolean check: `|| true` would make "hidden" impossible.
       showWorkStatement:
@@ -425,9 +468,16 @@ export function workStatementFor(content: SiteContent): string | null {
   return paragraphs[1] ?? paragraphs[0] ?? null;
 }
 
-/** The hero photograph as responsive sources. A Cloudinary upload gets
- *  width-capped renditions; the original placeholder is used as is. */
+/** The hero photograph as responsive sources. An uploaded hero comes as
+ *  signed, width-capped renditions; the original placeholder is used as is. */
 export function heroImage(content: SiteContent): { src: string; srcSet?: string; alt: string } {
+  if (content.heroImages) {
+    return {
+      src: pickImage(content.heroImages, 2400),
+      srcSet: imageSetSrcSet(content.heroImages, 1200),
+      alt: content.heroImageAlt,
+    };
+  }
   const url = content.heroImageUrl;
   const src = cloudinaryUrl(url, 2400);
   const srcSet =

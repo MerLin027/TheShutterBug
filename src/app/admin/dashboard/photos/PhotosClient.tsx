@@ -17,7 +17,7 @@ import {
   arrayMove,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
+import { photoImage, type ApiPhoto } from "@/lib/data";
 import { apiUrl } from "@/lib/api";
 import { STUDIO_FILTERS, categoryLabel } from "@/lib/categories";
 import { useAdminToken } from "@/lib/useAdminToken";
@@ -188,7 +188,7 @@ export default function PhotosClient() {
 
       setDeletingPhoto(null);
       await fetchPhotos();
-      await revalidatePublicPages();
+      await revalidatePublicPages(token);
     } catch (err) {
       console.error("[admin] delete failed:", err);
       setDeleteError("Network error — the photo wasn't deleted.");
@@ -254,7 +254,7 @@ export default function PhotosClient() {
         setActionError("The new order wasn't saved. The gallery has been reset.");
         await fetchPhotos();
       } else {
-        await revalidatePublicPages();
+        await revalidatePublicPages(token);
       }
     } catch (err) {
       console.error("[admin] reorder request failed:", err);
@@ -302,7 +302,7 @@ export default function PhotosClient() {
       if (activeCategory === "featured" && !nextValue) {
         setPhotos((prev) => prev.filter((p) => p._id !== photo._id));
       }
-      await revalidatePublicPages();
+      await revalidatePublicPages(token);
     } catch (err) {
       console.error("[admin] toggle featured failed:", err);
       rollback();
@@ -450,7 +450,7 @@ export default function PhotosClient() {
           onSuccess={async () => {
             setShowUpload(false);
             await fetchPhotos();
-            await revalidatePublicPages();
+            await revalidatePublicPages(token);
           }}
         />
       )}
@@ -464,7 +464,7 @@ export default function PhotosClient() {
           onSuccess={async () => {
             setEditingPhoto(null);
             await fetchPhotos();
-            await revalidatePublicPages();
+            await revalidatePublicPages(token);
           }}
         />
       )}
@@ -476,7 +476,7 @@ export default function PhotosClient() {
           <div className="frame-media mx-auto max-h-40 w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
             <img
-              src={cloudinaryUrl(deletingPhoto.imageUrl, 480)}
+              src={photoImage(deletingPhoto, 480)}
               alt=""
               className="max-h-40 w-auto"
             />

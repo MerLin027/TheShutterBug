@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { PHOTOS_TAG, SITE_CONTENT_TAG } from "@/lib/data";
+import { API_URL } from "@/lib/api";
 
 /**
  * Server Action: make the public pages reflect a Studio change immediately
@@ -23,8 +24,27 @@ import { PHOTOS_TAG, SITE_CONTENT_TAG } from "@/lib/data";
  *
  * Contact-message deletion deliberately does not call this: messages render
  * on no public page.
+ *
+ * Gated (Phase D9). A Server Action is a public POST endpoint: anyone who
+ * finds its id can call it, and before this anyone could purge the cache on
+ * every public page at will. Now it acts only for a caller whose Studio
+ * token the API accepts (GET /api/auth/me), and otherwise does nothing.
+ * Returns whether it purged.
  */
-export async function revalidatePublicPages() {
+export async function revalidatePublicPages(token: string | null): Promise<boolean> {
+  if (typeof token !== "string" || token.length === 0 || token.length > 2048) return false;
+
+  try {
+    const res = await fetch(`${API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return false;
+  } catch {
+    return false;
+  }
+
   updateTag(PHOTOS_TAG);
   updateTag(SITE_CONTENT_TAG);
 
@@ -32,4 +52,5 @@ export async function revalidatePublicPages() {
   revalidatePath("/work");
   revalidatePath("/about");
   revalidatePath("/lightbox/[id]", "page");
+  return true;
 }

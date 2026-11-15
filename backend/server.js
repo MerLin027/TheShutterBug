@@ -4,7 +4,8 @@ import './config/env.js';
 
 import express from 'express';
 import cors from 'cors';
-import { connectDB } from './config/db.js';
+import { connectDB, dbState } from './config/db.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 import authRoutes from './routes/auth.js';
@@ -16,6 +17,15 @@ import siteContentRoutes from './routes/siteContent.js';
 connectDB();
 
 const app = express();
+
+// Render terminates TLS at one proxy hop. Trusting exactly one hop makes
+// req.ip the visitor's address (the rate limiter keys on it) without letting
+// a client spoof it through extra X-Forwarded-For entries.
+app.set('trust proxy', 1);
+
+// Don't advertise the framework (D2).
+app.disable('x-powered-by');
+app.use(securityHeaders);
 
 // Middleware
 //
@@ -33,17 +43,20 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use(cors({ origin: allowedOrigins }));
-app.use(express.json());
+// 100 kB is far above the largest legitimate body (a 5000-character
+// message, or the About copy) and keeps oversized payloads out.
+app.use(express.json({ limit: '100kb' }));
 
-// Health check. Deliberately no DB call — it must answer while Atlas is
+// Health check. Deliberately no DB query — it must answer 200 while Atlas is
 // unreachable, or the keep-alive ping would report the service as down
-// whenever the database blips.
+// whenever the database blips. It does report the connection state (D7), so
+// an outage is visible at a glance without failing the ping.
 //
 // Registered at BOTH paths on purpose. These were two separate handlers with
 // two different response bodies; the cron-job.org keep-alive that stops Render
 // idling points at one of them, and that configuration lives outside this
 // repo, so neither path can be safely deleted. One handler, two mounts.
-const health = (req, res) => res.status(200).json({ status: 'ok' });
+const health = (req, res) => res.status(200).json({ status: 'ok', db: dbState() });
 app.get('/api/health', health);
 app.get('/health', health);
 

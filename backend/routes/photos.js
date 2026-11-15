@@ -2,41 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Photo, { CATEGORIES } from '../models/Photo.js';
 import { protect } from '../middleware/auth.js';
-import { upload, cloudinary } from '../config/cloudinary.js';
+import { upload, uploadImage, releaseAsset, PROTECTED_TYPE } from '../config/cloudinary.js';
 
 const router = express.Router();
 
 // A reorder covers what the Studio grid is currently showing. A cap keeps a
 // malformed or hostile payload from turning into an unbounded bulkWrite.
 const MAX_REORDER_ITEMS = 500;
-
-/**
- * Destroy an asset multer already streamed to Cloudinary.
- *
- * `upload.single()` runs as middleware, so by the time a handler executes the
- * file is ALREADY on Cloudinary. Every path that then fails to write a Photo
- * document — an invalid category enum, a missing aspectRatio, a bad position —
- * used to leave that asset there permanently: no DB row pointed at it, and
- * nothing in the app could remove it. Only the Cloudinary console could.
- *
- * (multer's own failures were always fine: CloudinaryStorage implements
- * _removeFile, which multer calls when it aborts. The gap was only the window
- * after multer succeeded and before the document was written.)
- *
- * Never throws — a cleanup failure must not replace the real error with its
- * own. It logs the public_id so the asset can be removed by hand.
- */
-async function cleanupUpload(req) {
-  if (!req.file || !req.file.filename) return;
-  try {
-    await cloudinary.uploader.destroy(req.file.filename);
-  } catch (err) {
-    console.error(
-      `[photos] ORPHANED Cloudinary asset ${req.file.filename} — cleanup failed:`,
-      err.message
-    );
-  }
-}
 
 // @route   GET /api/photos
 // @desc    Get all photos, optionally filter by category
@@ -142,8 +114,14 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
     return res.status(400).json({ message: 'Please upload an image file' });
   }
 
-  // The one try/catch left in this file. It stays because it has real work to
-  // do — releasing the Cloudinary asset — not because it formats an error.
+  // multer holds the file in memory; it reaches Cloudinary only here, after
+  // auth and the image-type check, and is stored as a protected asset (D10).
+  const stored = await uploadImage(req.file);
+
+  // The try/catch has real work to do: if the Photo document can't be
+  // written (an invalid category, a bad aspectRatio...), nothing references
+  // the upload, so it is released before the error is handed on —
+  // errorHandler still maps a ValidationError to 400.
   try {
     const { category, tags, caption, location, position, isFeatured, aspectRatio } = req.body;
 
@@ -162,12 +140,11 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
     }
 
     const photo = await Photo.create({
-      // multer-storage-cloudinary sets req.file.path = secure_url
-      // and req.file.filename = public_id (confirmed from source)
-      imageUrl: req.file.path,
-      cloudinaryId: req.file.filename,
+      imageUrl: stored.secure_url,
+      cloudinaryId: stored.public_id,
+      deliveryType: PROTECTED_TYPE,
       category,
-      tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((t) => t.trim())) : [],
+      tags: tags ? (Array.isArray(tags) ? tags : String(tags).split(',').map((t) => t.trim())) : [],
       caption: caption || '',
       location: location || '',
       position: resolvedPosition,
@@ -177,10 +154,7 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
 
     res.status(201).json(photo);
   } catch (error) {
-    // The document never landed, so nothing references the upload. Release it
-    // before handing the error on — errorHandler still maps a ValidationError
-    // to 400 exactly as before, the asset just doesn't survive the failure.
-    await cleanupUpload(req);
+    await releaseAsset(stored.public_id, PROTECTED_TYPE, 'photo save failed');
     next(error);
   }
 });
@@ -201,7 +175,7 @@ router.put('/:id', protect, async (req, res) => {
   // caller could set _id, timestamps, or anything added to the schema later.
   if (category !== undefined) photo.category = category;
   if (tags !== undefined) {
-    photo.tags = Array.isArray(tags) ? tags : tags.split(',').map((t) => t.trim());
+    photo.tags = Array.isArray(tags) ? tags : String(tags).split(',').map((t) => t.trim());
   }
   if (caption !== undefined) photo.caption = caption;
   if (location !== undefined) photo.location = location;
@@ -233,14 +207,8 @@ router.delete('/:id', protect, async (req, res) => {
   //
   // Note destroy() returns { result: 'not found' } rather than throwing when
   // the asset is already gone, so a retried delete is safe.
-  try {
-    await cloudinary.uploader.destroy(photo.cloudinaryId);
-  } catch (err) {
-    console.error(
-      `[photos] ORPHANED Cloudinary asset ${photo.cloudinaryId} — destroy failed, deleting the DB row anyway:`,
-      err.message
-    );
-  }
+  // releaseAsset never throws; it logs the public_id if destroy fails.
+  await releaseAsset(photo.cloudinaryId, photo.deliveryType, 'photo deleted, DB row removed anyway');
 
   await photo.deleteOne();
 
