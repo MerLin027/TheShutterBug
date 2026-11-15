@@ -32,7 +32,7 @@ function LoadFailedState() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
-    <Notice icon={CloudOff} title="The gallery couldn't load" alert>
+    <Notice icon={CloudOff} title="The Gallery Couldn't Load" alert>
       <p className="lede mt-4 max-w-md">
         The photographs are safe. The server didn&apos;t answer and may be
         waking up, so try again in a moment.
@@ -101,11 +101,11 @@ export default function GalleryClient({
       {failed ? (
         <LoadFailedState />
       ) : photos.length === 0 ? (
-        <Notice icon={Camera} title="No photographs yet">
+        <Notice icon={Camera} title="No Photographs Yet">
           <p className="lede mt-4 max-w-md">The collection is empty for now.</p>
         </Notice>
       ) : visible.length === 0 ? (
-        <Notice icon={FunnelX} title={`No ${activeFilter.toLowerCase()} photographs yet`}>
+        <Notice icon={FunnelX} title={`No ${activeFilter} Photographs Yet`}>
           <button type="button" onClick={() => chooseFilter("All")} className="text-link mt-6">
             Show all
           </button>

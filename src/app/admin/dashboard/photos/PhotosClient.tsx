@@ -403,7 +403,7 @@ export default function PhotosClient() {
           <div className="flex flex-col items-center px-6 py-24 text-center">
             <Images size={32} className="mb-5 text-fg-3" aria-hidden="true" />
             <h2 className="studio-heading">
-              {activeCategory === "featured" ? "Nothing featured yet" : "No photographs yet"}
+              {activeCategory === "featured" ? "Nothing Featured Yet" : "No Photographs Yet"}
             </h2>
             <p className="lede mt-3 max-w-sm">
               {activeCategory === "all"
@@ -472,7 +472,7 @@ export default function PhotosClient() {
       {deletingPhoto && (
         /* dismissible={!deleting}: a delete in flight can't be dismissed by
            Escape or a backdrop click. */
-        <StudioModal size="sm" title="Delete photo?" dismissible={!deleting} onClose={closeDeleteDialog}>
+        <StudioModal size="sm" title="Delete Photo?" dismissible={!deleting} onClose={closeDeleteDialog}>
           <div className="frame-media mx-auto max-h-40 w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
             <img

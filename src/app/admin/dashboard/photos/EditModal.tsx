@@ -79,7 +79,7 @@ export default function EditModal({
   }
 
   return (
-    <StudioModal title="Edit photo" onClose={onClose}>
+    <StudioModal title="Edit Photo" onClose={onClose}>
       {/* Preview fills the width and the frame follows the photo; max-h keeps
           a tall portrait from pushing the form off screen (letterboxed, not
           cropped). shrink-0 so it isn't what gives in the scrolling column. */}

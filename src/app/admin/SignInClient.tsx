@@ -163,7 +163,7 @@ export default function SignInClient({
 
           <p className="caps enter mt-16" style={{ "--i": 1 } as CSSProperties}>Studio</p>
           <h1 className="section-title enter mt-3" style={{ "--i": 2 } as CSSProperties}>
-            Sign in
+            Sign In
           </h1>
           <p className="lede enter mt-3 !text-[1.15rem]" style={{ "--i": 3 } as CSSProperties}>
             The gallery, the About page and your messages.

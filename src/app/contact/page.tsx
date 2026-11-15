@@ -164,7 +164,7 @@ export default function Contact() {
         <div className="site-container grid gap-10 md:grid-cols-12 md:gap-16">
           <div className="enter md:col-span-5">
             <p className="caps">Contact</p>
-            <h1 className="display-title mt-5">Say hello</h1>
+            <h1 className="display-title mt-5">Say Hello</h1>
             {/* First person, matching the About page. The line that promised
                 a reply window was cut in dc3ac35b: nothing behind this form
                 notifies anyone — it writes a row to MongoDB and waits. */}

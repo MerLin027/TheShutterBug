@@ -173,7 +173,7 @@ export default function UploadModal({
   }
 
   return (
-    <StudioModal title="Upload photo" onClose={onClose}>
+    <StudioModal title="Upload Photo" onClose={onClose}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         {/* Drop zone. The real file input sits inside it, visually hidden but
             focusable, so keyboard users can Tab to it and press Enter/Space —

@@ -148,7 +148,7 @@ export default function AboutClient() {
       <StudioTopBar title="About" />
 
       <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 md:px-8 md:pt-12">
-        <h2 className="studio-heading mb-2">The About page</h2>
+        <h2 className="studio-heading mb-2">The About Page</h2>
         <p className="lede mb-10 !text-[1.15rem]">
           What visitors read on /about. Saving updates the page immediately.
         </p>
