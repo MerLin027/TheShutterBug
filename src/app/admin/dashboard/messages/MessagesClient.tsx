@@ -264,7 +264,7 @@ export default function MessagesClient() {
             >
               Cancel
             </button>
-            <button type="button" onClick={handleDelete} disabled={deleting} className="btn btn-danger">
+            <button type="button" onClick={handleDelete} disabled={deleting} aria-busy={deleting} className="btn btn-danger">
               {deleting ? <Spinner /> : <Trash2 size={16} aria-hidden="true" />}
               Delete
             </button>

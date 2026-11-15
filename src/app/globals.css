@@ -137,6 +137,12 @@ body {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
+/* Text fields draw their own focus: the hairline thickens into a 2px gold
+   rule (.field / .field-line). This rule has to live here, unlayered —
+   the one above is unlayered too, so a layered override would lose. */
+.field:focus-visible,
+.field-line:focus-visible { outline: none; }
+textarea.field:focus-visible { outline: none; }
 
 /* Typeset, not generated: balance short headings, no orphans in body copy.
    In the BASE layer on purpose. `text-wrap` is a shorthand that also sets
@@ -210,7 +216,12 @@ svg.lucide {
     transition-timing-function: var(--ease-brand);
 }
 .btn:active:not(:disabled) { transform: scale(0.98); }
-.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Working (aria-busy): a disabled-but-busy button keeps its colour — it
+   isn't unavailable, it's doing the thing; the spinner says so. The old
+   blanket 55% fade turned the cream "Signing in…" button muddy grey. */
+.btn[aria-busy="true"]:disabled { opacity: 1; cursor: progress; }
+.btn-primary[aria-busy="true"] { background: #d9d3c9; }
 
 /* Primary: off-white from the ramp, paper text (15.4:1). Reads as
    deliberate on a dark page without spending the accent. */
@@ -295,35 +306,92 @@ svg.lucide {
 }
 /* The quiet suffix inside a label ("· optional") stays sentence case. */
 .field-label > span { text-transform: none; letter-spacing: 0.02em; }
-.field {
+/* ONE text-field design for the whole site (owner, 2026-11-15: "refine any
+   kind of text box"): `.field` (Studio) and `.field-line` (Contact) share
+   it. No box: a hairline drawn as an inset shadow, so it can thicken to a
+   2px gold rule on focus without shifting the layout by a pixel.
+
+   Browser autofill used to paint saved emails/passwords as pale-blue boxes
+   with black text (Chrome's UA style can't be overridden directly). The
+   standard fix: cover it with an inset shadow in the surface colour
+   (--field-fill: paper by default, card inside a .panel dialog), force the
+   text colour back, and postpone the UA background change indefinitely. */
+.field,
+.field-line {
+    --_line: rgb(236 230 220 / 0.2);
+    --_fill: transparent;
     display: block;
     width: 100%;
-    padding: 0.55rem 0 0.7rem;
+    min-height: 3rem;
+    padding: 0.7rem 0 0.75rem;
     background-color: transparent;
     border: 0;
-    border-bottom: 1px solid rgb(236 230 220 / 0.18);
     border-radius: 0;
+    box-shadow: inset 0 -1px 0 var(--_line), inset 0 0 0 100vmax var(--_fill);
     color: var(--color-fg);
+    caret-color: var(--color-accent);
     font-size: 1.0625rem;
     line-height: 1.6;
-    transition: border-color 250ms var(--ease-brand);
+    transition: box-shadow 250ms var(--ease-brand), opacity 200ms var(--ease-brand);
 }
-.field::placeholder { color: var(--color-fg-3); }
-.field:hover:not(:disabled) { border-bottom-color: rgb(236 230 220 / 0.35); }
-.field:focus { outline: none; box-shadow: none; border-bottom-color: var(--color-accent); }
-.field:disabled { opacity: 0.6; }
-.field[aria-invalid="true"] { border-bottom-color: rgb(255 180 171 / 0.7); }
+.field::placeholder,
+.field-line::placeholder { color: var(--color-fg-3); opacity: 1; }
+.field:hover:not(:disabled):not(:focus),
+.field-line:hover:not(:disabled):not(:focus) { --_line: rgb(236 230 220 / 0.38); }
+.field:focus,
+.field-line:focus {
+    outline: none;
+    box-shadow: inset 0 -2px 0 var(--color-accent), inset 0 0 0 100vmax var(--_fill);
+}
+.field:focus-visible,
+.field-line:focus-visible { outline: none; }  /* the gold rule IS the focus ring */
+.field:disabled,
+.field-line:disabled { opacity: 0.55; cursor: not-allowed; }
+.field[aria-invalid="true"],
+.field-line[aria-invalid="true"] { --_line: rgb(255 180 171 / 0.75); }
+/* Password dots: a little air between them. */
+.field[type="password"],
+.field-line[type="password"] { letter-spacing: 0.14em; }
+.field[type="password"]::placeholder,
+.field-line[type="password"]::placeholder { letter-spacing: normal; }
+
+/* Autofill. Two separate rules on purpose: a browser that doesn't know one
+   of the pseudo-classes would drop a combined selector list entirely. */
+.field:-webkit-autofill,
+.field-line:-webkit-autofill {
+    --_fill: var(--field-fill, var(--color-paper));
+    -webkit-text-fill-color: var(--color-fg);
+    caret-color: var(--color-accent);
+    transition: box-shadow 250ms var(--ease-brand), background-color 9999s 9999s;
+}
+.field:autofill,
+.field-line:autofill {
+    --_fill: var(--field-fill, var(--color-paper));
+    -webkit-text-fill-color: var(--color-fg);
+    caret-color: var(--color-accent);
+    transition: box-shadow 250ms var(--ease-brand), background-color 9999s 9999s;
+}
+.field-label,
+.field-label-caps { transition: color 200ms var(--ease-brand); }
+/* Dialogs sit on the card surface. */
+.panel { --field-fill: var(--color-card); }
+
+/* A label brightens while its field has focus. */
+div:has(> .field:focus) > .field-label,
+div:has(> .field-line:focus) > .field-label-caps { color: var(--color-fg-2); }
+
 /* Room for the forms plugin's chevron, which is a background image —
    hence background-color above, never the shorthand. */
 select.field { padding-right: 2rem; background-position: right 0 center; }
 /* A long text block gets a faint well, so its edges are findable. */
 textarea.field {
-    padding: 0.75rem 0.9rem;
+    padding: 0.85rem 1rem;
     background-color: rgb(236 230 220 / 0.025);
-    border: 1px solid rgb(236 230 220 / 0.1);
     border-radius: var(--radius-control);
+    box-shadow: inset 0 0 0 1px rgb(236 230 220 / 0.12);
 }
-textarea.field:focus { border-color: var(--color-accent); }
+textarea.field:hover:not(:disabled):not(:focus) { box-shadow: inset 0 0 0 1px rgb(236 230 220 / 0.24); }
+textarea.field:focus { box-shadow: inset 0 0 0 1px var(--color-accent); }
 /* A <select> styled as a field: native options take the ramp too. */
 select.field option { background: var(--color-card); color: var(--color-fg); }
 .field-error {
@@ -1028,24 +1096,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 .viewer-arrow-prev { left: clamp(0.25rem, 1.5vw, 1.5rem); }
 .viewer-arrow-next { right: clamp(0.25rem, 1.5vw, 1.5rem); }
 
-/* ── Editorial form field (Contact): label above, a single underline ──── */
-.field-line {
-    display: block;
-    width: 100%;
-    padding: 0.6rem 0 0.75rem;
-    background: transparent;
-    border: 0;
-    border-bottom: 1px solid rgb(236 230 220 / 0.18);
-    border-radius: 0;
-    color: var(--color-fg);
-    font-size: 1.125rem;
-    line-height: 1.6;
-    transition: border-color 250ms var(--ease-brand);
-}
-.field-line:hover { border-bottom-color: rgb(236 230 220 / 0.35); }
-.field-line:focus { outline: none; box-shadow: none; border-bottom-color: var(--color-accent); }
-.field-line[aria-invalid="true"] { border-bottom-color: rgb(255 180 171 / 0.7); }
-.field-line::placeholder { color: var(--color-fg-3); }
+/* ── Editorial form field (Contact): `.field-line` shares `.field` above ── */
 .field-label-caps {
     display: block;
     font-size: 0.8125rem;

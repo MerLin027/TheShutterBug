@@ -335,7 +335,7 @@ export default function HomeClient() {
                 </p>
               )}
               <div className="flex flex-wrap gap-3">
-                <button type="button" onClick={handleUpload} disabled={uploading} className="btn btn-primary">
+                <button type="button" onClick={handleUpload} disabled={uploading} aria-busy={uploading} className="btn btn-primary">
                   {uploading ? <Spinner /> : <ImageUp size={18} aria-hidden="true" />}
                   {uploading ? "Uploading…" : "Use this photograph"}
                 </button>
@@ -351,7 +351,7 @@ export default function HomeClient() {
                   <RefreshCw size={16} aria-hidden="true" />
                   Replace photograph
                 </button>
-                <button type="button" onClick={handleDownload} disabled={downloading} className="btn btn-text">
+                <button type="button" onClick={handleDownload} disabled={downloading} aria-busy={downloading} className="btn btn-text">
                   {downloading ? <Spinner /> : <Download size={16} aria-hidden="true" />}
                   Download current
                 </button>
@@ -424,7 +424,7 @@ export default function HomeClient() {
         </section>
 
         <div className="mt-12 flex flex-wrap items-center gap-4 border-t border-line pt-8">
-          <button type="button" onClick={handleSave} disabled={saving || uploading} className="btn btn-primary">
+          <button type="button" onClick={handleSave} disabled={saving || uploading} aria-busy={saving} className="btn btn-primary">
             {saving ? (
               <>
                 <Spinner />

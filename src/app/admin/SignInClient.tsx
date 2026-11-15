@@ -211,7 +211,7 @@ export default function SignInClient({
               </p>
             )}
 
-            <button className="btn btn-primary mt-2 w-full" type="submit" disabled={loading}>
+            <button className="btn btn-primary mt-2 w-full" type="submit" disabled={loading} aria-busy={loading}>
               {loading && <Spinner />}
               {loading ? "Signing in…" : "Sign in"}
             </button>

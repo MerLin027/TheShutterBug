@@ -242,7 +242,7 @@ export default function Contact() {
                 </div>
               )}
 
-              <button className="btn btn-primary !rounded-full px-8" type="submit" disabled={isLoading}>
+              <button className="btn btn-primary !rounded-full px-8" type="submit" disabled={isLoading} aria-busy={isLoading}>
                 {isLoading ? "Sending…" : "Send message"}
                 {/* Same-size slot for the arrow and the spinner, so the
                     button doesn't change width mid-submit. */}
