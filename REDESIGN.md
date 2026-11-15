@@ -609,3 +609,6 @@ Owner: "rework the pages and sections in the admin resource, decide what goes wh
 - **Verified:**
   - Simulation of 10,000 visits (node, strip-types): 0 rounds without all 10 distinct, 0 back-to-back repeats, every photo shown exactly 1,000 times. Corrupt and tampered storage is cleaned safely.
   - Real browser, 21 refreshes: round 1 had 10/10 distinct, round 2 had 10/10 distinct, refresh 21 started round 3. 0 back-to-back repeats, 0 photo changes after paint, no errors.
+- **Live (2026-11-15).** Merge `96209752` was built by Vercel only as a **Preview**, with no Production deploy, because `main` and `redesign/unslop` received the same commit seconds apart. An empty commit `85aad547` pushed to `main` alone triggered Production (40 s).
+  - Live check, 11 refreshes: 10/10 distinct, then a new round; bag stored as `studio-signin-bag`; no errors.
+  - **Trap for future merges:** push `main`, wait for the Production deployment, *then* fast-forward and push the branch. Check GitHub's deployments API for `environment: Production`, not just the commit status.
