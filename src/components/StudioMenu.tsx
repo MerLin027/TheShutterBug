@@ -81,12 +81,10 @@ export default function StudioMenu({
           aria-label="Studio menu"
           className="studio-sheet fixed inset-0 z-[90] flex flex-col bg-paper-deep px-3 pb-6 pt-3 md:hidden"
         >
-          <div className="mb-6 flex items-center justify-between pl-3">
+          <div className="mb-10 flex items-center justify-between pl-3">
             <Link href="/" onClick={() => onOpenChange(false)} className="block">
-              <span className="block text-lead font-medium leading-tight text-fg">
-                The Shutter Bug
-              </span>
-              <span className="block text-label text-fg-3">Studio</span>
+              <span className="wordmark block">The Shutter Bug</span>
+              <span className="caps mt-1.5 block">Studio</span>
             </Link>
             <button
               ref={closeButton}
@@ -99,14 +97,14 @@ export default function StudioMenu({
             </button>
           </div>
 
-          <ul className="flex flex-col gap-0.5">
+          <ul className="flex flex-col">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   aria-current={pathname === item.href ? "page" : undefined}
                   onClick={() => onOpenChange(false)}
-                  className="studio-nav-row h-12"
+                  className="studio-nav-row h-14 !text-lead"
                 >
                   <item.icon size={18} aria-hidden="true" />
                   {item.label}
@@ -115,7 +113,7 @@ export default function StudioMenu({
             ))}
           </ul>
 
-          <ul className="mt-auto flex flex-col gap-0.5 border-t border-line pt-4">
+          <ul className="mt-auto flex flex-col border-t border-line pt-4">
             <li>
               <button
                 type="button"

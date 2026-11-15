@@ -142,21 +142,21 @@ export default function AccountClient() {
     <StudioShell>
       <StudioTopBar title="Account" />
 
-      <div className="max-w-2xl px-4 pb-16 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 md:px-8 md:pt-12">
         {email && (
-          <p className="mb-8 text-body-md text-fg-2">
-            Signed in as <span className="text-fg">{email}</span>
+          <p className="caps mb-10">
+            Signed in as <span className="normal-case tracking-normal text-fg-2">{email}</span>
           </p>
         )}
 
-        <h2 className="mb-1 text-heading font-medium text-fg">About page</h2>
-        <p className="mb-6 text-body-md text-fg-2">
+        <h2 className="studio-heading mb-2">About page</h2>
+        <p className="lede mb-10 !text-[1.15rem]">
           What visitors read on /about. Saving updates the page immediately.
         </p>
 
         {/* Labels above every field (task C4). They were sr-only, so the
             page showed three unlabelled boxes. */}
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-8">
           <div>
             <label htmlFor="account-quote" className="field-label">
               Heading

@@ -17,10 +17,10 @@ const NAV_ITEMS: StudioNavItem[] = [
  * Studio chrome (Redesign Phase C): sidebar on desktop, menu sheet on
  * mobile, shared by Gallery, Messages and Account.
  *
- * App proportions per unslop: a 16rem (≈230px) sidebar on the deepest
- * surface, navigation rows 2.25rem tall with a 2px gap, icons in one column,
- * labels in sentence case. The active row is a surface step plus a hairline
- * highlight, with the accent only on its icon — not a gold wash.
+ * A 16rem (≈230px) sidebar on the deepest surface with the serif wordmark
+ * from the public site. The active row is full-strength text with a short
+ * gold rule at its left edge (Studio refinement, 2026-11-15) — no surface
+ * blocks, so it reads like the public navbar rather than an admin template.
  */
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -36,16 +36,15 @@ export default function StudioShell({ children }: { children: ReactNode }) {
       <div className="flex h-[100dvh] overflow-hidden">
         <nav
           aria-label="Studio"
-          className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-line bg-paper-deep px-3 py-5 md:flex"
+          className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-line bg-paper-deep px-3 py-6 md:flex"
         >
-          <Link href="/" className="mb-8 block px-3">
-            <span className="block text-lead font-medium leading-tight text-fg">
-              The Shutter Bug
-            </span>
-            <span className="mt-0.5 block text-label text-fg-3">Studio</span>
+          <Link href="/" className="mb-10 block px-3 pt-1">
+            <span className="wordmark block">The Shutter Bug</span>
+            <span className="caps mt-2 block">Studio</span>
           </Link>
 
-          <ul className="flex flex-col gap-0.5">
+          <p className="caps mb-2 px-3.5 !text-[0.6875rem]">Manage</p>
+          <ul className="flex flex-col">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <Link
@@ -60,7 +59,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
             ))}
           </ul>
 
-          <ul className="mt-auto flex flex-col gap-0.5 border-t border-line pt-4">
+          <ul className="mt-auto flex flex-col border-t border-line pt-4">
             <li>
               <Link href="/" className="studio-nav-row">
                 <ArrowLeft size={18} aria-hidden="true" />

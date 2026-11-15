@@ -30,7 +30,7 @@ import { PhotoGridSkeleton, StudioBoot } from "@/components/StudioSkeletons";
 import PhotoCard from "./PhotoCard";
 import UploadModal from "./UploadModal";
 import EditModal from "./EditModal";
-import { ChevronDown, CircleAlert, Images, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { CircleAlert, Images, Plus, RefreshCw, Trash2 } from "lucide-react";
 
 /**
  * Keyboard reordering in READING order. dnd-kit's stock getter is spatial:
@@ -295,28 +295,27 @@ export default function DashboardClient() {
   }
 
   // ── Render ──────────────────────────────────────────────────────────────
-  const categorySelect = (id: string) => (
-    <div className="relative">
-      <label htmlFor={id} className="sr-only">
-        Filter by category
-      </label>
-      <select
-        id={id}
-        value={activeCategory}
-        onChange={(e) => setActiveCategory(e.target.value)}
-        className="field h-11 cursor-pointer appearance-none py-0 pl-3 pr-9 text-label"
-      >
-        {STUDIO_FILTERS.map((c) => (
-          <option key={c} value={c}>
-            {c === "all" ? "All categories" : categoryLabel(c)}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        aria-hidden="true"
-        size={16}
-        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-3"
-      />
+  // Category filter: the public gallery's underline tabs (Studio refinement,
+  // 2026-11-15), replacing a native <select> that looked like a form control
+  // from another product. One row for every width; it scrolls sideways on a
+  // narrow phone rather than wrapping.
+  const categoryTabs = (
+    <div
+      role="group"
+      aria-label="Filter by category"
+      className="-mx-4 mb-8 flex gap-x-7 overflow-x-auto px-4 md:mx-0 md:px-0"
+    >
+      {STUDIO_FILTERS.map((c) => (
+        <button
+          key={c}
+          type="button"
+          aria-pressed={activeCategory === c}
+          onClick={() => setActiveCategory(c)}
+          className="tab shrink-0"
+        >
+          {c === "all" ? "All" : categoryLabel(c)}
+        </button>
+      ))}
     </div>
   );
 
@@ -332,11 +331,10 @@ export default function DashboardClient() {
             : `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`
         }
       >
-        <div className="hidden sm:block">{categorySelect("category-filter")}</div>
         <button
           type="button"
           onClick={() => setShowUpload(true)}
-          className="btn btn-primary h-11 px-3 sm:px-4"
+          className="btn btn-primary h-11 px-3.5 sm:px-5"
           aria-label="Upload photo"
         >
           <Plus size={18} aria-hidden="true" />
@@ -345,8 +343,7 @@ export default function DashboardClient() {
       </StudioTopBar>
 
       <div className="px-4 pb-16 pt-6 md:px-8 md:pt-8">
-        {/* Phones: the filter was simply missing below `sm`. */}
-        <div className="mb-6 sm:hidden">{categorySelect("category-filter-mobile")}</div>
+        {categoryTabs}
 
         {actionError && !error && (
           <p
@@ -362,7 +359,7 @@ export default function DashboardClient() {
         ) : error ? (
           <div role="alert" className="flex flex-col items-center px-6 py-24 text-center">
             <CircleAlert size={32} className="mb-5 text-fg-3" aria-hidden="true" />
-            <p className="max-w-sm text-body-md text-fg-2">{error}</p>
+            <p className="lede max-w-sm">{error}</p>
             <button
               type="button"
               onClick={() => {
@@ -378,8 +375,8 @@ export default function DashboardClient() {
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-24 text-center">
             <Images size={32} className="mb-5 text-fg-3" aria-hidden="true" />
-            <h2 className="text-heading font-medium text-fg">No photographs yet</h2>
-            <p className="mt-3 max-w-sm text-body-md text-fg-2">
+            <h2 className="studio-heading">No photographs yet</h2>
+            <p className="lede mt-3 max-w-sm">
               {activeCategory === "all"
                 ? "Upload the first one to start the gallery."
                 : `Nothing in ${categoryLabel(activeCategory)} yet.`}
@@ -396,7 +393,7 @@ export default function DashboardClient() {
                   drag order here is the reading order there. */}
               {/* A shorter row than the public grid: the Studio is for overview,
                   so about four frames fit per row at 1440px instead of two. */}
-              <ul className="justified [--row:11rem]" aria-label="Photographs, in gallery order">
+              <ul className="justified [--row:11rem] [--gap:1.5rem]" aria-label="Photographs, in gallery order">
                 {photos.map((photo) => (
                   <PhotoCard
                     key={photo._id}

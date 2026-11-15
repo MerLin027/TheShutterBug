@@ -450,3 +450,33 @@ Owner verdict on the live Phase B/C design: "hideous", the gallery "takes too mu
   - Most likely cause: the 2026-11-14 outage. After Render was resumed while Atlas was still paused, `connectDB` hit `querySrv ENOTFOUND` and called `process.exit(1)`, so the service crash-looped until Atlas was resumed.
   - Render's own event log (dashboard → service → Events/Logs) would confirm the exact error; it isn't reachable from here.
   - Fix queued as **D7**: retry the DB connection instead of exiting, and have `/api/health` report DB state.
+
+## Studio refinement + footer (owner request, 2026-11-15)
+
+Owner: "refine the pages left in a similar manner — the admin login, the dashboard and the other pages in admin", and remove the footer's links.
+
+- **Footer:** the Gallery / About / Contact links are gone; the wordmark, the line and the year remain.
+- **Shared Studio styles** (`globals.css`, components layer):
+  - `.field` / `.field-label` now match Contact: underline fields, small-caps labels, a gold underline on focus. The bio textarea keeps a faint well so its edges are findable.
+  - `.btn` is a pill, as on Contact.
+  - `.studio-nav-row`: no surface blocks. The current page is full-strength text with a short gold rule at its left edge.
+  - New `.studio-title` / `.studio-heading` serif classes.
+- **Sign-in (`/admin`):**
+  - Split into a server `page.tsx` and a client `SignInClient.tsx` (moved with `git mv`).
+  - On desktop, the first featured photo fills the left half, with only its caption on a scrim. The form sits on the paper: serif "Sign in", italic lede, underline fields, pill button, "Back to the site" text link.
+  - Phones, or no featured photo: the form alone.
+  - Only four public fields (src, srcSet, alt, title) cross to the client.
+  - The Studio layout now sends `robots: noindex, nofollow`.
+- **Studio chrome:** serif wordmark plus small-caps "Studio" in the sidebar, the mobile sheet and the boot screen. Serif page titles in the top bar, the count in caps, serif dialog titles.
+- **Gallery (Studio):**
+  - The category `<select>` is replaced by the public gallery's underline tabs, one row at every width (it scrolls sideways on phones).
+  - Photo cards take two lines, label then tools. On one shared line, narrow frames truncated to "005 · O…".
+- **Messages:** a hairline list instead of stacked cards. Serif sender names, the avatar circle dropped, and the open message in lead-size text. The address is repeated in the body only on phones. Centred under the title.
+- **Account:** caps "Signed in as", a serif "About page" heading, and an italic lede. Centred.
+- **Checks:**
+  - `tsc` clean; `eslint src backend` 0 problems; production build OK.
+  - Read-only puppeteer pass against a local backend: the live API's CORS correctly refuses localhost.
+  - Sign-in through the real form → dashboard. Tabs filter correctly (Nature = 2).
+  - Upload, Edit and Delete dialogs open and close; Cancel is used, nothing mutated.
+  - No horizontal overflow at 390 px. The footer has 0 links. No page errors.
+- **Harness trap:** `waitForFunction` polls on rAF, which never fires in a background tab. Call `bringToFront()` or use `polling: <ms>`.

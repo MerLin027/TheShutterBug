@@ -81,13 +81,13 @@ export default function StudioModal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`studio-dialog panel flex max-h-[90dvh] w-full flex-col gap-6 overflow-y-auto p-6 ${
+        className={`studio-dialog panel flex max-h-[90dvh] w-full flex-col gap-6 overflow-y-auto p-6 sm:p-8 ${
           size === "sm" ? "max-w-sm" : "max-w-lg"
         } ${className}`.trim()}
       >
         {title && (
           <div className="flex items-center justify-between gap-4">
-            <h2 id={titleId} className="text-heading font-medium text-fg">
+            <h2 id={titleId} className="studio-heading">
               {title}
             </h2>
             <button type="button" onClick={onClose} aria-label="Close" className="tool-btn -mr-2">

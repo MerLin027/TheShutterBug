@@ -198,8 +198,8 @@ svg.lucide {
     justify-content: center;
     gap: 0.5rem;
     height: 3rem;                 /* 43.2px rendered: touch target */
-    padding-inline: 1.25rem;
-    border-radius: var(--radius-control);
+    padding-inline: 1.4rem;
+    border-radius: 9999px;        /* pill, as on Contact */
     font-size: var(--text-label);
     line-height: 1;
     font-weight: 500;
@@ -280,32 +280,50 @@ svg.lucide {
 .tool-btn-danger:hover:not(:disabled) { color: var(--color-error); }
 
 /* ── Forms: label ABOVE the field, never placeholder-as-label ──────────── */
+/* Studio refinement (2026-11-15): the same editorial field as Contact — a
+   small-caps label and a single underline that turns gold on focus — so the
+   Studio reads as part of the site rather than an admin template. */
 .field-label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-size: var(--text-label);
-    line-height: var(--text-label--line-height);
+    margin-bottom: 0.35rem;
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
     font-weight: 500;
-    color: var(--color-fg-2);
+    color: var(--color-fg-3);
 }
+/* The quiet suffix inside a label ("· optional") stays sentence case. */
+.field-label > span { text-transform: none; letter-spacing: 0.02em; }
 .field {
     display: block;
     width: 100%;
-    padding: 0.75rem 1rem;
-    background: var(--color-card);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-control);
+    padding: 0.55rem 0 0.7rem;
+    background-color: transparent;
+    border: 0;
+    border-bottom: 1px solid rgb(236 230 220 / 0.18);
+    border-radius: 0;
     color: var(--color-fg);
-    font-size: var(--text-body-md);
-    line-height: var(--text-body-md--line-height);
-    transition-property: border-color, background-color;
-    transition-duration: var(--duration-micro);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    transition: border-color 250ms var(--ease-brand);
 }
 .field::placeholder { color: var(--color-fg-3); }
-.field:hover:not(:disabled) { border-color: rgb(236 230 220 / 0.16); }
-.field:focus { background: var(--color-raised); box-shadow: none; }
+.field:hover:not(:disabled) { border-bottom-color: rgb(236 230 220 / 0.35); }
+.field:focus { outline: none; box-shadow: none; border-bottom-color: var(--color-accent); }
 .field:disabled { opacity: 0.6; }
-.field[aria-invalid="true"] { border-color: rgb(255 180 171 / 0.6); }
+.field[aria-invalid="true"] { border-bottom-color: rgb(255 180 171 / 0.7); }
+/* Room for the forms plugin's chevron, which is a background image —
+   hence background-color above, never the shorthand. */
+select.field { padding-right: 2rem; background-position: right 0 center; }
+/* A long text block gets a faint well, so its edges are findable. */
+textarea.field {
+    padding: 0.75rem 0.9rem;
+    background-color: rgb(236 230 220 / 0.025);
+    border: 1px solid rgb(236 230 220 / 0.1);
+    border-radius: var(--radius-control);
+}
+textarea.field:focus { border-color: var(--color-accent); }
 /* A <select> styled as a field: native options take the ramp too. */
 select.field option { background: var(--color-card); color: var(--color-fg); }
 .field-error {
@@ -440,30 +458,59 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 
 /* ── Studio ────────────────────────────────────────────────────────────── */
 
-/* Navigation row (sidebar and mobile sheet). Unslop app spacing: 2.25rem
-   rows with a 2px gap, icons in one column. Active = a surface step plus a
-   hairline highlight, the accent only on the icon. */
+/* Navigation row (sidebar and mobile sheet). Editorial: no surface
+   blocks — the current page is full-strength text with a short gold rule
+   at its left edge; the rest sit back in the secondary tone. */
 .studio-nav-row {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.625rem;
-    height: 2.25rem;
-    padding-inline: 0.75rem;
-    border-radius: var(--radius-control);
+    gap: 0.75rem;
+    height: 2.5rem;
+    padding-inline: 0.9rem;
     font-size: var(--text-label);
-    font-weight: 500;
+    font-weight: 400;
     color: var(--color-fg-2);
     text-align: left;
-    transition-property: background-color, color;
-    transition-duration: var(--duration-micro);
+    transition: color 200ms var(--ease-brand);
 }
-.studio-nav-row:hover { color: var(--color-fg); background: rgb(236 230 220 / 0.04); }
-.studio-nav-row[aria-current="page"] {
-    color: var(--color-fg);
-    background: var(--color-raised);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+.studio-nav-row::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2px;
+    height: 1.1rem;
+    margin-top: -0.55rem;
+    border-radius: 2px;
+    background: var(--color-accent);
+    transform: scaleY(0);
+    transition: transform 300ms var(--ease-brand);
 }
+.studio-nav-row svg { color: var(--color-fg-3); transition: color 200ms var(--ease-brand); }
+.studio-nav-row:hover,
+.studio-nav-row:hover svg { color: var(--color-fg); }
+.studio-nav-row[aria-current="page"] { color: var(--color-fg); }
 .studio-nav-row[aria-current="page"] svg { color: var(--color-accent); }
+.studio-nav-row[aria-current="page"]::before { transform: scaleY(1); }
+
+/* Studio page title — the serif of the public pages at a working size. */
+.studio-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 2rem;
+    line-height: 1.1;
+    letter-spacing: -0.005em;
+    color: var(--color-fg);
+}
+/* Dialog and section headings. */
+.studio-heading {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.75rem;
+    line-height: 1.15;
+    color: var(--color-fg);
+}
 
 /* Dialog backdrop — solid enough that nothing behind competes. No blur. */
 .studio-backdrop { background: rgb(11 10 9 / 0.8); }

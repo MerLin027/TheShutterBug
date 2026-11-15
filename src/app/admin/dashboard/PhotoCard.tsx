@@ -24,10 +24,10 @@ type Props = {
  * so on a phone they were unreliable at best. REDESIGN.md §3.9 has the old
  * markup.
  *
- * Now: a solid tool row under the photo, always visible. Reorder handle on
- * the left (pointer drag, touch drag, or Space + arrow keys via dnd-kit's
- * keyboard sensor), then the caption and frame line, then feature / edit /
- * delete as equal quiet icon buttons. Delete still goes through the confirm
+ * Now: the caption and frame line under the photo, then a tool row, always
+ * visible: reorder handle on the left (pointer drag, touch drag, or Space +
+ * arrow keys via dnd-kit's keyboard sensor), feature / edit / delete as
+ * equal quiet icon buttons on the right. Delete still goes through the confirm
  * dialog — it just no longer dominates the card.
  *
  * The <li> is a `.frame` in the same justified rows as the public gallery,
@@ -63,7 +63,19 @@ export default function PhotoCard({ photo, onEdit, onDelete, onToggleFeatured }:
         />
       </div>
 
-      <div className="mt-2 flex items-center gap-1">
+      {/* Two lines: the label gets the frame's full width (one shared line
+          with four buttons truncated it to "005 · O…" on a narrow frame),
+          then the tools — handle left, actions right. */}
+      <div className="mt-3 min-w-0">
+        {photo.caption && (
+          <p className="truncate font-display text-[1.15rem] leading-tight text-fg">{photo.caption}</p>
+        )}
+        <p className="frame-meta mt-0.5 truncate">
+          {frame} · {categoryLabel(photo.category)}
+        </p>
+      </div>
+
+      <div className="-mx-2 mt-1 flex items-center">
         <button
           type="button"
           className="tool-btn shrink-0 cursor-grab touch-none active:cursor-grabbing"
@@ -74,14 +86,7 @@ export default function PhotoCard({ photo, onEdit, onDelete, onToggleFeatured }:
           <GripVertical size={18} aria-hidden="true" />
         </button>
 
-        <div className="min-w-0 flex-1 px-1">
-          {photo.caption && (
-            <p className="truncate text-label text-fg">{photo.caption}</p>
-          )}
-          <p className="frame-meta truncate">
-            {frame} · {categoryLabel(photo.category)}
-          </p>
-        </div>
+        <span className="flex-1" aria-hidden="true" />
 
         <button
           type="button"

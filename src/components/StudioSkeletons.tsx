@@ -26,10 +26,9 @@ export function PhotoGridSkeleton() {
 /** Message list placeholder — matches the row rhythm of MessagesClient. */
 export function MessageListSkeleton() {
   return (
-    <div className="flex flex-col gap-2" aria-hidden="true">
+    <div className="flex flex-col border-t border-line" aria-hidden="true">
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="panel flex items-center gap-4 px-4 py-4">
-          <div className="skeleton size-9 shrink-0 rounded-full" />
+        <div key={i} className="flex items-center gap-4 border-b border-line py-5">
           <div className="flex flex-1 flex-col gap-2">
             <div className="skeleton h-3 w-1/3 rounded-full" />
             <div className="skeleton h-3 w-2/3 rounded-full" />
@@ -51,8 +50,9 @@ export function StudioBoot() {
       role="status"
       className="flex h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-paper"
     >
-      <div className="admin-spinner" aria-hidden="true" />
-      <p className="text-label text-fg-3">Checking your session</p>
+      <p className="wordmark">The Shutter Bug</p>
+      <div className="admin-spinner mt-2 !size-6" aria-hidden="true" />
+      <p className="caps">Checking your session</p>
     </div>
   );
 }
