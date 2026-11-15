@@ -10,6 +10,7 @@ import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
 
 import type { SignInPhoto } from "./signInPhotos";
+import { drawFromBag, parseBag } from "./photoBag";
 
 /**
  * Studio sign-in (Redesign Phase C, task C5; editorial since the Studio
@@ -27,8 +28,8 @@ import type { SignInPhoto } from "./signInPhotos";
  * long random password, which is the practical fix for the short one the
  * account currently has (REDESIGN.md task D8). Rate limiting is Phase D.
  */
-/** Remembers the last photo shown, so a refresh always brings a new one. */
-const LAST_PHOTO_KEY = "studio-signin-photo";
+/** Which sign-in photos this browser has already shown (see photoBag.ts). */
+const BAG_KEY = "studio-signin-bag";
 
 export default function SignInClient({
   photos,
@@ -41,21 +42,21 @@ export default function SignInClient({
   const [index, setIndex] = useState(initialIndex);
   const photo: SignInPhoto | null = photos[index] ?? null;
 
-  // The server picks at random, so 1 visit in 10 would repeat the photo just
-  // seen. If it did, step to the next one — before the image has faded in
-  // (it settles over ~2.6 s), so the switch isn't noticeable. Storage can be
-  // unavailable (private mode, blocked): then the random pick simply stands.
+  // Shuffle bag: no photo repeats until every one has been shown. The
+  // server's random pick stands when it's still unseen; otherwise an unseen
+  // one replaces it. This runs on mount, while the "checking your session"
+  // screen is up — before the photo is ever drawn — so there's no flicker.
+  // Storage can be unavailable (private mode, blocked): then the server's
+  // random pick simply stands.
   useEffect(() => {
     if (photos.length < 2) return;
-    let shown = initialIndex;
     try {
-      const last = Number(sessionStorage.getItem(LAST_PHOTO_KEY) ?? localStorage.getItem(LAST_PHOTO_KEY));
-      if (last === initialIndex) {
-        shown = (initialIndex + 1) % photos.length;
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time correction after reading storage
-        setIndex(shown);
-      }
-      localStorage.setItem(LAST_PHOTO_KEY, String(shown));
+      const state = parseBag(localStorage.getItem(BAG_KEY), photos.length);
+      const { pick, next } = drawFromBag(photos.length, initialIndex, state);
+      localStorage.setItem(BAG_KEY, JSON.stringify(next));
+      localStorage.removeItem("studio-signin-photo"); // the previous scheme's key
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time pick after reading storage
+      if (pick !== initialIndex) setIndex(pick);
     } catch {
       /* storage unavailable — keep the server's pick */
     }
