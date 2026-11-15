@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 /**
- * Editable copy for the public About page.
+ * Editable copy for the public About page, and the Home page's hero image
+ * and "The work" statement.
  *
  * This is a singleton collection — there is only ever one document, created
  * on the first PUT via upsert. Routes must never assume it exists: a fresh
@@ -23,7 +24,21 @@ export const DEFAULTS = {
   // into public/ — that directory is empty, so a relative path would 404.
   aboutImageUrl:
     'https://lh3.googleusercontent.com/aida-public/AB6AXuCFd3kHx3f7TeKHtxF_JbbMOx1gcgGN2yJwun0sRZTvkpH0C5Os9LO4SOCnp3UlHBkmbBdbD9r7C6ScpOSyILvBtEOoSi0flavIB50fRf7kmqOL86vKVCMADob9KFsiurnit21aw1Oq79dX5bfimo8ulSvwskvjA7fhD8eVHmylQFGnnJfLDtoxMj4pehyK71qvCKTeclW6BetKTFL02lrphZAeuRvfWazNDSz6sSrgd0PZuCEQBN_D',
+
+  // ── Home page (Studio → Home page, 2026-11-15) ──
+  // The hero photograph. The default is the placeholder Home has always
+  // shown; an upload replaces it with a Cloudinary asset.
+  heroImageUrl:
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBN4WALWq_emxJIYSU6-Ph6fTn37OTV7OLsoCQ18yhMT1Ch35bNiLM4PlaQGpX7yMywVF0SKr_lWFJ0A6ljA2Yse8ng0wVoQcgD1VWlj6NH6Vg-IzAvUuJumBOqGqNybIThpITt94pICLEZ8H6K_d4Wb02uA12APN9PrHFTTgDRm8p5-amoOw1XUMQii1fxOS90Sa87ajqewjmm2EyiY2NfdJGKNZS3vFiAIkpfpm1A2Y83s1FHV9wH=w2400',
+  heroImageAlt: 'A lone rowing boat on still water at dusk, mirrored in the lake',
+  // "The work" statement on Home. Empty means "use the second paragraph of
+  // the bio", which is what Home showed before this field existed.
+  showWorkStatement: true,
+  workStatement: '',
 };
+
+export const HERO_ALT_MAX = 300;
+export const WORK_STATEMENT_MAX = 1000;
 
 const siteContentSchema = new mongoose.Schema({
   quote: {
@@ -41,6 +56,34 @@ const siteContentSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: DEFAULTS.aboutImageUrl,
+  },
+  heroImageUrl: {
+    type: String,
+    trim: true,
+    default: DEFAULTS.heroImageUrl,
+  },
+  // Cloudinary public_id of an UPLOADED hero, so the previous one can be
+  // released when it is replaced. Empty for the default placeholder (which
+  // is not ours to delete). Never sent to clients — see routes/siteContent.js.
+  heroImageId: {
+    type: String,
+    default: '',
+  },
+  heroImageAlt: {
+    type: String,
+    trim: true,
+    maxlength: [HERO_ALT_MAX, `Image description must be ${HERO_ALT_MAX} characters or fewer`],
+    default: DEFAULTS.heroImageAlt,
+  },
+  showWorkStatement: {
+    type: Boolean,
+    default: DEFAULTS.showWorkStatement,
+  },
+  workStatement: {
+    type: String,
+    trim: true,
+    maxlength: [WORK_STATEMENT_MAX, `"The work" text must be ${WORK_STATEMENT_MAX} characters or fewer`],
+    default: DEFAULTS.workStatement,
   },
 }, { timestamps: true });
 

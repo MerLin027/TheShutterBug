@@ -10,18 +10,24 @@ import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
 
 /** The one photograph beside the form — only what the page needs. */
-export type SignInPhoto = { src: string; srcSet: string; alt: string; title: string };
+export type SignInPhoto = {
+  src: string;
+  srcSet: string;
+  alt: string;
+  title: string;
+  /** Photographer credit for a photo that isn't the owner's own. */
+  credit?: { name: string; url: string };
+};
 
 /**
  * Studio sign-in (Redesign Phase C, task C5; editorial since the Studio
  * refinement, 2026-11-15).
  *
- * Desktop: one of the owner's featured photographs fills the left half —
+ * Desktop: a photograph (chosen in admin/page.tsx) fills the left half —
  * nothing laid over it but its own caption on a scrim at the foot — and the
  * form sits on the paper to the right in the public site's voice: serif
  * title, small-caps labels, underline fields, a pill button. Phones get
- * the form alone. With no featured photo (or the API asleep) the page is
- * just the form, centred.
+ * the form alone. With no photo the page is just the form, centred.
  *
  * Security notes (OWASP A07): the error shown is the server's own generic
  * "Invalid email or password" — it never says which field was wrong — and
@@ -103,7 +109,19 @@ export default function SignInClient({ photo }: { photo: SignInPhoto | null }) {
             aria-hidden="true"
             className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-paper/85 to-transparent"
           />
-          <figcaption className="caps absolute bottom-8 left-10 !text-fg-2">{photo.title}</figcaption>
+          <figcaption className="absolute bottom-8 left-10 right-10 flex items-baseline justify-between gap-6">
+            <span className="caps !text-fg-2">{photo.title}</span>
+            {photo.credit && (
+              <a
+                href={photo.credit.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-label text-fg-2 transition-colors hover:text-fg"
+              >
+                Photo: {photo.credit.name} / Unsplash
+              </a>
+            )}
+          </figcaption>
         </figure>
       )}
 

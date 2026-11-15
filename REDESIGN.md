@@ -480,3 +480,66 @@ Owner: "refine the pages left in a similar manner — the admin login, the dashb
   - Upload, Edit and Delete dialogs open and close; Cancel is used, nothing mutated.
   - No horizontal overflow at 390 px. The footer has 0 links. No page errors.
 - **Harness trap:** `waitForFunction` polls on rAF, which never fires in a background tab. Call `bringToFront()` or use `polling: <ms>`.
+
+## Studio → Home page (owner request, 2026-11-15)
+
+Owner: "an option to display 'the work' section in the homepage and to be able to change the description … change the homepage bg image and an option to download the current bg image."
+
+- **Backend (`SiteContent`):** five new fields.
+  - `heroImageUrl` and `heroImageAlt` (≤300). Defaults are the existing placeholder and its alt text.
+  - `heroImageId`: the Cloudinary public_id of an uploaded hero. Never returned by the API.
+  - `showWorkStatement`: a strict boolean, default true.
+  - `workStatement` (≤1000): empty means "use bio paragraph 2", which is what Home showed before.
+  - `PUT /api/site-content` type-checks every field (strings must be strings; the boolean must be a real boolean) and still picks fields explicitly.
+  - The hero URL is **not** settable via PUT. It only changes through `POST /api/site-content/hero`, so it is always one of our own Cloudinary assets.
+- **`POST /api/site-content/hero`:** `protect` then `upload.single('image')` (image-only, 25 MB), with a description (alt text) required.
+  - The replaced hero is released from Cloudinary only after the new one is saved, and never the default placeholder.
+  - A failed save releases the new upload.
+- **Frontend:**
+  - `Hero` takes its image as a prop: Cloudinary renditions at 1200/1800/2400, the placeholder used as is.
+  - Home's statement goes through `workStatementFor()` and is `null` when switched off.
+  - New Studio page `/admin/dashboard/home` ("Home page" in the sidebar):
+    - Background photograph: preview; Replace (pick → preview → describe → "Use this photograph"); Download current (Cloudinary `fl_attachment:home_background`, i.e. the original file; the placeholder is fetched as a blob, with an open-in-tab fallback); description field.
+    - The work: on/off switch (`role="switch"`), text with a counter, Save.
+- **Checks (local backend, same Atlas DB):**
+  - 15/15 pass. Bad types, overlong text, an operator object and missing tokens are all refused; `heroImageId` is hidden.
+  - Toggle off: Home has no section. Toggle on with new text: Home shows it.
+  - An upload without a description is refused. An upload with one makes the Home hero the Cloudinary asset with srcSet and the new alt.
+  - Download saves the file: `home_background.jpg` from Cloudinary (header verified), `home-background.jpg` for the placeholder. No page errors.
+  - **Restored afterwards:** the probe hero was released from Cloudinary and the new fields were unset, so the document is exactly as before (none of the fields existed).
+- **Deploy note:** this needs the backend (Render) and the frontend (Vercel) both deployed from `main`. If the frontend lands first, every new field falls back to today's behaviour, so the order doesn't matter.
+
+## Studio reorganisation (owner request, 2026-11-15)
+
+Owner: "rework the pages and sections in the admin resource, decide what goes where."
+
+**Decision.** Collections first, then the public pages by name.
+- **Overview** (`/admin/dashboard`, new landing screen): "Needs attention", a three-column ledger (Photographs, Messages, Pages), the latest 3 messages, a Selected-work strip, and "Signed in as".
+  - "Needs attention" lists, each with a link to fix it: demo hero, demo portrait, U+FFFD in the bio, nothing featured, empty gallery.
+- **Photographs** (`/photos`, was "Gallery" at `/admin/dashboard`):
+  - New **Featured** tab (right-aligned). It fetches all photos and keeps the starred ones; reorder still works on the subset (positions are permuted within the visible set).
+  - `?filter=featured` deep-links to it. Un-starring a photo in that view removes it from the view.
+- **Messages:** unchanged.
+- **Pages → Home** (`/home`): background, "The work", plus a read-only **Selected work** section with "Choose in Photographs →". It sits below Save, which only covers the editable sections.
+- **Pages → About** (`/about`, was "Account"): the About copy. The old `/admin/dashboard/account` redirects here. "Signed in as" moved to Overview.
+- **Sidebar:** Overview / Photographs / Messages, then a "Pages" group (Home, About). At the foot: **View the site** (was "Back to site") and Sign out. The mobile sheet uses the same groups and now has View the site too.
+- **Files:** moved with `git mv` (`DashboardClient` → `photos/PhotosClient`, plus PhotoCard/UploadModal/EditModal; `account/AccountClient` → `about/AboutClient`).
+- **Checks:**
+  - `tsc`, `eslint` and the build are clean.
+  - Read-only puppeteer pass, 11/11:
+    - Sign-in lands on Overview.
+    - Sidebar order and groups are correct; every page shows the right title and current-page marker.
+    - `/account` redirects to About.
+    - `?filter=featured` shows 3 cards, matching the API's 3 featured.
+    - No overflow at 390 px; no page errors.
+  - Overview currently flags: the demo hero, the demo portrait, and U+FFFD in the bio.
+
+## Sign-in photograph (owner request, 2026-11-15)
+
+- Owner asked for "a random aesthetic image of the northern lights" on the sign-in page. It is now fixed instead of "first featured photo", so it no longer changes when photos are starred. The page also no longer waits on the backend.
+- **Photo:** "Aurora borealis over Reine, Lofoten" by Johny Goerend, Unsplash (https://unsplash.com/photos/aurora-borealis-over-reine-lofoten-x3WQMj5QkEE).
+  - **Unsplash License:** free to use, commercial included. Credit is shown anyway, bottom-right of the photo, linking out with `rel="noopener noreferrer"`.
+  - Chosen from 5 free (non-premium) portrait candidates read from Unsplash's search JSON. Portrait fits the tall left panel.
+- Served from `images.unsplash.com` at 800/1200/1600/2400 with `auto=format`; all sizes verified 200.
+- **Phase D note:** the CSP (D1) must allow `img-src https://images.unsplash.com`.
+- Verified: the image loads (800w chosen at 1440×900, DPR 1); the credit link is present; no page errors.
