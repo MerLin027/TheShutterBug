@@ -277,7 +277,7 @@ export default function UploadModal({
           </p>
         )}
 
-        <button type="submit" disabled={uploading || !file} className="btn btn-primary w-full">
+        <button type="submit" disabled={uploading || !file} aria-busy={uploading} className="btn btn-primary w-full">
           {uploading ? (
             <>
               <Spinner />

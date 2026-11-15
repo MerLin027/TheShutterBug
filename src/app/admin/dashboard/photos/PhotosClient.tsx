@@ -494,7 +494,7 @@ export default function PhotosClient() {
             <button type="button" onClick={closeDeleteDialog} disabled={deleting} className="btn btn-quiet">
               Cancel
             </button>
-            <button type="button" onClick={handleDelete} disabled={deleting} className="btn btn-danger">
+            <button type="button" onClick={handleDelete} disabled={deleting} aria-busy={deleting} className="btn btn-danger">
               {deleting ? <Spinner /> : <Trash2 size={16} aria-hidden="true" />}
               Delete
             </button>

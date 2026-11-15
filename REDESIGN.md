@@ -548,3 +548,41 @@ Owner: "rework the pages and sections in the admin resource, decide what goes wh
   - Now **"Northern lights over Flakstad beach" by Johny Goerend** (https://unsplash.com/photos/northern-lights-over-flakstad-beach-U_diPCXCBxU), Unsplash License, credited.
   - Added a gentle 28% dark wash over the photo for a moodier panel. It is a solid darkening layer, not glass, and leaves the photo untouched.
   - Verified: all four sizes 200, loads at 1440×900, credit present, no page errors.
+
+## Sign-in: a different photograph on every visit (owner request, 2026-11-15)
+
+- Owner: cycle through ~10 images (northern lights, Edinburgh, Norway, F1, space, nature), then refined it to "every time i refresh a different image appears" and "high quality ones". So it is one photo per visit, not an auto-advancing slideshow (nothing moves while you sign in).
+- **`src/app/admin/signInPhotos.ts`:** 10 Unsplash photos (Unsplash License; all checked `premium:false, plus:false`; credits read from Unsplash's photo JSON).
+  - Northern lights ×2: Flakstad (Johny Goerend), Ylläsjärvi (Lucas Marcomini).
+  - Edinburgh ×2: Victoria Street at dusk (jim Divine), skyline at sunset (Natalie Parham).
+  - Norway ×1: fjord with ship (David Bottenberg).
+  - F1 ×2: circuit at sunset (Baptiste Prat), vintage F1 car (Namito Yokota).
+  - Space ×2: Milky Way over a lake (Thomas Ciszewski), Milky Way over rock formations (John Fowler).
+  - Nature ×1: pine forest in fog (Liliia Liliia).
+  - Chosen from 22 previewed candidates by eye for low-key tones. Rejected: bright daytime fjords, bright snow, sunny Edinburgh.
+- **Quality:** q=85, srcSet 960/1400/1800/2400/3000 with `auto=format`. All 50 URLs verified 200. A 1440×900 DPR-2 screen gets the 1800 px file.
+- **Mechanics:**
+  - `/admin` is now per-request (`connection()`); the server picks with `crypto.randomInt`, so the chosen photo is in the first HTML.
+  - The client remembers the last index in `localStorage` and steps to the next one if the pick repeats. This happens before the ~2.6 s fade-in completes, so it isn't visible. If storage is blocked, the random pick stands.
+  - The dark wash dropped to 22%, since several photos are darker than Flakstad.
+- **Verified:** 12 reloads gave 8 distinct photos and 0 back-to-back repeats; no errors or hydration warnings; screenshots checked.
+
+## Text fields and busy buttons, site-wide (owner request, 2026-11-15)
+
+- **Owner's screenshot:** browser autofill painted the sign-in email/password as pale-blue boxes with black text, and the "Signing in…" button went muddy grey. "Refine it properly across the website, any kind of text box."
+- **One field design** for `.field` (Studio) and `.field-line` (Contact), shared in `globals.css`:
+  - The hairline is an inset box-shadow that becomes a 2 px gold rule on focus (no layout shift). The caret is gold.
+  - Hover brightens the line; invalid fields get a red line. Password dots get a little letter-spacing.
+  - The label brightens while its field has focus (`div:has(> .field:focus) > label`).
+- **Autofill fix:** the field is covered with an inset shadow in the surface colour (`--field-fill`: paper by default, card inside `.panel`). `-webkit-text-fill-color` is forced back to the ramp, and the UA background change is postponed indefinitely.
+  - The rules are written as two selector lists; Lightning CSS folds `:-webkit-autofill` into the standard `:autofill`, which current Chrome, Edge, Safari and Firefox support. Verified in the built CSS.
+- **Focus ring trap:** the site-wide `:focus-visible` outline is unlayered, so it beat the components-layer "no outline" rule on fields. The field exemption now lives next to it, unlayered.
+- **Studio textareas** keep a faint well, now drawn with inset shadows (gold on focus).
+- **Busy vs disabled buttons:** `aria-busy` is set on every working button (sign-in, contact send, About save, Home save/upload/download, Edit save, Upload, both deletes).
+  - `.btn[aria-busy=true]:disabled` keeps full colour with `cursor: progress`; the primary dims slightly to #d9d3c9.
+  - A genuinely unavailable button (Upload with no file) fades to 45%.
+- **Verified with screenshots and computed styles:**
+  - Sign-in: empty, focused, filled, and busy (login request held, never sent).
+  - Contact: focus moves the gold rule and the label brightens.
+  - Studio: About and the Upload dialog.
+  - Busy button opacity is 1; unavailable is 0.45. No errors.

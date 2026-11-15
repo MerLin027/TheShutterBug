@@ -176,7 +176,7 @@ export default function EditModal({
           </p>
         )}
 
-        <button type="submit" disabled={saving} className="btn btn-primary w-full">
+        <button type="submit" disabled={saving} aria-busy={saving} className="btn btn-primary w-full">
           {saving ? (
             <>
               <Spinner />

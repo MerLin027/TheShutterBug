@@ -215,7 +215,7 @@ export default function AboutClient() {
           )}
 
           <div className="flex flex-wrap items-center gap-4">
-            <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary">
+            <button type="button" onClick={handleSave} disabled={saving} aria-busy={saving} className="btn btn-primary">
               {saving ? (
                 <>
                   <Spinner />
