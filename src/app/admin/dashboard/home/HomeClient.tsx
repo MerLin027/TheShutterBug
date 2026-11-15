@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Download, ImageUp, RefreshCw } from "lucide-react";
+import { ArrowRight, Download, ImageUp, RefreshCw } from "lucide-react";
 import { apiUrl } from "@/lib/api";
-import { DEFAULT_SITE_CONTENT, splitBio } from "@/lib/data";
+import { DEFAULT_SITE_CONTENT, cloudinaryUrl, splitBio, type ApiPhoto } from "@/lib/data";
+import { categoryLabel } from "@/lib/categories";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
@@ -69,6 +71,9 @@ export default function HomeClient() {
 
   const [downloading, setDownloading] = useState(false);
 
+  // Selected work (read-only here; starred in Photographs). null = failed.
+  const [featured, setFeatured] = useState<ApiPhoto[] | null>([]);
+
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (savedTimer.current) clearTimeout(savedTimer.current);
@@ -86,8 +91,17 @@ export default function HomeClient() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(apiUrl("/api/site-content"), { cache: "no-store" });
+        const [res, photosRes] = await Promise.all([
+          fetch(apiUrl("/api/site-content"), { cache: "no-store" }),
+          fetch(apiUrl("/api/photos"), { cache: "no-store" }).catch(() => null),
+        ]);
         if (cancelled) return;
+        if (photosRes?.ok) {
+          const all: ApiPhoto[] = await photosRes.json();
+          if (!cancelled) setFeatured(all.filter((p) => p.isFeatured));
+        } else {
+          setFeatured(null);
+        }
         if (!res.ok) {
           setLoadError("Couldn't load the current settings, so the defaults are shown.");
           return;
@@ -261,7 +275,7 @@ export default function HomeClient() {
 
   return (
     <StudioShell>
-      <StudioTopBar title="Home page" />
+      <StudioTopBar title="Home" />
 
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-8 md:px-8 md:pt-12">
         {loadError && (
@@ -431,6 +445,38 @@ export default function HomeClient() {
             </p>
           )}
         </div>
+        {/* ── Selected work (managed in Photographs) ───────────────────── */}
+        <section aria-labelledby="selected-heading" className="mt-16 border-t border-line pt-12">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 id="selected-heading" className="studio-heading mb-2">Selected work</h2>
+              <p className="lede !text-[1.15rem]">The starred photographs, in gallery order, below the statement.</p>
+            </div>
+            <Link href="/admin/dashboard/photos?filter=featured" className="text-link shrink-0 self-start sm:self-auto">
+              Choose in Photographs
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+          {featured === null ? (
+            <p className="mt-6 text-body-md text-error">Couldn&apos;t load the photographs just now.</p>
+          ) : featured.length === 0 ? (
+            <p className="mt-6 text-body-md text-fg-2">
+              Nothing is starred, so the section is hidden on the home page.
+            </p>
+          ) : (
+            <ul className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {featured.map((p) => (
+                <li key={p._id}>
+                  <div className="frame-media aspect-[4/3]">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
+                    <img src={cloudinaryUrl(p.imageUrl, 480)} alt={p.caption || `${categoryLabel(p.category)} photograph`} loading="lazy" />
+                  </div>
+                  <p className="frame-meta mt-2 truncate">{p.caption || categoryLabel(p.category)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </StudioShell>
   );

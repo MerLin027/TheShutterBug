@@ -22,9 +22,14 @@ I shoot on a mix of digital and film, print small, and travel light. The Shutter
 const SEED_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCFd3kHx3f7TeKHtxF_JbbMOx1gcgGN2yJwun0sRZTvkpH0C5Os9LO4SOCnp3UlHBkmbBdbD9r7C6ScpOSyILvBtEOoSi0flavIB50fRf7kmqOL86vKVCMADob9KFsiurnit21aw1Oq79dX5bfimo8ulSvwskvjA7fhD8eVHmylQFGnnJfLDtoxMj4pehyK71qvCKTeclW6BetKTFL02lrphZAeuRvfWazNDSz6sSrgd0PZuCEQBN_D";
 
-export default function AccountClient() {
+/**
+ * Studio → About: the copy and portrait on the public /about page.
+ * (Was "Account" until the Studio reorganisation, 2026-11-15; the old
+ * /admin/dashboard/account address redirects here.)
+ */
+export default function AboutClient() {
   // Effect-based session read, not a lazy initialiser — see useAdminToken.
-  const { token, email, ready, signOut } = useAdminToken();
+  const { token, ready, signOut } = useAdminToken();
 
   const [quote, setQuote] = useState(SEED_QUOTE);
   const [bio, setBio] = useState(SEED_BIO);
@@ -121,7 +126,7 @@ export default function AccountClient() {
       try {
         await revalidatePublicPages();
       } catch {
-        console.error("[account] revalidate failed after a successful save");
+        console.error("[about] revalidate failed after a successful save");
       }
 
       setSaving(false);
@@ -140,16 +145,10 @@ export default function AccountClient() {
 
   return (
     <StudioShell>
-      <StudioTopBar title="Account" />
+      <StudioTopBar title="About" />
 
       <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 md:px-8 md:pt-12">
-        {email && (
-          <p className="caps mb-10">
-            Signed in as <span className="normal-case tracking-normal text-fg-2">{email}</span>
-          </p>
-        )}
-
-        <h2 className="studio-heading mb-2">About page</h2>
+        <h2 className="studio-heading mb-2">The About page</h2>
         <p className="lede mb-10 !text-[1.15rem]">
           What visitors read on /about. Saving updates the page immediately.
         </p>

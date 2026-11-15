@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { LogOut, Menu, X, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, LogOut, Menu, X, type LucideIcon } from "lucide-react";
 
 export type StudioNavItem = { href: string; label: string; icon: LucideIcon };
+export type StudioNavGroup = { label?: string; items: StudioNavItem[] };
 
 /**
  * Studio menu below `md`: a button in the top bar's corner opens a full
@@ -17,13 +18,13 @@ export type StudioNavItem = { href: string; label: string; icon: LucideIcon };
  * button on close, and the page behind cannot scroll.
  */
 export default function StudioMenu({
-  navItems,
+  navGroups,
   pathname,
   open,
   onOpenChange,
   onSignOut,
 }: {
-  navItems: StudioNavItem[];
+  navGroups: StudioNavGroup[];
   pathname: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -97,23 +98,34 @@ export default function StudioMenu({
             </button>
           </div>
 
-          <ul className="flex flex-col">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={pathname === item.href ? "page" : undefined}
-                  onClick={() => onOpenChange(false)}
-                  className="studio-nav-row h-14 !text-lead"
-                >
-                  <item.icon size={18} aria-hidden="true" />
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {navGroups.map((group, g) => (
+            <div key={g} className={g > 0 ? "mt-6" : ""}>
+              {group.label && <p className="caps mb-1 px-3.5 !text-[0.6875rem]">{group.label}</p>}
+              <ul className="flex flex-col">
+                {group.items.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={pathname === item.href ? "page" : undefined}
+                      onClick={() => onOpenChange(false)}
+                      className="studio-nav-row h-14 !text-lead"
+                    >
+                      <item.icon size={18} aria-hidden="true" />
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           <ul className="mt-auto flex flex-col border-t border-line pt-4">
+            <li>
+              <Link href="/" onClick={() => onOpenChange(false)} className="studio-nav-row h-12">
+                <ArrowUpRight size={18} aria-hidden="true" />
+                View the site
+              </Link>
+            </li>
             <li>
               <button
                 type="button"

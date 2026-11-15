@@ -1,9 +1,9 @@
-import DashboardClient from "./DashboardClient";
+import OverviewClient from "./OverviewClient";
 
 export const metadata = {
-  title: "Gallery — Studio",
+  title: "Overview — Studio",
 };
 
-export default function AdminDashboardPage() {
-  return <DashboardClient />;
+export default function OverviewPage() {
+  return <OverviewClient />;
 }

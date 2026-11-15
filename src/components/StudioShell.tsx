@@ -3,15 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, House, Images, LogOut, Mail, User } from "lucide-react";
+import { ArrowUpRight, FileText, House, Images, LayoutGrid, LogOut, Mail } from "lucide-react";
 import { useAdminToken } from "@/lib/useAdminToken";
-import StudioMenu, { type StudioNavItem } from "./StudioMenu";
+import StudioMenu, { type StudioNavGroup } from "./StudioMenu";
 
-const NAV_ITEMS: StudioNavItem[] = [
-  { href: "/admin/dashboard", label: "Gallery", icon: Images },
-  { href: "/admin/dashboard/home", label: "Home page", icon: House },
-  { href: "/admin/dashboard/messages", label: "Messages", icon: Mail },
-  { href: "/admin/dashboard/account", label: "Account", icon: User },
+/**
+ * Studio information architecture (reorganised 2026-11-15):
+ *   Overview      — the landing screen: what's on the site, what's new.
+ *   Photographs   — the collection (upload, edit, order, feature).
+ *   Messages      — the contact-form inbox.
+ *   Pages · Home  — hero photograph, "The work", Selected work.
+ *   Pages · About — bio, heading, portrait.
+ * Content you manage as a collection is in the first group; the copy and
+ * images of individual public pages are under "Pages", named after the page.
+ */
+export const NAV_GROUPS: StudioNavGroup[] = [
+  {
+    items: [
+      { href: "/admin/dashboard", label: "Overview", icon: LayoutGrid },
+      { href: "/admin/dashboard/photos", label: "Photographs", icon: Images },
+      { href: "/admin/dashboard/messages", label: "Messages", icon: Mail },
+    ],
+  },
+  {
+    label: "Pages",
+    items: [
+      { href: "/admin/dashboard/home", label: "Home", icon: House },
+      { href: "/admin/dashboard/about", label: "About", icon: FileText },
+    ],
+  },
 ];
 
 /**
@@ -44,27 +64,31 @@ export default function StudioShell({ children }: { children: ReactNode }) {
             <span className="caps mt-2 block">Studio</span>
           </Link>
 
-          <p className="caps mb-2 px-3.5 !text-[0.6875rem]">Manage</p>
-          <ul className="flex flex-col">
-            {NAV_ITEMS.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={pathname === item.href ? "page" : undefined}
-                  className="studio-nav-row"
-                >
-                  <item.icon size={18} aria-hidden="true" />
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {NAV_GROUPS.map((group, g) => (
+            <div key={g} className={g > 0 ? "mt-7" : ""}>
+              {group.label && <p className="caps mb-2 px-3.5 !text-[0.6875rem]">{group.label}</p>}
+              <ul className="flex flex-col">
+                {group.items.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={pathname === item.href ? "page" : undefined}
+                      className="studio-nav-row"
+                    >
+                      <item.icon size={18} aria-hidden="true" />
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           <ul className="mt-auto flex flex-col border-t border-line pt-4">
             <li>
               <Link href="/" className="studio-nav-row">
-                <ArrowLeft size={18} aria-hidden="true" />
-                Back to site
+                <ArrowUpRight size={18} aria-hidden="true" />
+                View the site
               </Link>
             </li>
             <li>
@@ -80,7 +104,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
         </nav>
 
         <StudioMenu
-          navItems={NAV_ITEMS}
+          navGroups={NAV_GROUPS}
           pathname={pathname}
           open={menuOpen}
           onOpenChange={setMenuOpen}

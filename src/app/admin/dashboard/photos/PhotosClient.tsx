@@ -21,7 +21,7 @@ import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
 import { apiUrl } from "@/lib/api";
 import { STUDIO_FILTERS, categoryLabel } from "@/lib/categories";
 import { useAdminToken } from "@/lib/useAdminToken";
-import { revalidatePublicPages } from "../actions";
+import { revalidatePublicPages } from "../../actions";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
 import StudioModal from "@/components/StudioModal";
@@ -61,7 +61,17 @@ const readingOrderCoordinates: KeyboardCoordinateGetter = (event, { context }) =
   };
 };
 
-export default function DashboardClient() {
+/** Category tabs plus "featured" — the photos shown in Home's Selected work. */
+const FILTERS = [...STUDIO_FILTERS, "featured"] as const;
+type Filter = (typeof FILTERS)[number];
+const filterLabel = (f: Filter) =>
+  f === "all" ? "All" : f === "featured" ? "Featured" : categoryLabel(f);
+
+/**
+ * Studio → Photographs: the collection. Upload, edit, delete, drag to
+ * reorder (the public reading order), and star to feature on Home.
+ */
+export default function PhotosClient() {
   // ── Auth state ──────────────────────────────────────────────────────────
   // See useAdminToken for why this is an effect rather than a lazy
   // initialiser: localStorage doesn't exist at SSR time, so reading it during
@@ -78,7 +88,17 @@ export default function DashboardClient() {
   // A single action failed (featured toggle, reorder). The grid stays; this
   // says why the change didn't stick. Cleared by the next attempt.
   const [actionError, setActionError] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeCategory, setActiveCategory] = useState<Filter>("all");
+
+  // Deep link from Studio → Home ("Choose in Photographs" → ?filter=featured).
+  // Read in an effect, not during render: the URL isn't known at SSR time.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("filter");
+    if (wanted && (FILTERS as readonly string[]).includes(wanted)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL
+      setActiveCategory(wanted as Filter);
+    }
+  }, []);
 
   // ── Modal state ─────────────────────────────────────────────────────────
   const [showUpload, setShowUpload] = useState(false);
@@ -100,7 +120,10 @@ export default function DashboardClient() {
     if (!token) return;
 
     const url = new URL(apiUrl("/api/photos"));
-    if (activeCategory !== "all") {
+    // "featured" isn't an API filter: fetch everything and keep the
+    // starred ones. Reordering still works on the subset — handleDragEnd
+    // only permutes the positions the visible photos already hold.
+    if (activeCategory !== "all" && activeCategory !== "featured") {
       url.searchParams.set("category", activeCategory);
     }
 
@@ -120,7 +143,7 @@ export default function DashboardClient() {
       }
 
       const data: ApiPhoto[] = await res.json();
-      setPhotos(data);
+      setPhotos(activeCategory === "featured" ? data.filter((p) => p.isFeatured) : data);
       setError("");
     } catch (err) {
       console.error("[admin] fetch photos failed:", err);
@@ -275,6 +298,10 @@ export default function DashboardClient() {
         return;
       }
 
+      // In the Featured view, an un-starred photo no longer belongs here.
+      if (activeCategory === "featured" && !nextValue) {
+        setPhotos((prev) => prev.filter((p) => p._id !== photo._id));
+      }
       await revalidatePublicPages();
     } catch (err) {
       console.error("[admin] toggle featured failed:", err);
@@ -305,15 +332,15 @@ export default function DashboardClient() {
       aria-label="Filter by category"
       className="-mx-4 mb-8 flex gap-x-7 overflow-x-auto px-4 md:mx-0 md:px-0"
     >
-      {STUDIO_FILTERS.map((c) => (
+      {FILTERS.map((c) => (
         <button
           key={c}
           type="button"
           aria-pressed={activeCategory === c}
           onClick={() => setActiveCategory(c)}
-          className="tab shrink-0"
+          className={`tab shrink-0 ${c === "featured" ? "ml-auto" : ""}`}
         >
-          {c === "all" ? "All" : categoryLabel(c)}
+          {filterLabel(c)}
         </button>
       ))}
     </div>
@@ -322,7 +349,7 @@ export default function DashboardClient() {
   return (
     <StudioShell>
       <StudioTopBar
-        title="Gallery"
+        title="Photographs"
         count={
           // No count while loading or failed: "0 frames" during an outage
           // repeats the false "empty gallery" claim in a smaller font.
@@ -375,16 +402,22 @@ export default function DashboardClient() {
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-24 text-center">
             <Images size={32} className="mb-5 text-fg-3" aria-hidden="true" />
-            <h2 className="studio-heading">No photographs yet</h2>
+            <h2 className="studio-heading">
+              {activeCategory === "featured" ? "Nothing featured yet" : "No photographs yet"}
+            </h2>
             <p className="lede mt-3 max-w-sm">
               {activeCategory === "all"
                 ? "Upload the first one to start the gallery."
-                : `Nothing in ${categoryLabel(activeCategory)} yet.`}
+                : activeCategory === "featured"
+                  ? "Star a photograph to show it in Selected work on the home page."
+                  : `Nothing in ${categoryLabel(activeCategory)} yet.`}
             </p>
-            <button type="button" onClick={() => setShowUpload(true)} className="btn btn-primary mt-6">
-              <Plus size={18} aria-hidden="true" />
-              Upload photo
-            </button>
+            {activeCategory !== "featured" && (
+              <button type="button" onClick={() => setShowUpload(true)} className="btn btn-primary mt-6">
+                <Plus size={18} aria-hidden="true" />
+                Upload photo
+              </button>
+            )}
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

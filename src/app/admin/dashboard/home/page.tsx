@@ -1,7 +1,7 @@
 import HomeClient from "./HomeClient";
 
 export const metadata = {
-  title: "Home page — Studio",
+  title: "Home — Studio",
 };
 
 export default function HomePageSettings() {

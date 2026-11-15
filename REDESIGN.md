@@ -508,3 +508,28 @@ Owner: "an option to display 'the work' section in the homepage and to be able t
   - Download saves the file: `home_background.jpg` from Cloudinary (header verified), `home-background.jpg` for the placeholder. No page errors.
   - **Restored afterwards:** the probe hero was released from Cloudinary and the new fields were unset, so the document is exactly as before (none of the fields existed).
 - **Deploy note:** this needs the backend (Render) and the frontend (Vercel) both deployed from `main`. If the frontend lands first, every new field falls back to today's behaviour, so the order doesn't matter.
+
+## Studio reorganisation (owner request, 2026-11-15)
+
+Owner: "rework the pages and sections in the admin resource, decide what goes where."
+
+**Decision.** Collections first, then the public pages by name.
+- **Overview** (`/admin/dashboard`, new landing screen): "Needs attention", a three-column ledger (Photographs, Messages, Pages), the latest 3 messages, a Selected-work strip, and "Signed in as".
+  - "Needs attention" lists, each with a link to fix it: demo hero, demo portrait, U+FFFD in the bio, nothing featured, empty gallery.
+- **Photographs** (`/photos`, was "Gallery" at `/admin/dashboard`):
+  - New **Featured** tab (right-aligned). It fetches all photos and keeps the starred ones; reorder still works on the subset (positions are permuted within the visible set).
+  - `?filter=featured` deep-links to it. Un-starring a photo in that view removes it from the view.
+- **Messages:** unchanged.
+- **Pages → Home** (`/home`): background, "The work", plus a read-only **Selected work** section with "Choose in Photographs →". It sits below Save, which only covers the editable sections.
+- **Pages → About** (`/about`, was "Account"): the About copy. The old `/admin/dashboard/account` redirects here. "Signed in as" moved to Overview.
+- **Sidebar:** Overview / Photographs / Messages, then a "Pages" group (Home, About). At the foot: **View the site** (was "Back to site") and Sign out. The mobile sheet uses the same groups and now has View the site too.
+- **Files:** moved with `git mv` (`DashboardClient` → `photos/PhotosClient`, plus PhotoCard/UploadModal/EditModal; `account/AccountClient` → `about/AboutClient`).
+- **Checks:**
+  - `tsc`, `eslint` and the build are clean.
+  - Read-only puppeteer pass, 11/11:
+    - Sign-in lands on Overview.
+    - Sidebar order and groups are correct; every page shows the right title and current-page marker.
+    - `/account` redirects to About.
+    - `?filter=featured` shows 3 cards, matching the API's 3 featured.
+    - No overflow at 390 px; no page errors.
+  - Overview currently flags: the demo hero, the demo portrait, and U+FFFD in the bio.
