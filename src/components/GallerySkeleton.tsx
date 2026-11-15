@@ -11,8 +11,11 @@ import { GALLERY_FILTERS } from "@/lib/categories";
  * heading and filters, and a contact sheet of empty frames with the quiet
  * skeleton sheen (stilled by reduced motion, globals.css).
  *
- * Same frame for the old /lightbox/<id> links, which check the photo and
- * then send the visitor to /work.
+ * Deliberately NOT used for the old /lightbox/<id> route. A loading state
+ * makes Next stream the response, so the status is committed as 200 before
+ * the page decides: an old link answered 200 instead of 307, and a deleted
+ * photo 200 instead of 404 (measured live, Stage 5). That route only checks
+ * the photo and redirects to /work, which then shows this.
  */
 const FRAMES = [
   // Aspect ratios like a real roll: mostly 3:2, some portrait, one square.
