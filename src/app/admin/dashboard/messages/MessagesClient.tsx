@@ -142,13 +142,13 @@ export default function MessagesClient() {
         </button>
       </StudioTopBar>
 
-      <div className="max-w-4xl px-4 pb-16 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-4xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
         {loading && <MessageListSkeleton />}
 
         {!loading && error && (
           <div role="alert" className="flex flex-col items-center px-6 py-24 text-center">
             <CircleAlert size={32} className="mb-5 text-fg-3" aria-hidden="true" />
-            <p className="max-w-sm text-body-md text-fg-2">{error}</p>
+            <p className="lede max-w-sm">{error}</p>
             <button type="button" onClick={fetchMessages} className="btn btn-quiet mt-6">
               <RefreshCw size={16} aria-hidden="true" />
               Retry
@@ -159,41 +159,34 @@ export default function MessagesClient() {
         {!loading && !error && messages.length === 0 && (
           <div className="flex flex-col items-center px-6 py-24 text-center">
             <Mail size={32} className="mb-5 text-fg-3" aria-hidden="true" />
-            <h2 className="text-heading font-medium text-fg">No messages yet</h2>
-            <p className="mt-3 max-w-sm text-body-md text-fg-2">
+            <h2 className="studio-heading">No messages yet</h2>
+            <p className="lede mt-3 max-w-sm">
               Messages sent from the contact form appear here.
             </p>
           </div>
         )}
 
         {!loading && !error && messages.length > 0 && (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col border-t border-line">
             {messages.map((msg) => {
               const isOpen = expanded === msg._id;
               const bodyId = `message-${msg._id}`;
               return (
-                <li key={msg._id} className="panel overflow-hidden">
+                <li key={msg._id} className="border-b border-line">
                   <button
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : msg._id)}
                     aria-expanded={isOpen}
                     aria-controls={bodyId}
-                    className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-raised/60"
+                    className="group flex w-full items-center gap-5 py-5 text-left"
                   >
-                    <span
-                      aria-hidden="true"
-                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-raised text-label font-medium text-fg-2"
-                    >
-                      {msg.name.charAt(0).toUpperCase()}
-                    </span>
-
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-baseline gap-x-3">
-                        <span className="truncate text-body-md font-medium text-fg">{msg.name}</span>
+                        <span className="truncate font-display text-[1.45rem] leading-tight text-fg transition-colors group-hover:text-[#fff8ec]">{msg.name}</span>
                         <span className="truncate text-label text-fg-2">{msg.email}</span>
                       </span>
                       {!isOpen && (
-                        <span className="mt-0.5 block truncate text-body-md text-fg-3">{msg.message}</span>
+                        <span className="mt-1 block truncate text-body-md text-fg-3">{msg.message}</span>
                       )}
                     </span>
 
@@ -204,31 +197,32 @@ export default function MessagesClient() {
                       <ChevronDown
                         aria-hidden="true"
                         size={18}
-                        className={`text-fg-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        className={`text-fg-3 transition-[transform,color] duration-300 group-hover:text-fg ${isOpen ? "rotate-180" : ""}`}
                       />
                     </span>
                   </button>
 
                   {isOpen && (
-                    <div id={bodyId} className="border-t border-line px-4 pb-4 pt-4">
+                    <div id={bodyId} className="enter pb-6">
                       <p className="frame-meta mb-3 sm:hidden">{formatDate(msg.createdAt)}</p>
                       {/* Plain, selectable text — not a mailto: link. Nothing
                           in this project sends or composes email (owner's
-                          standing rule); the address is here to be copied. */}
-                      <p className="mb-4 select-all text-label text-fg-2">{msg.email}</p>
+                          standing rule); the address is here to be copied.
+                          Phones only: wider screens show it in the row. */}
+                      <p className="mb-4 select-all text-label text-fg-2 sm:hidden">{msg.email}</p>
                       {/* React escapes this; whitespace-pre-wrap keeps the
                           sender's line breaks. Never rendered as HTML. */}
-                      <p className="whitespace-pre-wrap text-body-md leading-relaxed text-fg">
+                      <p className="max-w-[65ch] whitespace-pre-wrap text-lead text-fg">
                         {msg.message}
                       </p>
-                      <div className="mt-5 flex justify-end">
+                      <div className="mt-6 flex justify-start">
                         <button
                           type="button"
                           onClick={() => {
                             setDeleteError("");
                             setDeletingMessage(msg);
                           }}
-                          className="btn btn-quiet h-10 text-error"
+                          className="btn btn-quiet h-10 !text-error"
                         >
                           <Trash2 size={16} aria-hidden="true" />
                           Delete
