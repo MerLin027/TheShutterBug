@@ -595,3 +595,17 @@ Owner: "rework the pages and sections in the admin resource, decide what goes wh
 - **Studio:** Sign In; The Site at a Glance; Needs Attention; Latest Messages; Selected Work on Home; Background Photograph; The Work; Selected Work; The About Page; No Messages Yet; Nothing Featured Yet / No Photographs Yet; dialog titles Upload Photo, Edit Photo, Delete Photo?, Delete Message?.
 - **Deliberately unchanged:** button labels and sentences; the owner's own About heading (content they edit); small-caps labels (already all capitals on screen); single-word titles.
 - A sweep of every `<h1>`–`<h4>`, StudioModal/Notice/StudioTopBar title finds no lower-case main word left. tsc, eslint and the build are clean.
+
+## Sign-in photos: shuffle bag (owner request, 2026-11-15)
+
+- Owner: once a photo is shown it isn't eligible again until every photo has been shown; then all are available again.
+- **`src/app/admin/photoBag.ts`** (pure):
+  - `parseBag()` validates the stored state, since localStorage is untrusted: integers in range only, de-duplicated, anything else becomes an empty bag.
+  - `drawFromBag()` keeps the server's random pick if it's still unseen, otherwise draws randomly from the unseen photos.
+  - When the bag is full it starts a new round, excluding the photo just shown, so there's no back-to-back repeat at the changeover.
+- **SignInClient** stores `{seen, last}` under `studio-signin-bag` and removes the previous scheme's key.
+  - The draw runs on mount, while the "checking your session" screen is up, so the photo is never redrawn after it appears.
+  - If storage is blocked, the server's random pick stands.
+- **Verified:**
+  - Simulation of 10,000 visits (node, strip-types): 0 rounds without all 10 distinct, 0 back-to-back repeats, every photo shown exactly 1,000 times. Corrupt and tampered storage is cleaned safely.
+  - Real browser, 21 refreshes: round 1 had 10/10 distinct, round 2 had 10/10 distinct, refresh 21 started round 3. 0 back-to-back repeats, 0 photo changes after paint, no errors.
