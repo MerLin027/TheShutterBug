@@ -44,6 +44,12 @@ export type SiteContent = {
   quote: string;
   bio: string;
   aboutImageUrl: string;
+  /** Home hero photograph (Studio → Home page). */
+  heroImageUrl: string;
+  heroImageAlt: string;
+  /** Home's "The work" section: shown or not, and its text ("" = use bio ¶2). */
+  showWorkStatement: boolean;
+  workStatement: string;
 };
 
 /** Normalised shape used by all frontend components. */
@@ -353,6 +359,11 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   ].join("\n\n"),
   aboutImageUrl:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuCFd3kHx3f7TeKHtxF_JbbMOx1gcgGN2yJwun0sRZTvkpH0C5Os9LO4SOCnp3UlHBkmbBdbD9r7C6ScpOSyILvBtEOoSi0flavIB50fRf7kmqOL86vKVCMADob9KFsiurnit21aw1Oq79dX5bfimo8ulSvwskvjA7fhD8eVHmylQFGnnJfLDtoxMj4pehyK71qvCKTeclW6BetKTFL02lrphZAeuRvfWazNDSz6sSrgd0PZuCEQBN_D",
+  heroImageUrl:
+    "https://lh3.googleusercontent.com/aida-public/AB6AXuBN4WALWq_emxJIYSU6-Ph6fTn37OTV7OLsoCQ18yhMT1Ch35bNiLM4PlaQGpX7yMywVF0SKr_lWFJ0A6ljA2Yse8ng0wVoQcgD1VWlj6NH6Vg-IzAvUuJumBOqGqNybIThpITt94pICLEZ8H6K_d4Wb02uA12APN9PrHFTTgDRm8p5-amoOw1XUMQii1fxOS90Sa87ajqewjmm2EyiY2NfdJGKNZS3vFiAIkpfpm1A2Y83s1FHV9wH=w2400",
+  heroImageAlt: "A lone rowing boat on still water at dusk, mirrored in the lake",
+  showWorkStatement: true,
+  workStatement: "",
 };
 
 /**
@@ -378,6 +389,14 @@ export async function fetchSiteContent(): Promise<SiteContent> {
       quote: raw.quote || DEFAULT_SITE_CONTENT.quote,
       bio: raw.bio || DEFAULT_SITE_CONTENT.bio,
       aboutImageUrl: raw.aboutImageUrl || DEFAULT_SITE_CONTENT.aboutImageUrl,
+      heroImageUrl: raw.heroImageUrl || DEFAULT_SITE_CONTENT.heroImageUrl,
+      heroImageAlt: raw.heroImageAlt || DEFAULT_SITE_CONTENT.heroImageAlt,
+      // Explicit boolean check: `|| true` would make "hidden" impossible.
+      showWorkStatement:
+        typeof raw.showWorkStatement === "boolean"
+          ? raw.showWorkStatement
+          : DEFAULT_SITE_CONTENT.showWorkStatement,
+      workStatement: raw.workStatement ?? "",
     };
   } catch (err) {
     console.error("[data] GET /api/site-content threw —", err);
@@ -391,4 +410,27 @@ export function splitBio(bio: string): string[] {
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
+}
+
+/**
+ * Home's "The work" text: the owner's own statement when set, else the
+ * second paragraph of the bio (what Home showed before the setting existed),
+ * else the first. `null` when the owner has switched the section off.
+ */
+export function workStatementFor(content: SiteContent): string | null {
+  if (!content.showWorkStatement) return null;
+  const own = content.workStatement.trim();
+  if (own) return own;
+  const paragraphs = splitBio(content.bio);
+  return paragraphs[1] ?? paragraphs[0] ?? null;
+}
+
+/** The hero photograph as responsive sources. A Cloudinary upload gets
+ *  width-capped renditions; the original placeholder is used as is. */
+export function heroImage(content: SiteContent): { src: string; srcSet?: string; alt: string } {
+  const url = content.heroImageUrl;
+  const src = cloudinaryUrl(url, 2400);
+  const srcSet =
+    src === url ? undefined : [1200, 1800, 2400].map((w) => `${cloudinaryUrl(url, w)} ${w}w`).join(", ");
+  return { src, srcSet, alt: content.heroImageAlt };
 }

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Images, LogOut, Mail, User } from "lucide-react";
+import { ArrowLeft, House, Images, LogOut, Mail, User } from "lucide-react";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioMenu, { type StudioNavItem } from "./StudioMenu";
 
 const NAV_ITEMS: StudioNavItem[] = [
   { href: "/admin/dashboard", label: "Gallery", icon: Images },
+  { href: "/admin/dashboard/home", label: "Home page", icon: House },
   { href: "/admin/dashboard/messages", label: "Messages", icon: Mail },
   { href: "/admin/dashboard/account", label: "Account", icon: User },
 ];

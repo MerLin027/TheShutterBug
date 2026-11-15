@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { fetchFeaturedPhotos, fetchSiteContent, splitBio } from "@/lib/data";
+import { fetchFeaturedPhotos, fetchSiteContent, heroImage, workStatementFor } from "@/lib/data";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Hero from "@/components/Hero";
@@ -10,22 +10,23 @@ import SelectedFrames from "@/components/SelectedFrames";
 export const revalidate = 60;
 
 export default async function Home() {
-  // On failure Selected work renders nothing and the statement falls back to
-  // the default copy: the hero needs no data, so Home stays whole.
+  // On failure Selected work renders nothing, and the hero and statement fall
+  // back to the default copy, so Home stays whole.
   const [{ photos: featured }, content] = await Promise.all([
     fetchFeaturedPhotos(),
     fetchSiteContent(),
   ]);
-  const statement = splitBio(content.bio)[1] ?? splitBio(content.bio)[0];
+  // Studio → Home page: the statement can be switched off or rewritten.
+  const statement = workStatementFor(content);
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <SiteNav />
       <main id="main">
-        <Hero />
+        <Hero image={heroImage(content)} />
 
-        {/* A pause between the hero and the work: one paragraph of the
-            owner's own About copy (Studio → Account), set large. */}
+        {/* A pause between the hero and the work: the owner's statement
+            (Studio → Home page), set large. */}
         {statement && (
           <section aria-label="About the work" className="px-margin-mobile py-28 md:px-margin-desktop md:py-40">
             <div className="site-container grid gap-10 md:grid-cols-12">

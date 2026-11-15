@@ -480,3 +480,31 @@ Owner: "refine the pages left in a similar manner — the admin login, the dashb
   - Upload, Edit and Delete dialogs open and close; Cancel is used, nothing mutated.
   - No horizontal overflow at 390 px. The footer has 0 links. No page errors.
 - **Harness trap:** `waitForFunction` polls on rAF, which never fires in a background tab. Call `bringToFront()` or use `polling: <ms>`.
+
+## Studio → Home page (owner request, 2026-11-15)
+
+Owner: "an option to display 'the work' section in the homepage and to be able to change the description … change the homepage bg image and an option to download the current bg image."
+
+- **Backend (`SiteContent`):** five new fields.
+  - `heroImageUrl` and `heroImageAlt` (≤300). Defaults are the existing placeholder and its alt text.
+  - `heroImageId`: the Cloudinary public_id of an uploaded hero. Never returned by the API.
+  - `showWorkStatement`: a strict boolean, default true.
+  - `workStatement` (≤1000): empty means "use bio paragraph 2", which is what Home showed before.
+  - `PUT /api/site-content` type-checks every field (strings must be strings; the boolean must be a real boolean) and still picks fields explicitly.
+  - The hero URL is **not** settable via PUT. It only changes through `POST /api/site-content/hero`, so it is always one of our own Cloudinary assets.
+- **`POST /api/site-content/hero`:** `protect` then `upload.single('image')` (image-only, 25 MB), with a description (alt text) required.
+  - The replaced hero is released from Cloudinary only after the new one is saved, and never the default placeholder.
+  - A failed save releases the new upload.
+- **Frontend:**
+  - `Hero` takes its image as a prop: Cloudinary renditions at 1200/1800/2400, the placeholder used as is.
+  - Home's statement goes through `workStatementFor()` and is `null` when switched off.
+  - New Studio page `/admin/dashboard/home` ("Home page" in the sidebar):
+    - Background photograph: preview; Replace (pick → preview → describe → "Use this photograph"); Download current (Cloudinary `fl_attachment:home_background`, i.e. the original file; the placeholder is fetched as a blob, with an open-in-tab fallback); description field.
+    - The work: on/off switch (`role="switch"`), text with a counter, Save.
+- **Checks (local backend, same Atlas DB):**
+  - 15/15 pass. Bad types, overlong text, an operator object and missing tokens are all refused; `heroImageId` is hidden.
+  - Toggle off: Home has no section. Toggle on with new text: Home shows it.
+  - An upload without a description is refused. An upload with one makes the Home hero the Cloudinary asset with srcSet and the new alt.
+  - Download saves the file: `home_background.jpg` from Cloudinary (header verified), `home-background.jpg` for the placeholder. No page errors.
+  - **Restored afterwards:** the probe hero was released from Cloudinary and the new fields were unset, so the document is exactly as before (none of the fields existed).
+- **Deploy note:** this needs the backend (Render) and the frontend (Vercel) both deployed from `main`. If the frontend lands first, every new field falls back to today's behaviour, so the order doesn't matter.
