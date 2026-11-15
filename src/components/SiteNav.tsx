@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 const LINKS = [
   { href: "/work", label: "Gallery" },
@@ -10,52 +11,112 @@ const LINKS = [
 ] as const;
 
 /**
- * Public navbar (Redesign Phase B). Wordmark left, three links right, in one
- * glass bar — the only glass left on the public site.
+ * Public navbar (Phase R). No box: a serif wordmark on the left and
+ * small-caps links on the right, each with an underline that draws in on
+ * hover; the current page keeps a gold underline.
  *
- * The wordmark is the Home link; the separate "Home" item and the grid-icon
- * Gallery button are gone (REDESIGN.md §3.5 has the old layout). The wordmark
- * is set in Jost now, not the Playwrite VN script (decision 3, §3.3).
+ * Over the hero it is transparent; as the page scrolls a solid, softly
+ * blurred band fades in behind it (pure CSS scroll-driven animation —
+ * `.site-header::before` in globals.css — so it costs no JavaScript).
  *
- * The accent means exactly one thing here: "this is the page you're on".
- * Hover only brightens the label to full-strength text.
+ * Phones get a "Menu" button that opens a full-screen sheet of large serif
+ * links rising in one after another. Escape closes it, focus moves in and
+ * back out, and the page behind can't scroll.
  */
 export default function SiteNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const openButton = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    closeButton.current?.focus();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const opener = openButton.current;
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+      opener?.focus();
+    };
+  }, [open]);
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-margin-mobile pt-3 md:px-margin-desktop md:pt-5">
+    <header className="site-header px-margin-mobile md:px-margin-desktop">
+      {/* Gutters on the header, container inside — the same structure as
+          every page, so the wordmark lines up with the content below it. */}
       <nav
         aria-label="Primary"
-        className="site-container site-nav pointer-events-auto flex h-14 items-center justify-between pl-4 pr-1.5 sm:pl-5 sm:pr-2"
+        className="site-container relative flex h-[4.75rem] items-center justify-between"
       >
-        <Link
-          href="/"
-          aria-current={pathname === "/" ? "page" : undefined}
-          className="whitespace-nowrap text-lead font-medium leading-none tracking-[-0.01em] text-fg"
-        >
+        <Link href="/" className="wordmark" aria-current={pathname === "/" ? "page" : undefined}>
           The Shutter Bug
         </Link>
 
-        <ul className="flex items-center">
-          {LINKS.map(({ href, label }) => {
-            const active = pathname === href;
-            return (
+        <ul className="hidden items-center gap-9 sm:flex">
+          {LINKS.map(({ href, label }) => (
+            <li key={href}>
+              <Link
+                href={href}
+                className="nav-link"
+                aria-current={pathname === href ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          ref={openButton}
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={open}
+          aria-controls="site-menu"
+          className="nav-link sm:hidden"
+        >
+          Menu
+        </button>
+      </nav>
+
+      {open && (
+        <div id="site-menu" role="dialog" aria-modal="true" aria-label="Menu" className="menu-sheet">
+          <div className="flex h-[4.75rem] items-center justify-between px-margin-mobile">
+            <Link href="/" className="wordmark" onClick={() => setOpen(false)}>
+              The Shutter Bug
+            </Link>
+            <button
+              ref={closeButton}
+              type="button"
+              onClick={() => setOpen(false)}
+              className="nav-link"
+            >
+              Close
+            </button>
+          </div>
+          <ul className="flex flex-1 flex-col justify-center gap-2 px-margin-mobile pb-16">
+            {[{ href: "/", label: "Home" }, ...LINKS].map(({ href, label }, i) => (
               <li key={href}>
                 <Link
                   href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={`inline-flex h-11 items-center rounded-control px-2 text-label font-medium transition-colors sm:px-3 ${
-                    active ? "text-accent" : "text-fg-2 hover:text-fg"
-                  }`}
+                  onClick={() => setOpen(false)}
+                  aria-current={pathname === href ? "page" : undefined}
+                  className="menu-link py-1"
+                  style={{ "--i": i } as CSSProperties}
                 >
                   {label}
                 </Link>
               </li>
-            );
-          })}
-        </ul>
-      </nav>
+            ))}
+          </ul>
+          <p className="caps px-margin-mobile pb-8">Nature · Objects · Monochrome · Urban</p>
+        </div>
+      )}
     </header>
   );
 }

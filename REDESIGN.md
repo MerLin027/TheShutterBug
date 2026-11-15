@@ -395,3 +395,49 @@ Newest last. One entry per task: what changed, how it was verified, and anything
     - The owner cleared their temp folder mid-phase; the harness in this session's scratchpad was unaffected.
 - **2026-11-14 · Phase C committed** as `1a25e9e3` and pushed to `origin/redesign/unslop`. `main` is untouched.
 - **2026-11-14 · Merged to `main` and live** (owner request: "merge to main for now"). Merge commit `f644be73` (`--no-ff`, so one `git revert -m 1` undoes Phases A–C). Vercel deployed it in ~45 s. Live check against the-shutter-bug.vercel.app at 1440 and 390 px: every route returns the right page and status; all 6 photos load from Render on `/`, `/work` and the Studio dashboard; every image loads; no overflow. The only console error is the intended 404. Backend unchanged, so no Render deploy was needed. Rollback steps are in §1.
+
+---
+
+## Phase R — editorial refinement (owner feedback after going live, 2026-11-14)
+
+Owner verdict on the live Phase B/C design: "hideous", the gallery "takes too much time opening and is laggy, doesn't work sometimes on multiple clicks", "button not working after logout", no scroll effects or proper animations, the navbar the main problem, and the title should have animation and effects. Chose (via question): **editorial serif** direction and **masonry** gallery. The unslop restraint rules are superseded here by the owner's direction; the ui-ux-pro-max skill (`--design-system`, style/typography/ux searches) and genjutsu css-native + motion-principles guided the work.
+
+- **Lag, diagnosed on the live site.**
+  - Every photo open was a full server render (~350 ms, cache MISS each time) with nothing on screen meanwhile (~480 ms per click).
+  - The experimental view transition swallowed clicks made mid-transition: 4 quick "Next" presses moved 1 photo.
+- **Fix: in-page viewer** (`components/Viewer.tsx`, `components/PhotoBrowser.tsx`).
+  - The card's cached image shows instantly (same `srcSet`/`sizes`), and the sharp 2400px rendition fades over it.
+  - Neighbours are preloaded. Each step is a functional state update.
+  - ← → Escape and swipe work; focus moves in and back out; scroll is locked.
+  - The URL is synced to `?photo=`, so Back closes the viewer and links can be shared.
+  - `/lightbox/[id]` now validates, then redirects to `/work?photo=` (dropping a stale filter if the photo isn't in it).
+  - `experimental.viewTransition`, `<ViewTransition>`, the canary types and `FrameGrid` are removed.
+  - **Measured:** viewer visible in 32–62 ms (was ~480); 4 quick Next = +4 (was +1); Back closes; shared link opens; Home featured opens in 38–65 ms.
+- **"Button not working after logout":** could not reproduce on the live site in a scripted browser (sign in → sign out → Back to site → Enter the gallery → /work, no errors). The likely cause is the view transition's swallowed clicks, which is now removed. Ask the owner to name the button if it recurs.
+- **Look.**
+  - Cormorant Garamond (variable, italics) as the display face, Jost for text; IBM Plex Mono removed.
+  - Small-caps label voice (`.caps` / `.frame-meta`, shared with the Studio).
+  - Serif `.display-title` / `.section-title` / italic `.lede`, and `.text-link` with a drawn hairline and an arrow.
+- **Navbar.**
+  - No box: serif wordmark left, small-caps links right, an underline that draws in on hover, and a gold underline on the current page.
+  - Transparent over the hero; a solid blurred band fades in as you scroll (scroll-driven CSS).
+  - Phones: "Menu" opens a full-screen sheet of large serif links rising in a stagger.
+  - Aligned to the content edge (measured 72/72 px and 18/18 px).
+- **Hero.**
+  - The title "develops": 13 letter spans surface from a blurred, over-exposed smudge with a 55 ms stagger, then one safelight sweep passes across.
+  - The photo settles in on load, then parallaxes on scroll; the text block lifts and fades as you scroll; a scroll cue below.
+  - Measured at scroll 450: nav band 0 → 1, hero text opacity 1 → 0.23, media translateY 72px.
+- **Scroll reveals.** `.reveal` uses a scroll-driven view timeline: gallery cards, section heads, the home statement and later bio paragraphs. Pure CSS, so it can't block input.
+- **Gallery.**
+  - Masonry columns in reading order (shortest-column-first from stored ratios).
+  - Column count is guessed from the User-Agent on the server (phone 1, tablet 2, desktop 3) and corrected on the client, so phones don't flash 3 → 1 (measured: 1 column on an iPhone UA).
+  - Cards zoom gently on hover, and a hairline mount tightens. Serif caption title plus small-caps meta.
+- **Home** adds "The work" statement (paragraph 2 of the owner's own About bio, set large in serif) and "Selected work" as a responsive grid using the same instant viewer.
+- **Other pages.** About is an editorial spread with a sticky portrait. Contact uses underline-only fields and small-caps labels. 404/error, footer (wordmark, line, links, year), and the opaque viewer backdrop.
+- **Bugs caught in review and fixed.**
+  - Title rendered "TheShutterBug": the space inside the inline-block was dropped.
+  - The Phase R CSS was unlayered and beat `sm:hidden`, so "Menu" showed on desktop. It's now in `@layer components` (same trap as Phase C).
+  - Gallery heading borrowed the hero's slow delays.
+  - A shared `?photo=` link reopened the viewer on every filter change.
+- **Reduced motion:** every Phase R effect is off.
+- **Checks:** `tsc` clean, `eslint src backend` 0 problems, production build against the real API, sweep of 11 routes × 2 widths with no overflow.
