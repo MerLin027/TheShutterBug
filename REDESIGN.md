@@ -533,3 +533,13 @@ Owner: "rework the pages and sections in the admin resource, decide what goes wh
     - `?filter=featured` shows 3 cards, matching the API's 3 featured.
     - No overflow at 390 px; no page errors.
   - Overview currently flags: the demo hero, the demo portrait, and U+FFFD in the bio.
+
+## Sign-in photograph (owner request, 2026-11-15)
+
+- Owner asked for "a random aesthetic image of the northern lights" on the sign-in page. It is now fixed instead of "first featured photo", so it no longer changes when photos are starred. The page also no longer waits on the backend.
+- **Photo:** "Aurora borealis over Reine, Lofoten" by Johny Goerend, Unsplash (https://unsplash.com/photos/aurora-borealis-over-reine-lofoten-x3WQMj5QkEE).
+  - **Unsplash License:** free to use, commercial included. Credit is shown anyway, bottom-right of the photo, linking out with `rel="noopener noreferrer"`.
+  - Chosen from 5 free (non-premium) portrait candidates read from Unsplash's search JSON. Portrait fits the tall left panel.
+- Served from `images.unsplash.com` at 800/1200/1600/2400 with `auto=format`; all sizes verified 200.
+- **Phase D note:** the CSP (D1) must allow `img-src https://images.unsplash.com`.
+- Verified: the image loads (800w chosen at 1440×900, DPR 1); the credit link is present; no page errors.
