@@ -905,31 +905,88 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     color: var(--color-fg);
 }
 .hero-title .word { display: inline-block; white-space: nowrap; }
+.hero-title .char { display: inline-block; }
+/* Once the title has settled, a band of warm safelight sweeps through it,
+   left to right, inside the letters: each one warms to amber and cools back
+   to the paper white, staggered tightly so neighbours overlap and it reads
+   as one travelling band, not letters blinking. Colour only; nothing is
+   drawn over the photograph. (2026-11-15: replaces a band of light that
+   swept OVER the title and read as a pale box; the owner then tried a glass
+   glint, a chromatic split, a swell, a shutter and a focus lock, and chose
+   this.) */
 .hero-title .char {
-    display: inline-block;
-    animation: develop 1300ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
-    animation-delay: calc(350ms + var(--i) * 55ms);
+    animation:
+        develop 1100ms cubic-bezier(0.2, 0.7, 0.1, 1) both,
+        safelight 1300ms cubic-bezier(0.45, 0, 0.3, 1) both;
+    animation-delay:
+        calc(300ms + var(--i) * 45ms),
+        calc(2000ms + var(--i) * 38ms);
 }
+@keyframes safelight {
+    0%, 100% { color: var(--color-fg); }
+    30%      { color: #f2a65a; }
+    62%      { color: #f4d2a8; }
+}
+
+/* Two fine gold rules draw outward from either side of the line above the
+   title, like the rules on a print's mount (owner's pick, 2026-11-15). */
+.hero-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+}
+.hero-eyebrow::before,
+.hero-eyebrow::after {
+    content: "";
+    flex: none;
+    height: 1px;
+    width: clamp(1.5rem, 7vw, 6rem);
+    opacity: 0.7;
+    animation: hairline 1600ms cubic-bezier(0.22, 1, 0.36, 1) 2000ms both;
+}
+.hero-eyebrow::before {
+    background: linear-gradient(90deg, transparent, var(--color-accent));
+    transform-origin: right;
+}
+.hero-eyebrow::after {
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    transform-origin: left;
+}
+@keyframes hairline { from { transform: scaleX(0); opacity: 0; } }
+/* Below 30rem the rules squeeze the line onto two lines (measured 360–430px),
+   so phones keep it plain. */
+@media (max-width: 30rem) {
+    .hero-eyebrow { display: block; }
+    .hero-eyebrow::before, .hero-eyebrow::after { content: none; }
+}
+
+
 @keyframes develop {
     0%   { opacity: 0; transform: translateY(0.28em); filter: blur(14px) brightness(2.2); }
     55%  { opacity: 1; filter: blur(2px) brightness(1.25); }
     100% { opacity: 1; transform: none; filter: none; }
 }
-/* After the letters land, a single band of light passes across the title —
-   the safelight sweeping over the print. Runs once. */
-.hero-title-wrap { position: relative; display: inline-block; }
-.hero-title-wrap::after {
-    content: "";
-    position: absolute;
-    inset: -10% -6%;
-    background: linear-gradient(100deg, transparent 35%, rgb(255 236 200 / 0.22) 50%, transparent 65%);
-    background-size: 250% 100%;
-    background-position: 120% 0;
-    mix-blend-mode: soft-light;
-    pointer-events: none;
-    animation: sweep 1800ms cubic-bezier(0.4, 0, 0.2, 1) 1900ms both;
+/* While the letters develop, the title pulls into focus: it starts a touch
+   wide and draws in to its set tracking, like a lens racking onto the
+   print. (Replaced a band of light that swept across the title, 2026-11-15:
+   it read as a pale box over the photograph.) Runs once. */
+.hero-title-wrap {
+    --pull-from: 0.09em;
+    position: relative;
+    display: inline-block;
+    animation: focus-pull 1700ms cubic-bezier(0.16, 1, 0.3, 1) 250ms both;
 }
-@keyframes sweep { to { background-position: -20% 0; } }
+@keyframes focus-pull {
+    from { letter-spacing: var(--pull-from); }
+    to   { letter-spacing: -0.015em; }
+}
+/* On a phone the title only just fits one line; any wider start wraps it
+   to two and it jumps back to one as it draws in (measured at 360px). The
+   letters still develop there; only the pull is dropped. */
+@media (max-width: 40rem) {
+    .hero-title-wrap { animation: none; }
+}
 
 .hero-eyebrow { animation: rise 900ms var(--ease-brand) 150ms both; }
 .hero-sub     { animation: rise 900ms var(--ease-brand) 1250ms both; }
@@ -1113,7 +1170,8 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     .hero-content,
     .hero-img,
     .hero-title .char,
-    .hero-title-wrap::after,
+    .hero-title-wrap,
+    .hero-eyebrow::before, .hero-eyebrow::after,
     .hero-eyebrow, .hero-sub, .hero-cta,
     .scroll-cue, .scroll-cue::after,
     .reveal,
