@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "@/lib/api";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
@@ -18,7 +18,31 @@ const PASSWORD_MIN = 12;
  * a fresh token.
  */
 export default function AccountClient() {
-  const { token, email, ready, signOut, updateSession } = useAdminToken();
+  const { token, email: storedEmail, ready, signOut, updateSession } = useAdminToken();
+
+  // The signed-in address, asked of the server: the copy saved at sign-in
+  // can be missing (cleared storage, an older session), and comparing a new
+  // email against a blank would misjudge what changed. The stored copy is
+  // only the first guess.
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const email = accountEmail ?? storedEmail;
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    fetch(apiUrl("/api/auth/me"), { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.status === 401) return signOut();
+        if (res.ok) {
+          const data: { email?: string } = await res.json().catch(() => ({}));
+          if (!cancelled && data.email) setAccountEmail(data.email);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token, signOut]);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newEmail, setNewEmail] = useState<string | null>(null);
@@ -78,6 +102,7 @@ export default function AccountClient() {
         return;
       }
       updateSession(data.token, data.email);
+      setAccountEmail(data.email);
       setCurrentPassword("");
       setNewEmail(null);
       setNewPassword("");

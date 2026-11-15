@@ -5,8 +5,59 @@ state of the project. `plan.md` (same directory) is the actual task list
 to execute — this file is background so decisions in `plan.md` make sense
 and don't get silently reversed.
 
-**For where the work actually stands right now, jump to "Phase/Stage
-status" near the bottom** — it sits next to the six-stage plan it tracks.
+**Start with "Current state" just below**: it supersedes the older
+sections, which are kept as history.
+
+## Current state (2026-11-16) — read this first
+
+**Everything planned is done and live.** The six-stage refinement plan (Stages
+1–6) and the redesign that followed it (`REDESIGN.md`: Phases A–E plus Phase R)
+are complete. `main` is what's deployed. **The sections below this one are the
+build history**: where they disagree with this section, this section wins.
+
+**Stack as built**
+- Frontend:
+  - Next.js 16.4.6 App Router (Turbopack), React 19.2.4, TypeScript, Tailwind CSS v4 (Lightning CSS).
+  - All animation is CSS. **Framer Motion is not used** and isn't a dependency.
+  - dnd-kit for Studio reordering; lucide-react icons.
+- Backend: Express 5, Mongoose 9, Cloudinary SDK v2 (multer memory storage plus `upload_stream`), bcryptjs, JWT.
+- Deploy:
+  - Vercel builds from `main` (push `main` first and confirm the Production deployment before syncing a branch: same-SHA pushes can produce a Preview-only build).
+  - Render auto-deploys the API from `main`; cron-job.org pings `/api/health`.
+
+**Where to look**
+- `REDESIGN.md`: every redesign and security change, why, how it was verified, and the rollback registry.
+- The "Phase/Stage status" section below: the six-stage plan's record.
+
+**Studio layout:** Overview · Photographs · Messages | *Pages*: Home, About | *Settings*: Account | View the site · Sign out.
+
+**Decisions made since the stage plan (2026-11-14 to 16) — don't reverse these without the owner:**
+- **Photos can't be downloaded (D10):**
+  - Uploads are Cloudinary `authenticated` assets. The API sends only signed, size-capped (≤2400 px) `images` / `heroImages`.
+  - The stored `secure_url` is a working link to the original and must **never** be returned by any route.
+  - Global `img { pointer-events: none }` stops right-click save and drag.
+  - No watermark (owner's choice).
+- **Home hero:**
+  - The title develops letter by letter, with a focus pull on wider screens.
+  - At 2.0 s an amber "safelight" sweep runs through the letters, with gold hairlines either side of the eyebrow (hidden at ≤30rem).
+  - The owner rejected: a band of light over the title, a glass glint, a chromatic split, a swell, an exposure bloom, a drop shadow, a shutter blink and a focus lock.
+- **Studio → Home:** set the hero photo and its description, show or hide "The work" and edit its text, and download the current hero (an owner-only, 5-minute link).
+- **Studio → Account:** change the sign-in email and password. The current password is required; any change signs out every other session (`tokenVersion`).
+- **Sign-in page:** 10 Unsplash photographs, credited, in a shuffle bag. No photo repeats until all ten have been shown.
+- **Footer:** wordmark, one line, ©. No links.
+- **Text and controls:** headings are in Title Case. Every text field shares one underline style, with browser autofill painted over. Busy buttons keep full colour (`aria-busy`).
+- **Security (Phase D):**
+  - CSP keeps `script-src 'unsafe-inline'`, because nonces would make every page dynamic. `img-src https:`, because the About portrait is a free-text URL.
+  - Login and contact are rate-limited in memory.
+  - The contact form has a honeypot and length caps.
+  - JWT: 7 days, HS256 pinned.
+- **Never give a route that redirects or 404s a `loading.tsx`.** The response streams, and the status is committed as 200 (Stage 5).
+- **CORS allows only the production site.** Vercel preview URLs show the gallery's load-failed state, and that is expected.
+
+**Owner to-dos:**
+- Set a strong password in Studio → Account (the current one is 7 characters).
+- Upload a real hero photo and a real About portrait.
+- Star photos so Selected Work shows on Home.
 
 ## What this is
 A personal photography portfolio website for a nature/object photographer.
@@ -629,3 +680,13 @@ Its checklist (auth handling, JWT storage and expiry, CORS scope, input validati
 Triage if time runs short: Stage 1-2 are non-negotiable for a working
 submission. Stage 3-5 make it genuinely correct, not just visually done.
 Stage 6 is bonus.
+
+## History: redesign and close-out (2026-11-14 to 16)
+
+- **Phases A–C and R** (the unslop redesign of the public site and the Studio), **Phase D** (security), **Stage 5** (linkage) and **Phase E** (close-out) all shipped. The day-by-day record is in `REDESIGN.md`.
+- Phase E:
+  - **E1:** a live sweep of 13 routes at 390/768/1024/1440 px (52 page views, 95 images) found no overflow, no broken image, no console or CSP error; the 404 route answers 404; every Studio page loads signed in. Screenshots are in `design-reference/redesign-after/` (local only; the folder is gitignored).
+  - **E1 also found:** the Account page read the email from localStorage only, so with storage cleared the box was blank. It now asks `GET /api/auth/me`.
+  - **E2:** this file, AGENTS.md and HANDOFF.md were brought up to date.
+  - **E3** (vault note): skipped at the owner's request.
+  - **E4:** done throughout, as every step was merged to `main` and verified live.

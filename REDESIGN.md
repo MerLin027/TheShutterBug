@@ -217,10 +217,10 @@ Each phase is its own approval gate. A task is done only when its "done when" ch
 ### Phase E: Close-out
 | ID | Task | Status |
 |---|---|---|
-| E1 | Full sweep of every route at 4 widths; final before/after set in `design-reference/redesign-after/` | ☐ |
-| E2 | Update `context.md` (§7 conventions, §8 the decisions this changed, §9 history), `AGENTS.md` and `HANDOFF.md` | ☐ |
-| E3 | Create a Shutter Bug project note in the workspace vault (none exists), if the owner wants it | ☐ |
-| E4 | Owner reviews the Vercel preview of the branch; decide whether to merge into `main` | ☐ |
+| E1 | Full sweep of every route at 4 widths; final before/after set in `design-reference/redesign-after/` | ☑ |
+| E2 | Update `context.md` (§7 conventions, §8 the decisions this changed, §9 history), `AGENTS.md` and `HANDOFF.md` | ☑ |
+| E3 | Create a Shutter Bug project note in the workspace vault (none exists), if the owner wants it | — skipped (owner) |
+| E4 | Owner reviews the Vercel preview of the branch; decide whether to merge into `main` | ☑ (merged and verified live at every step) |
 
 ---
 
@@ -711,3 +711,21 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
   - Through the real page, twice: saved in ~1.7 s; the browser holds the new token and email; this session carries on; both other sessions → 401; the new credentials sign in; the Studio stays usable; 0 page errors.
   - A version-less token for the owner → 200.
   - Test-harness notes: a role=status check matched the Studio's boot screen (scope it to the form). The login limiter correctly tripped on the 6th test login.
+
+
+## Phase E: Close-out (owner: "go on whatever tasks are left and push", 2026-11-16)
+- **E1:**
+  - Live sweep: 13 routes × 4 widths (390/768/1024/1440) = 52 page views, 95 images.
+  - 0 overflow, 0 broken images, 0 console/CSP errors. 404 → 404; all Studio pages load signed in.
+  - Screenshots in `design-reference/redesign-after/` (local, gitignored).
+  - **Found and fixed:** the Account page's email box was blank when localStorage had no `admin_email`. It now reads `GET /api/auth/me` (verified with storage cleared).
+- **E2:**
+  - `context.md` gained a "Current state" section that supersedes its older sections: stack as built (no Framer Motion), the Studio layout, every decision made since the stage plan, and the owner to-dos.
+  - AGENTS.md and HANDOFF.md are updated locally (both gitignored).
+- **E3:** skipped at the owner's request (no vault note).
+- **E4:** satisfied throughout; every step was merged to `main` and checked live.
+
+**The redesign is complete.** Owner to-dos:
+- A strong password (Studio → Account).
+- A real hero photo and About portrait.
+- Star photos for Selected Work.
