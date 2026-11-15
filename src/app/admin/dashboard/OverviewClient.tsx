@@ -5,7 +5,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight, CircleAlert } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { CATEGORIES, categoryLabel } from "@/lib/categories";
-import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
+import { photoImage, type ApiPhoto } from "@/lib/data";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
@@ -238,7 +238,7 @@ export default function OverviewClient() {
               {featured.slice(0, 6).map((p) => (
                 <li key={p._id} className="frame-media aspect-square">
                   {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
-                  <img src={cloudinaryUrl(p.imageUrl, 320)} alt={p.caption || `${categoryLabel(p.category)} photograph`} loading="lazy" />
+                  <img src={photoImage(p, 320)} alt={p.caption || `${categoryLabel(p.category)} photograph`} loading="lazy" />
                 </li>
               ))}
             </ul>

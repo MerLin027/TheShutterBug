@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { signedImageSet } from '../config/cloudinary.js';
 
 /**
  * Editable copy for the public About page, and the Home page's hero image
@@ -69,6 +70,17 @@ const siteContentSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  // Delivery type of that asset ('authenticated' since D10) and its stored
+  // format, for the owner's private download link. Never sent to clients.
+  heroImageType: {
+    type: String,
+    enum: ['upload', 'authenticated'],
+    default: 'upload',
+  },
+  heroImageFormat: {
+    type: String,
+    default: '',
+  },
   heroImageAlt: {
     type: String,
     trim: true,
@@ -85,6 +97,26 @@ const siteContentSchema = new mongoose.Schema({
     maxlength: [WORK_STATEMENT_MAX, `"The work" text must be ${WORK_STATEMENT_MAX} characters or fewer`],
     default: DEFAULTS.workStatement,
   },
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  // What leaves the server (Phase D10). For an uploaded hero, clients get
+  // `heroImages`, signed size-capped delivery URLs; the stored original's
+  // URL, public_id, type and format stay here. The default placeholder (no
+  // id) keeps its plain heroImageUrl: it isn't ours, and there's nothing to
+  // protect.
+  toJSON: {
+    transform(doc, ret) {
+      if (doc.heroImageId) {
+        ret.heroImages = signedImageSet(doc.heroImageId, doc.heroImageType);
+        delete ret.heroImageUrl;
+      }
+      delete ret.heroImageId;
+      delete ret.heroImageType;
+      delete ret.heroImageFormat;
+      delete ret.__v;
+      return ret;
+    }
+  }
+});
 
 export default mongoose.model('SiteContent', siteContentSchema);

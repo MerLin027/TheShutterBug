@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { ArrowRight, Download, ImageUp, RefreshCw } from "lucide-react";
 import { apiUrl } from "@/lib/api";
-import { DEFAULT_SITE_CONTENT, cloudinaryUrl, splitBio, type ApiPhoto } from "@/lib/data";
+import { DEFAULT_SITE_CONTENT, photoImage, pickImage, splitBio, type ApiPhoto } from "@/lib/data";
 import { categoryLabel } from "@/lib/categories";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
@@ -18,24 +18,11 @@ const STATEMENT_MAX = 1000;
 const ALT_MAX = 300;
 const MAX_FILE_MB = 25;
 
-/**
- * Cloudinary serves any asset as a download when `fl_attachment` is added
- * to the delivery URL — the original file, untransformed. Returns null for
- * anything that isn't one of our https Cloudinary URLs.
- */
-function attachmentUrl(src: string): string | null {
-  try {
-    const url = new URL(src);
-    if (url.protocol !== "https:" || url.hostname !== "res.cloudinary.com") return null;
-    const marker = "/image/upload/";
-    const at = url.pathname.indexOf(marker);
-    if (at === -1) return null;
-    const head = url.pathname.slice(0, at + marker.length);
-    url.pathname = `${head}fl_attachment:home_background/${url.pathname.slice(at + marker.length)}`;
-    return url.toString();
-  } catch {
-    return null;
-  }
+/** The preview URL for the hero as the API sends it: a signed display size
+ *  for an uploaded hero (Phase D10), or the placeholder's own URL. */
+function heroPreviewUrl(data: { heroImages?: Record<string, string> | null; heroImageUrl?: string }): string {
+  if (data.heroImages) return pickImage(data.heroImages, 1600);
+  return data.heroImageUrl || DEFAULT_SITE_CONTENT.heroImageUrl;
 }
 
 /**
@@ -108,7 +95,7 @@ export default function HomeClient() {
         }
         const data = await res.json();
         if (cancelled) return;
-        if (data.heroImageUrl) setHeroUrl(data.heroImageUrl);
+        setHeroUrl(heroPreviewUrl(data));
         if (data.heroImageAlt) setHeroAlt(data.heroImageAlt);
         if (typeof data.showWorkStatement === "boolean") setShowStatement(data.showWorkStatement);
         // Empty = Home is using the bio's second paragraph; show that text,
@@ -129,7 +116,7 @@ export default function HomeClient() {
   async function refreshPublic() {
     // The change already landed; a failed revalidate only delays it ≤60 s.
     try {
-      await revalidatePublicPages();
+      await revalidatePublicPages(token);
     } catch {
       console.error("[home] revalidate failed after a successful change");
     }
@@ -228,7 +215,7 @@ export default function HomeClient() {
         setUploadError(data.message || "Upload failed. Please try again.");
         return;
       }
-      setHeroUrl(data.heroImageUrl);
+      setHeroUrl(heroPreviewUrl(data));
       setHeroAlt(data.heroImageAlt);
       cancelReplace();
       await refreshPublic();
@@ -240,30 +227,46 @@ export default function HomeClient() {
   }
 
   async function handleDownload() {
-    // Our own uploads: Cloudinary hands back the original as a download.
-    const direct = attachmentUrl(heroUrl);
-    if (direct) {
-      window.location.assign(direct);
-      return;
-    }
-    // The original placeholder lives on another host: fetch it and save the
-    // bytes; if that host refuses (CORS), open it in a tab to save by hand.
     setDownloading(true);
     try {
-      const res = await fetch(heroUrl);
-      if (!res.ok) throw new Error(String(res.status));
-      const blob = await res.blob();
-      const href = URL.createObjectURL(blob);
-      const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
-      const a = document.createElement("a");
-      a.href = href;
-      a.download = `home-background.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(href), 1000);
+      // The public site only ever gets signed display sizes (Phase D10). The
+      // stored file comes from an owner-only route as a five-minute link.
+      const res = await fetch(apiUrl("/api/site-content/hero/download"), {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        signOut();
+        return;
+      }
+      const data: { url?: string; placeholder?: boolean } = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(String(res.status));
+
+      if (!data.placeholder) {
+        window.location.assign(data.url);
+        return;
+      }
+
+      // The original placeholder lives on another host: fetch it and save the
+      // bytes; if that host refuses (CORS), open it in a tab to save by hand.
+      try {
+        const img = await fetch(data.url);
+        if (!img.ok) throw new Error(String(img.status));
+        const blob = await img.blob();
+        const href = URL.createObjectURL(blob);
+        const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = `home-background.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 1000);
+      } catch {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }
     } catch {
-      window.open(heroUrl, "_blank", "noopener,noreferrer");
+      setUploadError("Couldn't get the download link. The server may be waking up, so try again in a moment.");
     } finally {
       setDownloading(false);
     }
@@ -469,7 +472,7 @@ export default function HomeClient() {
                 <li key={p._id}>
                   <div className="frame-media aspect-[4/3]">
                     {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition */}
-                    <img src={cloudinaryUrl(p.imageUrl, 480)} alt={p.caption || `${categoryLabel(p.category)} photograph`} loading="lazy" />
+                    <img src={photoImage(p, 480)} alt={p.caption || `${categoryLabel(p.category)} photograph`} loading="lazy" />
                   </div>
                   <p className="frame-meta mt-2 truncate">{p.caption || categoryLabel(p.category)}</p>
                 </li>

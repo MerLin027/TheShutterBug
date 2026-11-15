@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Star, Trash2 } from "lucide-react";
-import { cloudinaryUrl, type ApiPhoto } from "@/lib/data";
+import { photoImage, type ApiPhoto } from "@/lib/data";
 import { categoryLabel } from "@/lib/categories";
 
 type Props = {
@@ -56,7 +56,7 @@ export default function PhotoCard({ photo, onEdit, onDelete, onToggleFeatured }:
       <div className="frame-media" style={{ aspectRatio: ratio }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary rendition; no next/image by decision (REDESIGN.md §2) */}
         <img
-          src={cloudinaryUrl(photo.imageUrl, 800)}
+          src={photoImage(photo, 800)}
           alt={photo.caption || `Untitled ${photo.category} photograph`}
           loading="lazy"
           decoding="async"

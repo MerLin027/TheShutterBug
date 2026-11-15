@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { signedImageSet } from '../config/cloudinary.js';
 
 /**
  * The category vocabulary, in one place.
@@ -19,6 +20,14 @@ const photoSchema = new mongoose.Schema({
   cloudinaryId: {
     type: String,
     required: true
+  },
+  // Cloudinary delivery type of the stored asset. 'authenticated' = no public
+  // URL; only signed sizes resolve (Phase D10). Rows from before D10 were
+  // 'upload' until scripts/protectImages.js moved them.
+  deliveryType: {
+    type: String,
+    enum: ['upload', 'authenticated'],
+    default: 'upload'
   },
   category: {
     type: String,
@@ -49,6 +58,21 @@ const photoSchema = new mongoose.Schema({
     type: Number,
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  // What leaves the server. The stored original's URL and public_id never do
+  // (Phase D10): clients get `images`, a fixed set of signed, size-capped
+  // delivery URLs, and nothing they can edit into the original.
+  toJSON: {
+    transform(doc, ret) {
+      ret.images = signedImageSet(doc.cloudinaryId, doc.deliveryType);
+      delete ret.imageUrl;
+      delete ret.cloudinaryId;
+      delete ret.deliveryType;
+      delete ret.__v;
+      return ret;
+    }
+  }
+});
 
 export default mongoose.model('Photo', photoSchema);

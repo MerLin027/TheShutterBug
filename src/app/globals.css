@@ -118,6 +118,22 @@ body {
     font-weight: 400;
 }
 
+/* Photographs can't be picked up (Phase D10, owner directive: nobody should
+   download the images). With pointer-events off, a right-click or long-press
+   lands on the frame around the photo, so the browser offers no "Save image
+   as", "Copy image" or "Open image in new tab"; it can't be dragged to the
+   desktop or selected either. Clicks still reach the link or button around
+   it. This only closes the easy routes: dev tools can always see what the
+   page loaded, which is why the API only ever sends signed, size-capped
+   copies (backend/config/cloudinary.js). */
+img {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+}
+
 /* Scrollbar hidden site-wide — visual only. Overflow is untouched, so
    wheel, touch and keyboard scrolling all still work. `*` because the
    Studio scrolls inside its own <main>, not the document. */

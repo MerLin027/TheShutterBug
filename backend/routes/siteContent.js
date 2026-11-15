@@ -1,22 +1,26 @@
 import express from 'express';
 import SiteContent, { DEFAULTS } from '../models/SiteContent.js';
 import { protect } from '../middleware/auth.js';
-import { upload, cloudinary } from '../config/cloudinary.js';
+import {
+  upload,
+  uploadImage,
+  releaseAsset,
+  privateDownloadUrl,
+  PROTECTED_TYPE,
+} from '../config/cloudinary.js';
 
 const router = express.Router();
 
-// Internal bookkeeping that never leaves the server: the Cloudinary
-// public_id of the uploaded hero. (Not secret — it's derivable from the
-// URL — but clients have no use for it, so it isn't part of the API.)
-const PRIVATE_FIELDS = '-heroImageId';
+// What a client sees is decided by the model's toJSON (models/SiteContent.js):
+// the hero's public_id, type and stored URL never leave the server.
 
-/** Release a Cloudinary asset; failure is logged, never thrown. */
-async function releaseAsset(publicId, why) {
-  if (!publicId) return;
+/** https: only, or empty. The About portrait is a free-text URL field. */
+function isHttpsUrlOrEmpty(value) {
+  if (value === '') return true;
   try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (err) {
-    console.error(`[site-content] ORPHANED Cloudinary asset ${publicId} (${why}):`, err.message);
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
   }
 }
 
@@ -24,7 +28,7 @@ async function releaseAsset(publicId, why) {
 // @desc    Get the About page copy and the Home page settings
 // @access  Public
 router.get('/', async (req, res) => {
-  const content = await SiteContent.findOne({}).select(PRIVATE_FIELDS);
+  const content = await SiteContent.findOne({});
 
   // No document yet (fresh database, admin has never hit Save). Return the
   // defaults rather than 404 so About renders its original copy instead of
@@ -56,6 +60,14 @@ router.put('/', protect, async (req, res) => {
     }
     update[key] = value;
   }
+  // The portrait URL is rendered as an <img src> on a public page: only an
+  // https: URL may be stored (no javascript:, data:, or plain http:).
+  if (update.aboutImageUrl !== undefined) {
+    update.aboutImageUrl = update.aboutImageUrl.trim();
+    if (!isHttpsUrlOrEmpty(update.aboutImageUrl)) {
+      return res.status(400).json({ message: 'The portrait must be an https:// address' });
+    }
+  }
   if (showWorkStatement !== undefined) {
     // A real boolean only — "false" (a string) is truthy and would show it.
     if (typeof showWorkStatement !== 'boolean') {
@@ -81,7 +93,7 @@ router.put('/', protect, async (req, res) => {
     upsert: true,
     runValidators: true,
     setDefaultsOnInsert: true,
-  }).select(PRIVATE_FIELDS);
+  });
 
   res.status(200).json(content);
 });
@@ -98,36 +110,66 @@ router.post('/hero', protect, upload.single('image'), async (req, res, next) => 
     return res.status(400).json({ message: 'Please choose an image file' });
   }
 
+  // Checked before the upload: a missing description costs nothing.
+  const alt = typeof req.body.alt === 'string' ? req.body.alt.trim() : '';
+  if (!alt) {
+    return res.status(400).json({ message: 'Please describe the photograph (alt text)' });
+  }
+
+  // Stored as a protected asset (D10); multer only held it in memory.
+  const stored = await uploadImage(req.file);
+
   try {
-    const alt = typeof req.body.alt === 'string' ? req.body.alt.trim() : '';
-    if (!alt) {
-      await releaseAsset(req.file.filename, 'hero upload rejected: no description');
-      return res.status(400).json({ message: 'Please describe the photograph (alt text)' });
-    }
+    const previous = await SiteContent.findOne({}).select('heroImageId heroImageType');
 
-    const previous = await SiteContent.findOne({}).select('heroImageId');
-
-    // multer-storage-cloudinary: req.file.path = secure_url,
-    // req.file.filename = public_id.
     const content = await SiteContent.findOneAndUpdate(
       {},
-      { heroImageUrl: req.file.path, heroImageId: req.file.filename, heroImageAlt: alt },
+      {
+        heroImageUrl: stored.secure_url,
+        heroImageId: stored.public_id,
+        heroImageType: PROTECTED_TYPE,
+        heroImageFormat: stored.format || '',
+        heroImageAlt: alt,
+      },
       { returnDocument: 'after', upsert: true, runValidators: true, setDefaultsOnInsert: true }
-    ).select(PRIVATE_FIELDS);
+    );
 
     // Only after the new one is saved: release the hero it replaced. Never
     // the default placeholder (no id), and never the asset just saved.
-    if (previous?.heroImageId && previous.heroImageId !== req.file.filename) {
-      await releaseAsset(previous.heroImageId, 'replaced hero');
+    if (previous?.heroImageId && previous.heroImageId !== stored.public_id) {
+      await releaseAsset(previous.heroImageId, previous.heroImageType, 'replaced hero');
     }
 
     res.status(200).json(content);
   } catch (error) {
     // Nothing references the new upload if the save failed. Release it, then
     // let errorHandler map the error (ValidationError → 400, etc.).
-    await releaseAsset(req.file.filename, 'hero save failed');
+    await releaseAsset(stored.public_id, PROTECTED_TYPE, 'hero save failed');
     next(error);
   }
+});
+
+// @route   GET /api/site-content/hero/download
+// @desc    A link to download the current hero photograph (the stored file)
+// @access  Private (Admin only)
+//
+// Studio → Home's "Download current". The public site only ever gets signed
+// display sizes; this is the one way to the stored file, and it is behind
+// `protect` and expires after five minutes. The default placeholder isn't a
+// Cloudinary asset of ours, so its own URL is returned.
+router.get('/hero/download', protect, async (req, res) => {
+  const content = await SiteContent.findOne({}).select(
+    'heroImageId heroImageType heroImageFormat heroImageUrl'
+  );
+
+  if (!content?.heroImageId) {
+    return res.json({ url: content?.heroImageUrl || DEFAULTS.heroImageUrl, placeholder: true });
+  }
+
+  res.json({
+    url: privateDownloadUrl(content.heroImageId, content.heroImageType, content.heroImageFormat),
+    placeholder: false,
+  });
 });
 
 export default router;

@@ -124,7 +124,7 @@ export default function AboutClient() {
       // the save already succeeded, so a failure here must not be reported as
       // "save failed" — worst case the page updates 60 s later on its own.
       try {
-        await revalidatePublicPages();
+        await revalidatePublicPages(token);
       } catch {
         console.error("[about] revalidate failed after a successful save");
       }
