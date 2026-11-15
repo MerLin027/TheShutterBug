@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import AdminUser from '../models/AdminUser.js';
 import { protect } from '../middleware/auth.js';
-import { loginLimiter } from '../middleware/rateLimit.js';
+import { loginLimiter, credentialsLimiter } from '../middleware/rateLimit.js';
+import { EMAIL_REGEX } from '../models/Contact.js';
 
 const router = express.Router();
 
@@ -17,8 +18,9 @@ const TOKEN_LIFETIME = '7d';
 
 // Generate JWT. HS256 is pinned on both sides (here and in middleware/auth.js)
 // so a token can't name a different algorithm.
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+// `v` is the account's tokenVersion at issue time (see models/AdminUser.js).
+const generateToken = (user) => {
+  return jwt.sign({ id: user._id, v: user.tokenVersion ?? 0 }, process.env.JWT_SECRET, {
     algorithm: 'HS256',
     expiresIn: TOKEN_LIFETIME,
   });
@@ -28,7 +30,12 @@ const generateToken = (id) => {
 // (scripts/seedAdmin.js). Compared against when the email matches no
 // account, so an unknown email takes as long as a wrong password and the
 // response time doesn't reveal which emails exist (D3).
-const DUMMY_HASH = bcrypt.hashSync(Math.random().toString(36), 12);
+const SALT_ROUNDS = 12;
+const DUMMY_HASH = bcrypt.hashSync(Math.random().toString(36), SALT_ROUNDS);
+
+/** New-password rule: length is what matters (NIST SP 800-63B). */
+export const PASSWORD_MIN = 12;
+const PASSWORD_MAX = 200;
 
 // @route   POST /api/auth/login
 // @desc    Auth user & get token
@@ -65,7 +72,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   res.json({
     _id: user._id,
     email: user.email,
-    token: generateToken(user._id),
+    token: generateToken(user),
   });
 });
 
@@ -78,6 +85,84 @@ router.post('/login', loginLimiter, async (req, res) => {
 // the cache for a caller whose token passes here (D9).
 router.get('/me', protect, (req, res) => {
   res.json({ email: req.user.email });
+});
+
+// @route   PUT /api/auth/credentials
+// @desc    Change the sign-in email and/or password
+// @access  Private, and the current password is required
+//
+// Body: { currentPassword, email?, newPassword? }
+//
+// - The current password is asked for again even though the caller holds a
+//   valid token: a token left in an unattended browser (or stolen from
+//   localStorage) must not be enough to take the account over.
+// - A wrong current password answers 403, not 401: the Studio treats 401 as
+//   "session over" and signs the owner out, which a typo shouldn't do.
+// - Any change bumps tokenVersion, which signs out every other session; the
+//   caller gets a fresh token so this one carries on.
+// - Rate-limited like login, so the current-password check can't be used to
+//   guess the password from a stolen token.
+router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
+  const { currentPassword, email, newPassword } = req.body;
+
+  if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > PASSWORD_MAX) {
+    return res.status(400).json({ message: 'Enter your current password' });
+  }
+  if (email !== undefined && typeof email !== 'string') {
+    return res.status(400).json({ message: 'Email must be text' });
+  }
+  if (newPassword !== undefined && typeof newPassword !== 'string') {
+    return res.status(400).json({ message: 'The new password must be text' });
+  }
+
+  const user = await AdminUser.findById(req.user._id);
+  if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    return res.status(403).json({ message: 'Your current password is incorrect' });
+  }
+
+  const nextEmail = typeof email === 'string' ? email.trim().toLowerCase() : user.email;
+  const emailChanged = nextEmail !== user.email;
+  const passwordChanged = typeof newPassword === 'string' && newPassword !== '';
+
+  if (!emailChanged && !passwordChanged) {
+    return res.status(400).json({ message: 'Nothing to change' });
+  }
+
+  if (emailChanged && (nextEmail.length > 254 || !EMAIL_REGEX.test(nextEmail))) {
+    return res.status(400).json({ message: 'Please enter a valid email address' });
+  }
+
+  if (passwordChanged) {
+    if (newPassword.length < PASSWORD_MIN) {
+      return res.status(400).json({ message: `The new password must be at least ${PASSWORD_MIN} characters` });
+    }
+    if (newPassword.length > PASSWORD_MAX) {
+      return res.status(400).json({ message: `The new password must be ${PASSWORD_MAX} characters or fewer` });
+    }
+    if (newPassword.toLowerCase().includes(nextEmail.split('@')[0]) && nextEmail.split('@')[0].length >= 4) {
+      return res.status(400).json({ message: "The new password can't contain your email name" });
+    }
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      return res.status(400).json({ message: 'The new password is the same as the current one' });
+    }
+    user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  }
+
+  if (emailChanged) user.email = nextEmail;
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+
+  try {
+    await user.save();
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(409).json({ message: 'That email is already in use' });
+    }
+    throw err;
+  }
+
+  console.log(`[auth] credentials changed (${[emailChanged && 'email', passwordChanged && 'password'].filter(Boolean).join(' + ')}); other sessions signed out`);
+
+  res.json({ email: user.email, token: generateToken(user) });
 });
 
 // There is deliberately no POST /register route.

@@ -58,3 +58,11 @@ export const contactLimiter = rateLimit({
   max: 5,
   message: 'Too many messages from this connection. Please try again in an hour.',
 });
+
+/** Changing the sign-in email or password: 5 attempts per 15 minutes. */
+export const credentialsLimiter = rateLimit({
+  name: 'credentials',
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many attempts. Please wait 15 minutes and try again.',
+});

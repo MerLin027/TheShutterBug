@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { ArrowUpRight, FileText, House, Images, LayoutGrid, LogOut, Mail } from "lucide-react";
+import { ArrowUpRight, FileText, House, Images, LayoutGrid, LogOut, Mail, KeyRound } from "lucide-react";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioMenu, { type StudioNavGroup } from "./StudioMenu";
 
@@ -31,6 +31,10 @@ export const NAV_GROUPS: StudioNavGroup[] = [
       { href: "/admin/dashboard/home", label: "Home", icon: House },
       { href: "/admin/dashboard/about", label: "About", icon: FileText },
     ],
+  },
+  {
+    label: "Settings",
+    items: [{ href: "/admin/dashboard/account", label: "Account", icon: KeyRound }],
   },
 ];
 

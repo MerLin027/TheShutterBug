@@ -41,6 +41,8 @@ type AdminSession = {
   ready: boolean;
   /** Clear both keys and return to the login page. */
   signOut: () => void;
+  /** Store a fresh token and email (after a credentials change). */
+  updateSession: (token: string, email: string) => void;
 };
 
 export function useAdminToken(
@@ -81,5 +83,11 @@ export function useAdminToken(
     router.replace("/admin");
   }, [router]);
 
-  return { ...session, signOut };
+  const updateSession = useCallback((token: string, email: string) => {
+    localStorage.setItem("admin_token", token);
+    localStorage.setItem("admin_email", email);
+    setSession({ token, email, ready: true });
+  }, []);
+
+  return { ...session, signOut, updateSession };
 }

@@ -694,3 +694,20 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 
 **Owner action:**
 - **D8:** set a strong admin password.
+
+## Studio → Account: change the sign-in email and password (owner request, 2026-11-15)
+
+- **Backend:**
+  - `PUT /api/auth/credentials` (`protect`, plus its own 5-per-15-min limiter). Body `{ currentPassword, email?, newPassword? }`.
+  - The current password is always re-checked; a wrong one answers **403, not 401**, so a typo doesn't sign the owner out.
+  - New password: 12–200 characters; can't be the current one; can't contain the email's name. Email: valid and ≤254; 409 if taken.
+  - Any change bumps `AdminUser.tokenVersion`. Tokens now carry `v`, and `protect` refuses a stale one, so every other session is signed out. The caller gets a fresh token. Tokens from before this change carry no `v` and count as version 0, so deploying signs nobody out.
+- **Studio:**
+  - `/admin/dashboard/account` (was a redirect to About) is now **Account** under a new "Settings" group in the sidebar.
+  - Fields: email, new password plus confirmation, current password (`autocomplete` set for password managers).
+  - `useAdminToken` gained `updateSession(token, email)`.
+- **Verified** against the local backend on the real DB, using a **temporary admin account** that was created and then deleted. The owner's account was never changed (only read).
+  - Wrong current password → 403. Short, same and email-containing passwords → 400. Someone else's email → 409. 6th attempt → 429.
+  - Through the real page, twice: saved in ~1.7 s; the browser holds the new token and email; this session carries on; both other sessions → 401; the new credentials sign in; the Studio stays usable; 0 page errors.
+  - A version-less token for the owner → 200.
+  - Test-harness notes: a role=status check matched the Studio's boot screen (scope it to the form). The login limiter correctly tripped on the 6th test login.

@@ -18,6 +18,11 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
 
+      // Issued before the last email/password change: signed out.
+      if ((decoded.v ?? 0) !== (req.user.tokenVersion ?? 0)) {
+        return res.status(401).json({ message: 'Not authorized, session ended' });
+      }
+
       return next();
     } catch {
       // jwt.verify threw (expired, malformed, etc.)
