@@ -45,6 +45,7 @@ build history**: where they disagree with this section, this section wins.
 - **Studio → Account:** change the sign-in email and password. The current password is required; any change signs out every other session (`tokenVersion`).
 - **Sign-in page:** 10 Unsplash photographs, credited, in a shuffle bag. No photo repeats until all ten have been shown.
 - **Footer:** wordmark, one line, ©. No links.
+- **Copy deterrent (public site only):** `src/components/CopyGuard.tsx` turns off right-click (except in text fields) and swallows F12, Ctrl/⌘+Shift+I/J/C, ⌘⌥I/J/C, Ctrl/⌘+U and Ctrl/⌘+S. It's a deterrent, not a lock: dev tools stay reachable from the browser menu. The Studio is exempt.
 - **Text and controls:** headings are in Title Case. Every text field shares one underline style, with browser autofill painted over. Busy buttons keep full colour (`aria-busy`).
 - **Security (Phase D):**
   - CSP keeps `script-src 'unsafe-inline'`, because nonces would make every page dynamic. `img-src https:`, because the About portrait is a free-text URL.

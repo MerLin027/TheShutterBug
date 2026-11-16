@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
+import CopyGuard from "@/components/CopyGuard";
 
 // Self-hosted at build time by next/font: no request to Google at runtime,
 // no render-blocking third-party stylesheet, and nothing third-party for the
@@ -63,6 +64,7 @@ export default function RootLayout({
           Skip to content
         </a>
         {children}
+        <CopyGuard />
       </body>
     </html>
   );

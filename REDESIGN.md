@@ -729,3 +729,14 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 - A strong password (Studio → Account).
 - A real hero photo and About portrait.
 - Star photos for Selected Work.
+
+
+## Right-click and dev-tools deterrent (owner: "i can still right click and inspect", using Brave, 2026-11-16)
+- **What:** `src/components/CopyGuard.tsx`, mounted in the root layout, is active on every route outside `/admin`.
+  - It turns off right-click except in `input`/`textarea`/`select`/contenteditable, so pasting into the contact form still works.
+  - In the capture phase it swallows F12, Ctrl/⌘+Shift+I/J/C, ⌘⌥I/J/C, Ctrl/⌘+U and Ctrl/⌘+S. Copy, paste, typing and refresh are untouched.
+- **Limits, told to the owner:** the browser's own menu, `view-source:` and fetching the page from a terminal can't be blocked by any page. The real protection is still D10 (only signed, compressed display copies ever leave the server).
+- **Verified** in Chrome (the same engine as Brave), production build:
+  - `/`, `/work`, `/about` and `/contact` block all eight combinations; Ctrl+C/V, typing and F5 still work.
+  - Right-click works in the contact message box; nothing is blocked on `/admin`.
+  - The guard stays on after in-site navigation; 0 page or hydration errors.
