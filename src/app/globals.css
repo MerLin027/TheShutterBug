@@ -927,15 +927,17 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 }
 .hero-top    { bottom: 51%; }
 .hero-bottom { top: 72%; }
-/* Home reads a size larger than the rest of the site (owner: "scale the
-   homepage a bit larger"). The block is zoomed as one unit, so the eyebrow,
-   title, subtitle, link and spacing keep their proportions; the navbar
-   and the page base are untouched. The title's vw term is divided by the
-   same factor, because zoom scales viewport units too and an unadjusted
-   title would outgrow narrow desktops. */
+/* Home's hero keeps the scale the owner called "perfect": what it was on a
+   90% base, while the rest of the desktop site is on 81%. The block is
+   zoomed by 90/81 as one unit, so the eyebrow, title, subtitle, link and
+   spacing match that version exactly; the navbar and the page base are
+   untouched. (A 1.2 zoom was tried and reverted, 2026-11-21: "scale down
+   the home page to what it was before".) The title's original rule,
+   clamp(3.4rem, 10.5vw, 9.5rem), has its vw term divided by the same
+   factor, because zoom scales viewport units too. */
 @media (min-width: 1024px) {
-    .hero-content { zoom: 1.2; }
-    .hero-content .hero-title { font-size: clamp(3.4rem, calc(10vw / 1.2), 9.4rem); }
+    .hero-content { zoom: 1.1111; }
+    .hero-content .hero-title { font-size: clamp(3.4rem, calc(10.5vw / 1.1111), 9.5rem); }
 }
 @supports (animation-timeline: scroll()) {
     .hero-media {

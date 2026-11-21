@@ -895,3 +895,18 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
   - The title stays pinned while the photos scroll (top 115 → 115).
   - No overflow, 0 errors.
   - Reduced motion: no clip, titles at rest.
+
+
+## Home hero back to its earlier scale (owner: "scale down the home page to what it was before… keep it in the middle", 2026-11-21)
+- `.hero-content { zoom: 1.1111 }` (was 1.2). On the 81% desktop base that equals the old 90% base exactly.
+- The title rule is back to the original `clamp(3.4rem, 10.5vw, 9.5rem)`, vw term ÷ zoom.
+- The centred framing (title above the boat, subtitle and link below) is unchanged.
+- **Measured:**
+
+| Screen | Title | Eyebrow | Subtitle | Clear of the boat |
+|---|---|---|---|---|
+| 1917×870, 1920×1080, 1366×768 | 136.8 px (90% era: 136.8) | 11.7 px | 21.6 px | 13–19 px |
+| 1024×768 | 107.5 px (90% era: 107.5) | 11.7 px | 20.5 px | 13 px |
+| 390×844 (unchanged) | 49 px | 12.6 px | 18 px | 15 px |
+
+- Title centre within 0.5 px of the screen centre at every size; no overflow.

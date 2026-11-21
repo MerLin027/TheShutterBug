@@ -71,7 +71,7 @@ build history**: where they disagree with this section, this section wins.
   - Swipes follow the finger (`translate`, damped).
   - On phones the arrows sit beside the caption and the photo and caption are centred together.
 - **Scale (2026-11-21):**
-  - The root is 90% on phones and **81% at ≥1024px on every page**, so a visitor at 100% zoom sees what the owner saw at 90%. **Never give one page a different root**: it resizes the shared navbar between pages (tried for Home, rejected as ugly). Home is larger instead through `.hero-content { zoom: 1.2 }` at ≥1024px (title 137px at 1366, 146px at 1920).
+  - The root is 90% on phones and **81% at ≥1024px on every page**, so a visitor at 100% zoom sees what the owner saw at 90%. **Never give one page a different root**: it resizes the shared navbar between pages (tried for Home, rejected as ugly). Home's hero keeps the scale the owner called perfect (its 90%-base sizes) through `.hero-content { zoom: 1.1111 }` (= 90/81) at ≥1024px, with the title's original `clamp(3.4rem, 10.5vw, 9.5rem)` (vw term divided by the zoom): title 136.8px at 1366 and 1920. A 1.2 zoom was tried and reverted.
   - Display titles max out at 4.25rem.
   - **About and Contact fit one screen** on 1024–1920px desktops; the About portrait's height follows the screen (4:5, capped).
   - **No photographs on Contact** (owner's rule). Its left column is an optional "What's it about?" picker (Commission / Licensing / Exhibition / Print / Just saying hello), and the choice is put at the start of the message as `[Topic] …`. There's no API or schema change.
