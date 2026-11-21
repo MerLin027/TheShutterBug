@@ -77,7 +77,7 @@ export default function Viewer({
   const count = photos.length;
   const [direction, setDirection] = useState(0);
   const [loaded, setLoaded] = useState<Record<string, true>>({});
-  // Closing fades out first (180 ms), then the parent unmounts the viewer.
+  // Closing fades out first (260 ms), then the parent unmounts the viewer.
   const [closing, setClosing] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
   const figure = useRef<HTMLElement>(null);
@@ -99,7 +99,7 @@ export default function Viewer({
   // browser may skip (a background tab, reduced motion's near-zero duration).
   useEffect(() => {
     if (!closing) return;
-    const t = window.setTimeout(onClose, 190);
+    const t = window.setTimeout(onClose, 270);
     return () => window.clearTimeout(t);
   }, [closing, onClose]);
 

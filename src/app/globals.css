@@ -846,7 +846,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     background: var(--color-accent);
 }
 .nav-link::after {
-    transition: transform 520ms var(--ease-brand), background-color 520ms var(--ease-brand);
+    transition: transform 760ms var(--ease-brand), background-color 760ms var(--ease-brand);
 }
 
 /* Mobile menu sheet: large serif links rising in one after another. */
@@ -857,7 +857,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     display: flex;
     flex-direction: column;
     background: var(--color-paper-deep);
-    animation: fade 260ms var(--ease-brand) both;
+    animation: fade 380ms var(--ease-brand) both;
 }
 .menu-link {
     display: block;
@@ -865,7 +865,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     font-size: 3rem;
     line-height: 1.15;
     color: var(--color-fg);
-    animation: rise 520ms var(--ease-brand) both;
+    animation: rise 720ms var(--ease-brand) both;
     animation-delay: calc(80ms + var(--i, 0) * 70ms);
 }
 .menu-link[aria-current="page"] { font-style: italic; color: var(--color-accent); }
@@ -1177,7 +1177,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     width: min(100%, calc((100dvh - 12rem) * var(--r)));
     aspect-ratio: var(--r);
     max-height: 100%;
-    animation: viewer-in 420ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
+    animation: viewer-in 600ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
 }
 @keyframes viewer-in {
     from { opacity: 0; transform: translateX(var(--dx, 0)) scale(0.975); }
@@ -1257,13 +1257,13 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
    pressed `transform` would never show through it. Down fast (90ms), back
    slower (220ms): the :active rule's own transition is the one used while
    pressing. */
-.tab           { transition: color var(--duration-micro) var(--ease-brand), scale 220ms var(--ease-brand); }
-.nav-link      { transition: color 200ms var(--ease-brand), scale 220ms var(--ease-brand); }
-.text-link     { transition: scale 220ms var(--ease-brand); }
-.studio-nav-row { transition: color 200ms var(--ease-brand), scale 220ms var(--ease-brand); }
-.switch        { transition: background-color 250ms var(--ease-brand), border-color 250ms var(--ease-brand), scale 220ms var(--ease-brand); }
-.menu-link     { transition: scale 220ms var(--ease-brand); }
-.photo-card .frame-media { transition: scale 260ms var(--ease-brand); }
+.tab           { transition: color var(--duration-micro) var(--ease-brand), scale 320ms var(--ease-brand); }
+.nav-link      { transition: color 200ms var(--ease-brand), scale 320ms var(--ease-brand); }
+.text-link     { transition: scale 320ms var(--ease-brand); }
+.studio-nav-row { transition: color 200ms var(--ease-brand), scale 320ms var(--ease-brand); }
+.switch        { transition: background-color 250ms var(--ease-brand), border-color 250ms var(--ease-brand), scale 320ms var(--ease-brand); }
+.menu-link     { transition: scale 320ms var(--ease-brand); }
+.photo-card .frame-media { transition: scale 360ms var(--ease-brand); }
 
 .tab:active, .nav-link:active, .text-link:active, .menu-link:active {
     scale: 0.96;
@@ -1284,16 +1284,16 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
    context forever, and anything layered inside it (the viewer, before it
    moved to a portal) ends up under the fixed header. Once the fade ends it
    should leave nothing behind. */
-.page-enter main { animation: page-in 280ms var(--ease-brand) backwards; }
+.page-enter main { animation: page-in 440ms var(--ease-brand) backwards; }
 
 /* Gallery filter: the new set fades in instead of snapping. Opacity only,
    for the same reason as above (the viewer lives inside). */
-.filter-swap { animation: page-in 300ms var(--ease-brand) backwards; }
+.filter-swap { animation: page-in 460ms var(--ease-brand) backwards; }
 
 /* Messages that appear in answer to an action (a field error, "Message
    sent", "Saved"): a short fade and settle, not a pop. */
 @keyframes msg-in { from { opacity: 0; transform: translateY(-3px); } }
-.field-error, .msg-in { animation: msg-in 220ms var(--ease-brand) both; }
+.field-error, .msg-in { animation: msg-in 320ms var(--ease-brand) both; }
 
 /* Contact → "What's it about?": numbered, serif, like a contact sheet's
    frame index. Stacked rows with hairlines on desktop; wrapping chips on a
@@ -1308,7 +1308,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     border: 1px solid var(--color-line);
     border-radius: 9999px;
     cursor: pointer;
-    transition: color 200ms var(--ease-brand), border-color 200ms var(--ease-brand), scale 220ms var(--ease-brand);
+    transition: color 200ms var(--ease-brand), border-color 200ms var(--ease-brand), scale 320ms var(--ease-brand);
 }
 .topic-no { display: none; font-family: var(--font-display); font-size: 0.95rem; color: var(--color-fg-3); font-variant-numeric: lining-nums tabular-nums; }
 .topic-name { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-fg-2); transition: color 200ms var(--ease-brand); }
@@ -1377,7 +1377,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 
 /* Viewer refinements (2026-11-21). Closing fades out instead of cutting. */
 @keyframes viewer-out { to { opacity: 0; } }
-.viewer-closing { animation: viewer-out 180ms var(--ease-brand) both; pointer-events: none; }
+.viewer-closing { animation: viewer-out 260ms var(--ease-brand) both; pointer-events: none; }
 .viewer-arrow-inline {
     display: none;
     align-items: center;
@@ -1387,7 +1387,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     height: 44px;
     border-radius: 9999px;
     color: var(--color-fg-2);
-    transition: color 200ms var(--ease-brand), background-color 200ms var(--ease-brand), scale 220ms var(--ease-brand);
+    transition: color 200ms var(--ease-brand), background-color 200ms var(--ease-brand), scale 320ms var(--ease-brand);
 }
 .viewer-arrow-inline:active { scale: 0.92; transition-duration: 90ms; }
 @media (max-width: 767px) {
@@ -1439,17 +1439,17 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     .home-rule {
         animation: rule-draw linear both;
         animation-timeline: view();
-        animation-range: entry 0% cover 30%;
+        animation-range: entry 0% cover 45%;
     }
     .home-title {
         animation: title-in linear both;
         animation-timeline: view();
-        animation-range: entry 0% cover 35%;
+        animation-range: entry 0% cover 50%;
     }
     .home-index {
         animation: fade linear both;
         animation-timeline: view();
-        animation-range: entry 0% cover 25%;
+        animation-range: entry 0% cover 40%;
     }
 }
 @keyframes rule-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -1471,7 +1471,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     .develop-word {
         animation: develop-word linear both;
         animation-timeline: view();
-        animation-range: entry 100% cover 58%;
+        animation-range: entry 100% cover 72%;
     }
 }
 @keyframes develop-word {
@@ -1491,13 +1491,13 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
         view-timeline: --frame block;
         animation: frame-wipe linear both;
         animation-timeline: view();
-        animation-range: entry 5% entry 95%;
+        animation-range: entry 5% cover 35%;
     }
-    .home-frames [role="listitem"]:nth-child(2n) .frame-media { animation-range: entry 25% cover 40%; }
+    .home-frames [role="listitem"]:nth-child(2n) .frame-media { animation-range: entry 25% cover 55%; }
     .home-frames .frame-media > img {
         animation: frame-settle linear both, frame-drift linear both;
         animation-timeline: --frame, --frame;
-        animation-range: entry 0% cover 45%, cover 0% cover 100%;
+        animation-range: entry 0% cover 60%, cover 0% cover 100%;
     }
     @media (min-width: 1024px) {
         .home-frames [role="listitem"]:nth-child(2n) {
