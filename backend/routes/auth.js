@@ -3,7 +3,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import AdminUser from '../models/AdminUser.js';
 import { protect } from '../middleware/auth.js';
-import { loginLimiter, credentialsLimiter } from '../middleware/rateLimit.js';
+import {
+  loginLimiter,
+  credentialsLimiter,
+  accountLocked,
+  recordFailedSignIn,
+} from '../middleware/rateLimit.js';
 import { EMAIL_REGEX } from '../models/Contact.js';
 
 const router = express.Router();
@@ -56,6 +61,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
+  if (accountLocked()) {
+    return res.status(429).json({
+      message: 'Too many failed sign-ins. Sign-in is paused; please try again within the hour.',
+    });
+  }
+
   const user = await AdminUser.findOne({ email });
 
   // bcrypt runs on every attempt: against the account's hash, or the dummy
@@ -65,6 +76,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   // One message for both branches, deliberately: distinguishing "no such
   // account" from "wrong password" tells an attacker which emails are real.
   if (!user || !passwordOk) {
+    recordFailedSignIn();
     return res.status(401).json({ message: 'Invalid email or password' });
   }
 

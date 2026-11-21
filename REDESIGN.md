@@ -910,3 +910,15 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 | 390×844 (unchanged) | 49 px | 12.6 px | 18 px | 15 px |
 
 - Title centre within 0.5 px of the screen centre at every size; no overflow.
+
+## Audit fixes, batch 1 (owner: "there's no cron job btw. but you can start", 2026-11-21)
+
+From the deep audit the same day. Each was reproduced before the fix.
+
+- **Rate limits now key on the visitor.** `req.ip` (with `trust proxy 1`) resolved to whichever Render/Cloudflare proxy relayed the request: one client's five sign-in requests read "remaining" 4, 4, 3, 2, 3 live. Now keyed on `CF-Connecting-IP`, which Cloudflare sets and overwrites, falling back to `req.ip` locally. Added an account-wide pause: 20 failed sign-ins within an hour, from any addresses, pauses sign-in (429) until the hour has passed. A correct password doesn't clear it early.
+- **A database outage no longer signs the owner out.** `protect` caught DB errors as 401 "token failed", and the Studio deletes the token on a 401. Only `jwt.verify` is inside the 401 catch now; a DB failure is a 500 (measured locally: 500 after the 10 s buffer).
+- **Non-JSON requests are a 400, not a 500.** Express 5 leaves `req.body` undefined; a middleware now defaults it to `{}`.
+- **Studio: a finished delete, star, reorder, upload or edit is never reported as failed** because the public-page refresh failed afterwards. `PhotosClient` calls it through its own try (`refreshPublic`), as Home and About already did.
+- **Keep-alive.** There was no cron job; the API slept (cold start 32.7 s). `.github/workflows/keep-alive.yml` pings `/api/health` every 10 min. Server fetch timeouts went from 20 s to 45 s (`data.ts`, `actions.ts`), so a cold start no longer becomes the gallery's error state.
+
+Verified: local API tests (7/7 with the DB unreachable; account pause 21st → 429 against the real DB using a made-up email), `tsc`, `eslint src backend`, `next build`; live checks after deploy below.

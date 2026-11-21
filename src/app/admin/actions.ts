@@ -38,7 +38,7 @@ export async function revalidatePublicPages(token: string | null): Promise<boole
     const res = await fetch(`${API_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(45_000),
     });
     if (!res.ok) return false;
   } catch {

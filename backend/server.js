@@ -46,6 +46,14 @@ app.use(cors({ origin: allowedOrigins }));
 // 100 kB is far above the largest legitimate body (a 5000-character
 // message, or the About copy) and keeps oversized payloads out.
 app.use(express.json({ limit: '100kb' }));
+// Express 5 leaves req.body undefined when no parser ran (no body, or a
+// Content-Type other than JSON), and every route destructures it, so a
+// text/plain POST answered 500 instead of the route's own 400 (2026-11-21
+// audit, measured live). multer replaces this on its multipart routes.
+app.use((req, res, next) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 
 // Health check. Deliberately no DB query — it must answer 200 while Atlas is
 // unreachable, or the keep-alive ping would report the service as down
@@ -56,6 +64,8 @@ app.use(express.json({ limit: '100kb' }));
 // two different response bodies; the cron-job.org keep-alive that stops Render
 // idling points at one of them, and that configuration lives outside this
 // repo, so neither path can be safely deleted. One handler, two mounts.
+// (2026-11-21: the owner says there is no cron job; the cold start measured
+// 32.7 s. .github/workflows/keep-alive.yml now pings /api/health.)
 const health = (req, res) => res.status(200).json({ status: 'ok', db: dbState() });
 app.get('/api/health', health);
 app.get('/health', health);

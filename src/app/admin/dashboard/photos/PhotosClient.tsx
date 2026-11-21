@@ -107,6 +107,19 @@ export default function PhotosClient() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  // Refresh the public pages after a change that has ALREADY been saved. Its
+  // own try: it used to share the change's try, so a failed refresh (network
+  // drop, a deploy swapping the Server Action) reported a finished delete as
+  // "the photo wasn't deleted" and rolled a saved star back on screen
+  // (2026-11-21 audit). A failed refresh only delays the public pages ≤60 s.
+  async function refreshPublic() {
+    try {
+      await revalidatePublicPages(token);
+    } catch (err) {
+      console.error("[admin] revalidate failed after a successful change:", err);
+    }
+  }
+
   // ── dnd-kit sensors ─────────────────────────────────────────────────────
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -188,7 +201,7 @@ export default function PhotosClient() {
 
       setDeletingPhoto(null);
       await fetchPhotos();
-      await revalidatePublicPages(token);
+      await refreshPublic();
     } catch (err) {
       console.error("[admin] delete failed:", err);
       setDeleteError("Network error — the photo wasn't deleted.");
@@ -254,7 +267,7 @@ export default function PhotosClient() {
         setActionError("The new order wasn't saved. The gallery has been reset.");
         await fetchPhotos();
       } else {
-        await revalidatePublicPages(token);
+        await refreshPublic();
       }
     } catch (err) {
       console.error("[admin] reorder request failed:", err);
@@ -302,7 +315,7 @@ export default function PhotosClient() {
       if (activeCategory === "featured" && !nextValue) {
         setPhotos((prev) => prev.filter((p) => p._id !== photo._id));
       }
-      await revalidatePublicPages(token);
+      await refreshPublic();
     } catch (err) {
       console.error("[admin] toggle featured failed:", err);
       rollback();
@@ -450,7 +463,7 @@ export default function PhotosClient() {
           onSuccess={async () => {
             setShowUpload(false);
             await fetchPhotos();
-            await revalidatePublicPages(token);
+            await refreshPublic();
           }}
         />
       )}
@@ -464,7 +477,7 @@ export default function PhotosClient() {
           onSuccess={async () => {
             setEditingPhoto(null);
             await fetchPhotos();
-            await revalidatePublicPages(token);
+            await refreshPublic();
           }}
         />
       )}

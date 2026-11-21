@@ -6,10 +6,24 @@
  * would need a shared store.) A restart resets the counts, which errs on the
  * side of the visitor.
  *
- * Keyed on the client IP. That relies on `app.set('trust proxy', 1)` in
- * server.js: Render terminates TLS at one proxy hop, and without it every
- * request would appear to come from that proxy and share one bucket.
+ * Keyed on the visitor's address (clientIp below).
  */
+
+/**
+ * The visitor's address. Render sits behind Cloudflare, which sets
+ * CF-Connecting-IP to the address that connected to it and overwrites any
+ * value a client sends, so it can't be forged. `req.ip` was the key before
+ * (2026-11-21 audit): with `trust proxy 1` it resolved to whichever proxy
+ * relayed the request, so one visitor's five requests read "remaining"
+ * 4, 4, 3, 2, 3 — the limit was spread over proxies, not visitors. Falls back
+ * to req.ip when the header is absent (local runs).
+ */
+export function clientIp(req) {
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && cf.length > 0 && cf.length <= 64) return cf.trim();
+  return req.ip || 'unknown';
+}
+
 export function rateLimit({ name, windowMs, max, message }) {
   const hits = new Map(); // key -> { count, resetAt }
 
@@ -22,7 +36,7 @@ export function rateLimit({ name, windowMs, max, message }) {
 
   return function limiter(req, res, next) {
     const now = Date.now();
-    const key = req.ip || 'unknown';
+    const key = clientIp(req);
     let entry = hits.get(key);
     if (!entry || entry.resetAt <= now) {
       entry = { count: 0, resetAt: now + windowMs };
@@ -58,6 +72,30 @@ export const contactLimiter = rateLimit({
   max: 5,
   message: 'Too many messages from this connection. Please try again in an hour.',
 });
+
+/**
+ * Failed sign-ins across ALL addresses (there is one admin account). The
+ * per-address limit can be spread across many addresses; this can't. After
+ * ACCOUNT_FAILURES_MAX wrong passwords within an hour, sign-in pauses for
+ * everyone until the hour since the first of them has passed. A correct
+ * password does not clear it early: that would let a guesser learn when they
+ * had hit it. Worst case for the owner is a wait of up to an hour.
+ */
+const ACCOUNT_WINDOW_MS = 60 * 60 * 1000;
+const ACCOUNT_FAILURES_MAX = 20;
+let accountFailures = []; // timestamps
+
+export function accountLocked(now = Date.now()) {
+  accountFailures = accountFailures.filter((t) => now - t < ACCOUNT_WINDOW_MS);
+  return accountFailures.length >= ACCOUNT_FAILURES_MAX;
+}
+
+export function recordFailedSignIn(now = Date.now()) {
+  accountFailures.push(now);
+  if (accountFailures.length === ACCOUNT_FAILURES_MAX) {
+    console.warn(`[rate-limit] ${ACCOUNT_FAILURES_MAX} failed sign-ins within an hour; sign-in paused`);
+  }
+}
 
 /** Changing the sign-in email or password: 5 attempts per 15 minutes. */
 export const credentialsLimiter = rateLimit({

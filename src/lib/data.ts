@@ -103,9 +103,11 @@ export type PhotoList = { photos: Photo[]; failed: boolean };
  * Ceiling for any one request to the API. Generous on purpose: a Render free
  * instance waking from idle legitimately takes 20–50 s. The point is that a
  * ceiling exists. A fetch that hangs never rejects, so without one a stalled
- * backend hung the page instead of reaching the fallback path.
+ * backend hung the page instead of reaching the fallback path. It was 20 s
+ * until 2026-11-21, shorter than the 32.7 s cold start measured that day,
+ * so a cold API turned into the gallery's error state.
  */
-const FETCH_TIMEOUT_MS = 20_000;
+const FETCH_TIMEOUT_MS = 45_000;
 
 /** Revalidation window for every public fetch, in seconds. */
 const REVALIDATE_SECONDS = 60;

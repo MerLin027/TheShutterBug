@@ -23,7 +23,7 @@ build history**: where they disagree with this section, this section wins.
 - Backend: Express 5, Mongoose 9, Cloudinary SDK v2 (multer memory storage plus `upload_stream`), bcryptjs, JWT.
 - Deploy:
   - Vercel builds from `main` (push `main` first and confirm the Production deployment before syncing a branch: same-SHA pushes can produce a Preview-only build).
-  - Render auto-deploys the API from `main`; cron-job.org pings `/api/health`.
+  - Render auto-deploys the API from `main`. A GitHub Actions schedule (`.github/workflows/keep-alive.yml`, every 10 min) pings `/api/health`. There never was a cron-job.org job (owner, 2026-11-21), which is why the API slept: cold start measured 32.7 s.
 
 **Where to look**
 - `REDESIGN.md`: every redesign and security change, why, how it was verified, and the rollback registry.
