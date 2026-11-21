@@ -64,23 +64,32 @@ export default function Hero({ image }: { image: { src: string; srcSet?: string;
       </div>
       <div aria-hidden="true" className="hero-scrim" />
 
-      <div className="hero-content px-margin-mobile md:px-margin-desktop">
-        <p className="caps hero-eyebrow !text-fg-2">Nature · Objects · Monochrome · Urban</p>
+      {/* Composed around the photograph's subject (owner, 2026-11-21: the
+          block didn't read as centred, and centring it put the subtitle
+          across the boat). The title sits above the middle of the frame and
+          the subtitle and link below it, so the group frames whatever the
+          hero photo shows there instead of covering it. */}
+      <div className="hero-content">
+        <div className="hero-top px-margin-mobile md:px-margin-desktop">
+          <p className="caps hero-eyebrow !text-fg-2">Nature · Objects · Monochrome · Urban</p>
 
-        <h1 id="hero-title" className="hero-title mt-6" aria-label={WORDS.join(" ")}>
-          <span className="hero-title-wrap" aria-hidden="true">
-            <TitleLetters />
-          </span>
-        </h1>
+          <h1 id="hero-title" className="hero-title mt-6" aria-label={WORDS.join(" ")}>
+            <span className="hero-title-wrap" aria-hidden="true">
+              <TitleLetters />
+            </span>
+          </h1>
+        </div>
 
-        <p className="lede hero-sub mt-6 max-w-[34rem] !text-fg/85">
-          A quiet study of light, absence, and the edges of the day
-        </p>
+        <div className="hero-bottom px-margin-mobile md:px-margin-desktop">
+          <p className="lede hero-sub max-w-[34rem] !text-fg/85">
+            A quiet study of light, absence, and the edges of the day
+          </p>
 
-        <Link href="/work" className="text-link hero-cta mt-8">
-          Enter the gallery
-          <ArrowRight size={16} aria-hidden="true" />
-        </Link>
+          <Link href="/work" className="text-link hero-cta mt-6">
+            Enter the gallery
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
       </div>
 
       <span aria-hidden="true" className="scroll-cue" />

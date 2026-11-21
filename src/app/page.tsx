@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { fetchFeaturedPhotos, fetchSiteContent, heroImage, workStatementFor } from "@/lib/data";
-import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Hero from "@/components/Hero";
 import SelectedFrames from "@/components/SelectedFrames";
@@ -21,7 +20,6 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <SiteNav />
       <main id="main">
         <Hero image={heroImage(content)} />
 

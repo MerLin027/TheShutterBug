@@ -118,11 +118,10 @@ html {
    always the browser default, not this.) */
 @media (min-width: 1024px) {
     html { font-size: 81%; }
-    /* Except Home, which the owner judged right at the old 90% (2026-11-21:
-       "before you made the changes, the homepage had the perfect scale").
-       :has() matches the page that renders the hero, and re-evaluates on
-       client-side navigation. */
-    html:has(.hero) { font-size: 90%; }
+    /* One base for every page, Home included. A per-page base (Home was 90%
+       for a while) resized the shared navbar between pages, so it visibly
+       jumped. Home is made larger by scaling its hero block instead
+       (.hero-content, below). */
 }
 
 body {
@@ -838,7 +837,17 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 .nav-link:hover { color: var(--color-fg); }
 .nav-link:hover::after { transform: scaleX(1); transform-origin: left; }
 .nav-link[aria-current="page"] { color: var(--color-fg); }
-.nav-link[aria-current="page"]::after { transform: scaleX(1); background: var(--color-accent); }
+/* The navbar persists across pages (root layout), so when the current page
+   changes this underline animates: the old one retracts to the right, the
+   new one draws in from the left, warming to gold as it goes. */
+.nav-link[aria-current="page"]::after {
+    transform: scaleX(1);
+    transform-origin: left;
+    background: var(--color-accent);
+}
+.nav-link::after {
+    transition: transform 520ms var(--ease-brand), background-color 520ms var(--ease-brand);
+}
 
 /* Mobile menu sheet: large serif links rising in one after another. */
 .menu-sheet {
@@ -902,11 +911,31 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     position: relative;
     z-index: 1;
     height: 100%;
+    text-align: center;
+}
+/* Two groups framing the middle of the photograph: the title ends just
+   above it, the subtitle and link start just below. Anchored as fractions
+   of the hero's height, so they track the photo (cover-fitted to the same
+   box) at every screen size. For the default photo the gap holds the boat
+   and its reflection. */
+.hero-top, .hero-bottom {
+    position: absolute;
+    inset-inline: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 19dvh;
-    text-align: center;
+}
+.hero-top    { bottom: 51%; }
+.hero-bottom { top: 72%; }
+/* Home reads a size larger than the rest of the site (owner: "scale the
+   homepage a bit larger"). The block is zoomed as one unit, so the eyebrow,
+   title, subtitle, link and spacing keep their proportions; the navbar
+   and the page base are untouched. The title's vw term is divided by the
+   same factor, because zoom scales viewport units too and an unadjusted
+   title would outgrow narrow desktops. */
+@media (min-width: 1024px) {
+    .hero-content { zoom: 1.2; }
+    .hero-content .hero-title { font-size: clamp(3.4rem, calc(10vw / 1.2), 9.4rem); }
 }
 @supports (animation-timeline: scroll()) {
     .hero-media {

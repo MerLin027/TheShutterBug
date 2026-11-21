@@ -2,7 +2,6 @@
 
 import { useState, useRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { apiUrl } from "@/lib/api";
-import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import Spinner from "@/components/Spinner";
 import { ArrowRight, CircleAlert, CircleCheck } from "lucide-react";
@@ -173,7 +172,6 @@ export default function ContactClient() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <SiteNav />
 
       <main
         id="main"

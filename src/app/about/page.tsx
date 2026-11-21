@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { fetchSiteContent, splitBio } from "@/lib/data";
 
@@ -22,7 +21,6 @@ export default async function About() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <SiteNav />
 
       <main id="main" className="flex-1 px-margin-mobile pb-24 pt-32 md:flex md:items-center md:px-margin-desktop md:pb-12 md:pt-28">
         <div className="site-container grid items-start gap-12 md:grid-cols-12 md:items-center md:gap-16">

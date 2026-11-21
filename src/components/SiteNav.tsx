@@ -25,6 +25,12 @@ const LINKS = [
  */
 export default function SiteNav() {
   const pathname = usePathname();
+  // One navbar for the whole public site, rendered by the root layout so it
+  // persists across page changes (2026-11-21). Each page used to render its
+  // own copy, so it was rebuilt on every navigation: nothing could animate
+  // between pages, and with per-page scales it visibly jumped. The Studio
+  // has its own chrome.
+  const hidden = pathname.startsWith("/admin");
   const [open, setOpen] = useState(false);
   const openButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -45,6 +51,8 @@ export default function SiteNav() {
       opener?.focus();
     };
   }, [open]);
+
+  if (hidden) return null;
 
   return (
     <header className="site-header px-margin-mobile md:px-margin-desktop">

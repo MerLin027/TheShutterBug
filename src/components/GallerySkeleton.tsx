@@ -1,4 +1,3 @@
-import SiteNav from "@/components/SiteNav";
 import { GALLERY_FILTERS } from "@/lib/categories";
 
 /**
@@ -27,7 +26,6 @@ const FRAMES = [
 export default function GallerySkeleton() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <SiteNav />
       <main
         id="main"
         aria-busy="true"

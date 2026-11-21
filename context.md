@@ -44,9 +44,11 @@ build history**: where they disagree with this section, this section wins.
 - **Studio → Home:** set the hero photo and its description, show or hide "The work" and edit its text, and download the current hero (an owner-only, 5-minute link).
 - **Studio → Account:** change the sign-in email and password. The current password is required; any change signs out every other session (`tokenVersion`).
 - **Sign-in page:** 10 Unsplash photographs, credited, in a shuffle bag. No photo repeats until all ten have been shown.
+- **One navbar** for the public site, rendered by the root layout (outside `template.tsx`), so it persists across pages; it returns null on `/admin`. When the page changes, the current-page underline retracts and the new one draws in. Pages must not render `<SiteNav />` themselves.
+- **Home hero composition:** the title group sits above the middle of the photo (`.hero-top { bottom: 51% }`) and the subtitle and link below it (`.hero-bottom { top: 72% }`), framing the boat and its reflection; it's centred horizontally. Measured clear of the boat from 390 to 1920 wide.
 - **Footer:** wordmark, one line, ©. No links.
 - **Scale (2026-11-21):**
-  - The root is 90% on phones and **81% at ≥1024px**, so a visitor at 100% zoom sees what the owner saw at 90%. **Home is the exception:** it stays at 90% (`html:has(.hero)`), because the owner judged its earlier scale right.
+  - The root is 90% on phones and **81% at ≥1024px on every page**, so a visitor at 100% zoom sees what the owner saw at 90%. **Never give one page a different root**: it resizes the shared navbar between pages (tried for Home, rejected as ugly). Home is larger instead through `.hero-content { zoom: 1.2 }` at ≥1024px (title 137px at 1366, 146px at 1920).
   - Display titles max out at 4.25rem.
   - **About and Contact fit one screen** on 1024–1920px desktops; the About portrait's height follows the screen (4:5, capped).
   - **No photographs on Contact** (owner's rule). Its left column is an optional "What's it about?" picker (Commission / Licensing / Exhibition / Print / Just saying hello), and the choice is put at the start of the message as `[Topic] …`. There's no API or schema change.

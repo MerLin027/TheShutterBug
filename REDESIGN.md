@@ -808,3 +808,22 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
   - Both fades now use `fill-mode: backwards`, so they leave nothing behind once finished.
 - **Verified** (production build), 8 paths: from Home via the nav, after stepping, after a filter, a second open, Escape, browser Back, a shared link plus Next, and About → Gallery. All close; Back afterwards lands on the previous page; the point under Close is the button itself at 1366 and 390.
 - **Lesson:** a test that measures an overlay's box isn't enough. Hit-test the controls (`elementFromPoint`) and click them.
+
+
+## Navbar jump, nav animation, Home scale and centring (owner, 2026-11-21)
+**Big picture:** two decisions from the previous round caused three symptoms.
+1. **Home had its own root size (90%) and other pages 81%.** The navbar is rem-sized, so its height, type and side margins changed between pages (owner's screenshots: the wordmark at x=150 on Home, x=231 on Gallery).
+2. **Every page rendered its own `<SiteNav />`**, so the navbar was rebuilt on each navigation. The gold current-page underline just appeared, nothing moved between pages, and the 90 ms press scale was invisible behind the page change.
+
+**Fixes:**
+- **One root size** (81% at ≥1024px) on every page.
+- **One persistent navbar** in the root layout (outside the page template; null on `/admin`). It was removed from 7 pages. The current-page underline now animates when the page changes: the old one retracts right, the new one draws in from the left and warms to gold (520 ms).
+- **Home larger** without touching the base: `.hero-content { zoom: 1.2 }` at ≥1024px. The title's vw term is divided by 1.2, because zoom scales viewport units too.
+- **Home composition:** centring the whole block put the subtitle across the boat. The hero is now two groups framing the photo's middle: the title above (`bottom: 51%`), the subtitle and link below (`top: 72%`).
+
+**Verified** (production build):
+- Navbar identical on `/`, `/work`, `/about` and `/contact` at 1917×870 (L375 R1542 H62), 1366×768 (L100 R1266) and 1024×768 (L52 R972). Exactly one per page; none on `/admin`; the 404 page has one and still answers 404.
+- The underline was caught mid-move (About 0.27 retracting, Contact 0.77 drawing in).
+- Title clears the boat by 14–19 px at 8 sizes (390×844 to 1920×1080). Screenshots at 1917, 1366 and 390 show the boat and reflection clear of all text.
+- Title centre within 0.5 px of the screen centre.
+- All 8 viewer close paths still pass. No overflow.

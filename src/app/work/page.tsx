@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { fetchPhotos } from "@/lib/data";
 import GalleryClient from "./GalleryClient";
-import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 // Revalidate the page every 60 s (matches the fetch revalidation in data.ts).
@@ -32,7 +31,6 @@ export default async function Work({
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <SiteNav />
       <main id="main" className="flex-grow px-margin-mobile pb-24 pt-32 md:px-margin-desktop md:pb-28 md:pt-36">
         <div className="site-container">
           <GalleryClient
