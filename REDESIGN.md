@@ -784,3 +784,18 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
   - Contact errors fade in.
   - Reduced motion: the fade takes 0.01 ms.
   - 0 console or hydration errors.
+
+**Owner corrections (2026-11-21):**
+- **No photographs on Contact.** The photo column is gone; `page.tsx` no longer fetches photos.
+  - The empty left column is now an optional **"What's it about?"** picker: Commission, Licensing, Exhibition, Print, Just saying hello.
+  - It's built from native radios tied to the form with `form="contact-form"`, so arrow keys work and they reset with the form.
+  - Desktop shows a numbered serif index with hairlines; a phone shows wrapping chips (85 px).
+  - The choice is sent as a `[Topic] ` prefix on the message (textarea cap lowered to leave room under the API's 5000). There's no backend change.
+- **Home keeps its old scale:** `html:has(.hero) { font-size: 90% }` at ≥1024px.
+- **Verified**, production build, 12/12:
+  - Home at 1366: root 14.4px, title 137px, page 1533px, identical to before the scale pass.
+  - Navigating to /about switches to 81% and back to Home returns to 90%.
+  - Contact has 0 images and fits 1366×768 (574px).
+  - Arrow keys move the choice.
+  - The POST was intercepted in the browser and never reached the API. With a topic it sent `"[Licensing] Is the fjord print available?"`; without one the message was unchanged. The picker resets after sending.
+  - Phone: no overflow, 0 console errors.

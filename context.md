@@ -45,7 +45,11 @@ build history**: where they disagree with this section, this section wins.
 - **Studio → Account:** change the sign-in email and password. The current password is required; any change signs out every other session (`tokenVersion`).
 - **Sign-in page:** 10 Unsplash photographs, credited, in a shuffle bag. No photo repeats until all ten have been shown.
 - **Footer:** wordmark, one line, ©. No links.
-- **Scale (2026-11-21):** the root is 90% on phones and **81% at ≥1024px**, so a visitor at 100% zoom sees what the owner saw at 90%. Display titles max out at 4.25rem. **About and Contact fit one screen** on 1024–1920px desktops: the About portrait's height follows the screen (4:5, capped), and Contact shows one of the owner's photos beside the form (the first Selected Work photo, else the first in the gallery; desktop only).
+- **Scale (2026-11-21):**
+  - The root is 90% on phones and **81% at ≥1024px**, so a visitor at 100% zoom sees what the owner saw at 90%. **Home is the exception:** it stays at 90% (`html:has(.hero)`), because the owner judged its earlier scale right.
+  - Display titles max out at 4.25rem.
+  - **About and Contact fit one screen** on 1024–1920px desktops; the About portrait's height follows the screen (4:5, capped).
+  - **No photographs on Contact** (owner's rule). Its left column is an optional "What's it about?" picker (Commission / Licensing / Exhibition / Print / Just saying hello), and the choice is put at the start of the message as `[Topic] …`. There's no API or schema change.
 - **Copy deterrent (public site only):** `src/components/CopyGuard.tsx` turns off right-click (except in text fields) and swallows F12, Ctrl/⌘+Shift+I/J/C, ⌘⌥I/J/C, Ctrl/⌘+U and Ctrl/⌘+S. It's a deterrent, not a lock: dev tools stay reachable from the browser menu. The Studio is exempt.
 - **Motion added (2026-11-21), on top of all the existing animations, which stay:**
   - Page change: the new page's `main` fades in over 280 ms, on client-side navigations only (`src/app/template.tsx`), opacity only. No exit animation: an exit has to hold the old page, which is what froze clicks under the removed view transitions.

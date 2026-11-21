@@ -118,6 +118,11 @@ html {
    always the browser default, not this.) */
 @media (min-width: 1024px) {
     html { font-size: 81%; }
+    /* Except Home, which the owner judged right at the old 90% (2026-11-21:
+       "before you made the changes, the homepage had the perfect scale").
+       :has() matches the page that renders the hero, and re-evaluates on
+       client-side navigation. */
+    html:has(.hero) { font-size: 90%; }
 }
 
 body {
@@ -1254,3 +1259,42 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
    sent", "Saved"): a short fade and settle, not a pop. */
 @keyframes msg-in { from { opacity: 0; transform: translateY(-3px); } }
 .field-error, .msg-in { animation: msg-in 220ms var(--ease-brand) both; }
+
+/* Contact → "What's it about?": numbered, serif, like a contact sheet's
+   frame index. Stacked rows with hairlines on desktop; wrapping chips on a
+   phone, so it doesn't push the form a screen down. The native radio is
+   visually hidden; the row is its label. */
+.topic-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.topic {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--color-line);
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: color 200ms var(--ease-brand), border-color 200ms var(--ease-brand), scale 220ms var(--ease-brand);
+}
+.topic-no { display: none; font-family: var(--font-display); font-size: 0.95rem; color: var(--color-fg-3); font-variant-numeric: lining-nums tabular-nums; }
+.topic-name { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-fg-2); transition: color 200ms var(--ease-brand); }
+.topic:hover .topic-name { color: var(--color-fg); }
+.topic:active { scale: 0.98; transition-duration: 90ms; }
+.topic:has(input:checked) { border-color: var(--color-accent); }
+.topic:has(input:checked) .topic-name { color: var(--color-accent); font-style: italic; }
+.topic:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.topic:has(input:disabled) { cursor: default; opacity: 0.6; }
+@media (min-width: 768px) {
+    .topic-list { display: block; max-width: 24rem; border-top: 1px solid var(--color-line); }
+    .topic {
+        display: flex;
+        padding: 0.7rem 0;
+        border: 0;
+        border-bottom: 1px solid var(--color-line);
+        border-radius: 0;
+        transform-origin: left center;
+    }
+    .topic-no { display: inline; min-width: 1.6rem; }
+    .topic-name { font-size: 1.35rem; }
+    .topic:has(input:checked) { border-color: var(--color-line); }
+    .topic:has(input:checked) .topic-no { color: var(--color-accent); }
+}

@@ -4,7 +4,6 @@ import { useState, useRef, type CSSProperties, type FormEvent, type ReactNode } 
 import { apiUrl } from "@/lib/api";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import type { Photo } from "@/lib/data";
 import Spinner from "@/components/Spinner";
 import { ArrowRight, CircleAlert, CircleCheck } from "lucide-react";
 
@@ -49,6 +48,16 @@ function validate(payload: {
   return errors;
 }
 
+/**
+ * "What's it about?" (owner, 2026-11-21: the page was too empty, but no
+ * photographs). Optional. The choice is put at the start of the message as
+ * "[Licensing] …", so enquiries can be told apart at a glance in Studio →
+ * Messages, with no change to the API or the database.
+ */
+const TOPICS = ["Commission", "Licensing", "Exhibition", "Print", "Just saying hello"] as const;
+/** Room left for the "[Topic] " prefix under the API's 5000-character cap. */
+const MESSAGE_MAX = 5000 - "[Just saying hello] ".length;
+
 /** One labelled field: label above, error below, wired with aria. */
 function Field({
   id,
@@ -76,8 +85,7 @@ function Field({
   );
 }
 
-/** One of the owner's photographs for the left column, or null (none yet). */
-export default function ContactClient({ photo }: { photo: Photo | null }) {
+export default function ContactClient() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -105,6 +113,9 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
       email: String(data.get("email") ?? ""),
       message: String(data.get("message") ?? ""),
     };
+    // The topic radios sit in the left column, outside <form>; their
+    // form="contact-form" attribute still makes them part of it.
+    const topic = String(data.get("topic") ?? "");
     // Honeypot: people never see this field; a form-filling bot does. Sent
     // as-is, and the API quietly drops any message that fills it.
     const website = String(data.get("website") ?? "");
@@ -133,7 +144,11 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
       const res = await fetch(apiUrl("/api/contact"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, website }),
+        body: JSON.stringify({
+          ...payload,
+          message: (TOPICS as readonly string[]).includes(topic) ? `[${topic}] ${payload.message.trim()}` : payload.message,
+          website,
+        }),
       });
 
       if (res.ok) {
@@ -178,30 +193,18 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
               about a photograph
             </p>
 
-            {/* One of the owner's own photographs, so the page isn't only a
-                form (owner: "too plain", 2026-11-21). A signed display copy
-                like every other photo on the site (Phase D10). Desktop only:
-                on a phone it would push the form a screen down. */}
-            {photo && (
-              <figure className="mt-10 hidden md:block">
-                <div className="frame-media max-h-[min(34vh,20rem)] w-fit max-w-full" style={{ aspectRatio: photo.ratio }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary renditions; no next/image by decision */}
-                  <img
-                    src={photo.thumb}
-                    srcSet={photo.srcSet}
-                    sizes="(min-width: 768px) 30vw, 100vw"
-                    alt={photo.alt}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <figcaption className="frame-meta mt-3 flex gap-3">
-                  <span>{photo.title}</span>
-                  {photo.location && <span className="text-fg-3">{photo.location}</span>}
-                </figcaption>
-              </figure>
-            )}
+            <fieldset className="mt-10 md:mt-12">
+              <legend className="caps">What&apos;s it about? <span className="normal-case tracking-normal text-fg-3">· optional</span></legend>
+              <div className="topic-list mt-4">
+                {TOPICS.map((t, i) => (
+                  <label key={t} className="topic">
+                    <input type="radio" name="topic" value={t} form="contact-form" className="sr-only" disabled={isLoading} />
+                    <span className="topic-no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="topic-name">{t}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
 
           <div className="enter md:col-span-7" style={{ "--i": 1 } as CSSProperties}>
@@ -219,7 +222,7 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
               </div>
             )}
 
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-10" noValidate>
+            <form id="contact-form" ref={formRef} onSubmit={handleSubmit} className="space-y-10" noValidate>
               {/* Honeypot (Phase D4): off-screen, out of the tab order and
                   hidden from assistive tech, so only a bot fills it. */}
               <div aria-hidden="true" className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">
@@ -263,7 +266,7 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
                   id="message"
                   name="message"
                   rows={4}
-                  maxLength={5000}
+                  maxLength={MESSAGE_MAX}
                   required
                   disabled={isLoading}
                   onChange={() => clearFieldError("message")}
