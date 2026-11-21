@@ -10,6 +10,15 @@ const router = express.Router();
 // malformed or hostile payload from turning into an unbounded bulkWrite.
 const MAX_REORDER_ITEMS = 500;
 
+/**
+ * Tags from a string ("sea, dusk,") or an array, trimmed, without empties.
+ * A trailing or doubled comma used to store an empty tag (2026-11-21 audit).
+ */
+function parseTags(tags) {
+  const list = Array.isArray(tags) ? tags : String(tags).split(',');
+  return list.map((t) => String(t).trim()).filter(Boolean);
+}
+
 // @route   GET /api/photos
 // @desc    Get all photos, optionally filter by category
 // @access  Public
@@ -114,8 +123,24 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
     return res.status(400).json({ message: 'Please upload an image file' });
   }
 
+  // Check what the schema would reject BEFORE the upload. These used to fail
+  // only at Photo.create, after the whole file (up to 25 MB) had gone to
+  // Cloudinary, which then had to be deleted again, and an asset was
+  // orphaned whenever that delete failed (2026-11-21 audit). The hero route
+  // checks its alt text first for the same reason.
+  if (!CATEGORIES.includes(req.body.category)) {
+    return res.status(400).json({ message: `Choose a category: ${CATEGORIES.join(', ')}` });
+  }
+  if (req.body.aspectRatio !== undefined) {
+    const ratio = parseFloat(req.body.aspectRatio);
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      return res.status(400).json({ message: 'Invalid aspect ratio' });
+    }
+  }
+
   // multer holds the file in memory; it reaches Cloudinary only here, after
-  // auth and the image-type check, and is stored as a protected asset (D10).
+  // auth, the image-type check and the checks above, and is stored as a
+  // protected asset (D10).
   const stored = await uploadImage(req.file);
 
   // The try/catch has real work to do: if the Photo document can't be
@@ -144,7 +169,7 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
       cloudinaryId: stored.public_id,
       deliveryType: PROTECTED_TYPE,
       category,
-      tags: tags ? (Array.isArray(tags) ? tags : String(tags).split(',').map((t) => t.trim())) : [],
+      tags: tags ? parseTags(tags) : [],
       caption: caption || '',
       location: location || '',
       position: resolvedPosition,
@@ -175,7 +200,7 @@ router.put('/:id', protect, async (req, res) => {
   // caller could set _id, timestamps, or anything added to the schema later.
   if (category !== undefined) photo.category = category;
   if (tags !== undefined) {
-    photo.tags = Array.isArray(tags) ? tags : String(tags).split(',').map((t) => t.trim());
+    photo.tags = parseTags(tags);
   }
   if (caption !== undefined) photo.caption = caption;
   if (location !== undefined) photo.location = location;

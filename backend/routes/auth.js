@@ -40,7 +40,10 @@ const DUMMY_HASH = bcrypt.hashSync(Math.random().toString(36), SALT_ROUNDS);
 
 /** New-password rule: length is what matters (NIST SP 800-63B). */
 export const PASSWORD_MIN = 12;
+/** Longest input accepted at all (sign-in, current password). */
 const PASSWORD_MAX = 200;
+/** What bcrypt actually checks; a new password must fit inside it. */
+const BCRYPT_MAX_BYTES = 72;
 
 // @route   POST /api/auth/login
 // @desc    Auth user & get token
@@ -148,8 +151,11 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
     if (newPassword.length < PASSWORD_MIN) {
       return res.status(400).json({ message: `The new password must be at least ${PASSWORD_MIN} characters` });
     }
-    if (newPassword.length > PASSWORD_MAX) {
-      return res.status(400).json({ message: `The new password must be ${PASSWORD_MAX} characters or fewer` });
+    // bcrypt reads only the first 72 bytes and silently ignores the rest, so
+    // a longer passphrase was really just its first 72 bytes (2026-11-21
+    // audit). Bytes, not characters: an accented letter or emoji is 2–4.
+    if (Buffer.byteLength(newPassword, 'utf8') > BCRYPT_MAX_BYTES) {
+      return res.status(400).json({ message: `The new password must be ${BCRYPT_MAX_BYTES} characters or fewer` });
     }
     if (newPassword.toLowerCase().includes(nextEmail.split('@')[0]) && nextEmail.split('@')[0].length >= 4) {
       return res.status(400).json({ message: "The new password can't contain your email name" });

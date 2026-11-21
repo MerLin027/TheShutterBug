@@ -133,10 +133,20 @@ export default function UploadModal({
     setError("");
     setUploading(true);
 
+    // Measure the shape first, in its own try. A file the browser can't
+    // decode (an iPhone HEIC in Chrome, some TIFFs) failed here and fell
+    // into the network catch below, which said "Couldn't reach the server"
+    // (2026-11-21 audit).
+    let aspectRatio: number;
     try {
-      // Compute aspect ratio from image dimensions
-      const aspectRatio = await getAspectRatio(file);
+      aspectRatio = await getAspectRatio(file);
+    } catch {
+      setError("This browser can't read that image. Export it as JPEG, PNG or WebP and try again.");
+      setUploading(false);
+      return;
+    }
 
+    try {
       const formData = new FormData();
       formData.append("image", file);
       formData.append("category", category);
@@ -305,7 +315,11 @@ function getAspectRatio(file: File): Promise<number> {
       URL.revokeObjectURL(img.src);
       resolve(img.naturalWidth / img.naturalHeight);
     };
-    img.onerror = () => reject(new Error("Could not read image dimensions"));
+    img.onerror = () => {
+      // Release the copy on failure too; only onload did.
+      URL.revokeObjectURL(img.src);
+      reject(new Error("Could not read image dimensions"));
+    };
     img.src = URL.createObjectURL(file);
   });
 }

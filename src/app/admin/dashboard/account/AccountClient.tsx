@@ -166,12 +166,12 @@ export default function AccountClient() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               disabled={saving}
-              maxLength={200}
+              maxLength={72}
               aria-describedby="account-password-hint"
               className="field"
             />
             <p id="account-password-hint" className="mt-2 text-label text-fg-3">
-              At least {PASSWORD_MIN} characters. A few unrelated words make a strong one.
+              {PASSWORD_MIN} to 72 characters. A few unrelated words make a strong one.
             </p>
           </div>
 
@@ -188,7 +188,7 @@ export default function AccountClient() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={saving}
-                maxLength={200}
+                maxLength={72}
                 className="field"
               />
             </div>

@@ -14,9 +14,23 @@ const router = express.Router();
 // What a client sees is decided by the model's toJSON (models/SiteContent.js):
 // the hero's public_id, type and stored URL never leave the server.
 
-/** https: only, or empty. The About portrait is a free-text URL field. */
-function isHttpsUrlOrEmpty(value) {
-  if (value === '') return true;
+/**
+ * Fields that may not be saved empty. The public site treats an empty value
+ * as "missing" and shows the built-in default instead (data.ts), so an empty
+ * save looked like it worked while the page kept the demo copy: a cleared
+ * portrait came back as the demo portrait, and an empty hero description
+ * described the uploaded photo as the default rowing boat (2026-11-21 audit).
+ * The work statement is the exception: empty there means "use the bio".
+ */
+const NOT_EMPTY = {
+  quote: 'The quote',
+  bio: 'The bio',
+  aboutImageUrl: 'The portrait address',
+  heroImageAlt: 'The photograph description',
+};
+
+/** https: only. The About portrait is a free-text URL field. */
+function isHttpsUrl(value) {
   try {
     return new URL(value).protocol === 'https:';
   } catch {
@@ -58,13 +72,16 @@ router.put('/', protect, async (req, res) => {
     if (typeof value !== 'string') {
       return res.status(400).json({ message: `${key} must be text` });
     }
+    if (NOT_EMPTY[key] && value.trim() === '') {
+      return res.status(400).json({ message: `${NOT_EMPTY[key]} can't be empty` });
+    }
     update[key] = value;
   }
   // The portrait URL is rendered as an <img src> on a public page: only an
   // https: URL may be stored (no javascript:, data:, or plain http:).
   if (update.aboutImageUrl !== undefined) {
     update.aboutImageUrl = update.aboutImageUrl.trim();
-    if (!isHttpsUrlOrEmpty(update.aboutImageUrl)) {
+    if (!isHttpsUrl(update.aboutImageUrl)) {
       return res.status(400).json({ message: 'The portrait must be an https:// address' });
     }
   }

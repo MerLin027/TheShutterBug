@@ -919,6 +919,18 @@ From the deep audit the same day. Each was reproduced before the fix.
 - **A database outage no longer signs the owner out.** `protect` caught DB errors as 401 "token failed", and the Studio deletes the token on a 401. Only `jwt.verify` is inside the 401 catch now; a DB failure is a 500 (measured locally: 500 after the 10 s buffer).
 - **Non-JSON requests are a 400, not a 500.** Express 5 leaves `req.body` undefined; a middleware now defaults it to `{}`.
 - **Studio: a finished delete, star, reorder, upload or edit is never reported as failed** because the public-page refresh failed afterwards. `PhotosClient` calls it through its own try (`refreshPublic`), as Home and About already did.
-- **Keep-alive.** There was no cron job; the API slept (cold start 32.7 s). `.github/workflows/keep-alive.yml` pings `/api/health` every 10 min. Server fetch timeouts went from 20 s to 45 s (`data.ts`, `actions.ts`), so a cold start no longer becomes the gallery's error state.
+- **Keep-alive.** There was no cron job; the API slept (cold start 32.7 s). A GitHub Actions ping was added here and **removed the same day: the owner had not approved it** ("never do something like this without my approval"). Server fetch timeouts went from 20 s to 45 s (`data.ts`, `actions.ts`), so a cold start no longer becomes the gallery's error state; that stays.
 
 Verified: local API tests (7/7 with the DB unreachable; account pause 21st → 429 against the real DB using a made-up email), `tsc`, `eslint src backend`, `next build`; live checks after deploy below.
+
+## Audit fixes, batch 2 (Studio logic, 2026-11-21)
+
+- **Reorder with tied positions.** `handleDragEnd` permuted the positions the visible photos held; when two shared a value there was nothing to permute and the drag "saved" with no effect. The slots are made strictly increasing first.
+- **Tab race.** Only the newest photos request may write the grid (`latestFetch`); a late answer for a tab already left no longer replaces the current one.
+- **New passwords are capped at 72 bytes.** bcrypt ignores everything after byte 72, so a longer passphrase was really only its first 72 bytes. The API checks bytes; the Account inputs cap at 72.
+- **Uploads are checked before Cloudinary.** Category and aspect ratio are validated first; a bad one used to upload up to 25 MB and then delete it again (and orphan it if that delete failed).
+- **An image the browser can't read** (HEIC in Chrome, some TIFFs) now says so, instead of "Couldn't reach the server"; the temporary preview copy is released on failure too.
+- **Empty quote, bio, portrait address or hero description are refused (400).** The public site treats empty as missing and shows the built-in default, so an empty save silently brought back the demo portrait, or described an uploaded hero as the rowing boat. (Allowing "no portrait" would need an About layout without one: owner's call.)
+- **Empty tags** from a trailing or doubled comma are dropped.
+
+Verified: local API against the real DB, read-only (9/9: four empty fields → 400, http portrait → 400, four bad uploads → 400 in under 170 ms, i.e. before Cloudinary); Studio in a browser against a local build (tab race with the Nature answer delayed 2.5 s: All keeps 6/6; an undecodable image shows the new message and nothing is posted); reorder and tag logic checked directly; `tsc`, `eslint src backend`, `next build`.

@@ -64,8 +64,8 @@ app.use((req, res, next) => {
 // two different response bodies; the cron-job.org keep-alive that stops Render
 // idling points at one of them, and that configuration lives outside this
 // repo, so neither path can be safely deleted. One handler, two mounts.
-// (2026-11-21: the owner says there is no cron job; the cold start measured
-// 32.7 s. .github/workflows/keep-alive.yml now pings /api/health.)
+// (2026-11-21: the owner says there is no cron job, so nothing pings this;
+// the instance sleeps when idle. Don't add a keep-alive without approval.)
 const health = (req, res) => res.status(200).json({ status: 'ok', db: dbState() });
 app.get('/api/health', health);
 app.get('/health', health);

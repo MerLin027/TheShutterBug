@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -129,8 +129,16 @@ export default function PhotosClient() {
   );
 
   // ── Fetch photos ────────────────────────────────────────────────────────
+  //
+  // Only the newest request may write. Switching tabs quickly (Nature, then
+  // All) used to let whichever response arrived LAST win, so "All" could end
+  // up showing only Nature, and a drag then reordered the wrong set
+  // (2026-11-21 audit).
+  const latestFetch = useRef(0);
   const fetchPhotos = useCallback(async () => {
     if (!token) return;
+    const requestId = ++latestFetch.current;
+    const stale = () => requestId !== latestFetch.current;
 
     const url = new URL(apiUrl("/api/photos"));
     // "featured" isn't an API filter: fetch everything and keep the
@@ -150,19 +158,22 @@ export default function PhotosClient() {
         return;
       }
 
+      if (stale()) return;
       if (!res.ok) {
         setError("The gallery couldn't be loaded. Please try again.");
         return;
       }
 
       const data: ApiPhoto[] = await res.json();
+      if (stale()) return;
       setPhotos(activeCategory === "featured" ? data.filter((p) => p.isFeatured) : data);
       setError("");
     } catch (err) {
+      if (stale()) return;
       console.error("[admin] fetch photos failed:", err);
       setError("Network error — the server didn't answer. It may be waking up.");
     } finally {
-      setLoading(false);
+      if (!stale()) setLoading(false);
     }
   }, [token, activeCategory, signOut]);
 
@@ -234,7 +245,16 @@ export default function PhotosClient() {
     const newIndex = photos.findIndex((p) => p._id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
+    // The list arrives sorted by position, so these ascend. Make them
+    // strictly increasing: two photos sharing a value (rows from before the
+    // upload fix, or two uploads at once) left nothing to permute, and the
+    // drag "saved" while the order stayed arbitrary (2026-11-21 audit).
+    // Bumping a tied value can at worst tie with a photo outside this
+    // filtered view, which is no worse than before; it is gone in "All".
     const slots = photos.map((p) => p.position);
+    for (let i = 1; i < slots.length; i++) {
+      if (slots[i] <= slots[i - 1]) slots[i] = slots[i - 1] + 1;
+    }
     const moved = arrayMove(photos, oldIndex, newIndex);
 
     // Carry the new positions into local state too, so a second drag before
