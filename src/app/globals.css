@@ -811,18 +811,20 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     white-space: nowrap;
 }
 
-/* Navbar wordmark with the site's mark before it (owner, 2026-11-22): an
-   inline SVG drawing (BrandMark.tsx). The photographic versions, square and
-   then round, blurred at this size and the owner rejected both. */
+/* Navbar wordmark with the site's mark before it (owner, 2026-11-22): their
+   artwork, round. 38 CSS px in px, not rem: the image files are made for
+   exactly that size (1x/2x/3x), so the root scale must not resize it. At
+   27px it was too small and dark to read; a drawn version was rejected. */
 .brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.75rem;
 }
 .brand-mark {
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 38px;
+    height: 38px;
     flex: none;
+    border-radius: 50%;
 }
 
 .nav-link {
