@@ -1249,11 +1249,15 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
    an exit would have to hold the old page, which is what froze clicks
    under the experimental view transitions removed in Phase R. */
 @keyframes page-in { from { opacity: 0; } }
-.page-enter main { animation: page-in 280ms var(--ease-brand) both; }
+/* `backwards`, not `both`: a held opacity animation keeps `main` a stacking
+   context forever, and anything layered inside it (the viewer, before it
+   moved to a portal) ends up under the fixed header. Once the fade ends it
+   should leave nothing behind. */
+.page-enter main { animation: page-in 280ms var(--ease-brand) backwards; }
 
 /* Gallery filter: the new set fades in instead of snapping. Opacity only,
    for the same reason as above (the viewer lives inside). */
-.filter-swap { animation: page-in 300ms var(--ease-brand) both; }
+.filter-swap { animation: page-in 300ms var(--ease-brand) backwards; }
 
 /* Messages that appear in answer to an action (a field error, "Message
    sent", "Saved"): a short fade and settle, not a pop. */

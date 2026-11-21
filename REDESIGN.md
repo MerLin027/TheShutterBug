@@ -799,3 +799,12 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
   - Arrow keys move the choice.
   - The POST was intercepted in the browser and never reached the API. With a topic it sent `"[Licensing] Is the fjord print available?"`; without one the message was unchanged. The picker resets after sending.
   - Phone: no overflow, 0 console errors.
+
+## Viewer: Close did nothing (owner report, 2026-11-21) — regression, fixed
+- **Reproduced live:** after reaching /work through an in-site link, the Close button didn't close the viewer, while Escape and browser Back still worked. A direct visit and a shared `?photo=` link were fine, which is why the motion-pass tests missed it.
+- **Cause:** my motion pass (`3a089f6a`) ran `page-in` with `fill-mode: both`. A held opacity animation keeps `main` a stacking context forever, so the viewer's `z-index: 80` was confined inside `main`, and the fixed site header (z 50, outside `main`) painted over the viewer's top row and took the click. `.filter-swap` did the same after any filter change.
+- **Fix:**
+  - `Viewer` renders through `createPortal(…, document.body)`, so no ancestor can trap it. It's client-only via `useSyncExternalStore`, because a shared link renders it on the server, where there is no body.
+  - Both fades now use `fill-mode: backwards`, so they leave nothing behind once finished.
+- **Verified** (production build), 8 paths: from Home via the nav, after stepping, after a filter, a second open, Escape, browser Back, a shared link plus Next, and About → Gallery. All close; Back afterwards lands on the previous page; the point under Close is the button itself at 1366 and 390.
+- **Lesson:** a test that measures an overlay's box isn't enough. Hit-test the controls (`elementFromPoint`) and click them.

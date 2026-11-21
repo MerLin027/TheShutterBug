@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Photo } from "@/lib/data";
 
 /** Must match the grid's `sizes` so the viewer's first image is the one the
  *  browser already downloaded for the card — it appears instantly, from cache. */
 export const GRID_SIZES = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
+
+/** True in the browser, false while server-rendering, without a hydration
+ *  mismatch (the server snapshot is used for the first client render). */
+const noSubscribe = () => () => {};
+function useIsClient() {
+  return useSyncExternalStore(noSubscribe, () => true, () => false);
+}
 
 export function photoTitle(p: Photo): string {
   return p.caption || p.category;
@@ -30,6 +38,13 @@ export function photoMeta(p: Photo): string {
  *   - each step is a functional state update, so rapid clicks all count.
  * Keyboard: ← → move, Escape closes. Touch: swipe. Focus moves in on open
  * and back to the card on close; the page behind can't scroll.
+ *
+ * Rendered into document.body (a portal), not inside the gallery. Inside,
+ * any ancestor that becomes a stacking context (an opacity animation such
+ * as the page fade, a transform) traps the viewer's z-index below the fixed
+ * site header, which then sat over the top row and swallowed clicks on
+ * Close (2026-11-21, measured live: Close did nothing after arriving at the
+ * gallery through a link; Escape still worked).
  */
 export default function Viewer({
   photos,
@@ -100,7 +115,12 @@ export default function Viewer({
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.clientY - s.y)) step(dx < 0 ? 1 : -1);
   };
 
-  return (
+  // A shared ?photo= link renders this on the server too, where there is no
+  // document.body to portal into: nothing there, the viewer on the client.
+  const isClient = useIsClient();
+  if (!isClient) return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -167,6 +187,7 @@ export default function Viewer({
         <p className="cap-title">{photoTitle(photo)}</p>
         {photoMeta(photo) && <p className="frame-meta mt-1">{photoMeta(photo)}</p>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
