@@ -3,13 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-// The site's mark: the owner's own artwork (2026-11-22), cropped to the
-// planet and triangle, cut round, slightly brightened and sharpened so it
-// reads at navbar size. One file per pixel density, each sharpened at its
-// own size (a browser shrinking one big file blurred it).
-import mark1x from "@/assets/logo-mark-38.png";
-import mark2x from "@/assets/logo-mark-76.png";
-import mark3x from "@/assets/logo-mark-114.png";
 
 const LINKS = [
   { href: "/work", label: "Gallery" },
@@ -69,18 +62,7 @@ export default function SiteNav() {
         aria-label="Primary"
         className="site-container relative flex h-[4.75rem] items-center justify-between"
       >
-        <Link href="/" className="wordmark brand" aria-current={pathname === "/" ? "page" : undefined}>
-          {/* Decorative: the link's name is the text beside it. */}
-          {/* eslint-disable-next-line @next/next/no-img-element -- static mark with density variants; no next/image by decision */}
-          <img
-            src={mark1x.src}
-            srcSet={`${mark1x.src} 1x, ${mark2x.src} 2x, ${mark3x.src} 3x`}
-            alt=""
-            aria-hidden="true"
-            width={38}
-            height={38}
-            className="brand-mark"
-          />
+        <Link href="/" className="wordmark" aria-current={pathname === "/" ? "page" : undefined}>
           The Shutter Bug
         </Link>
 
