@@ -934,3 +934,11 @@ Verified: local API tests (7/7 with the DB unreachable; account pause 21st → 4
 - **Empty tags** from a trailing or doubled comma are dropped.
 
 Verified: local API against the real DB, read-only (9/9: four empty fields → 400, http portrait → 400, four bad uploads → 400 in under 170 ms, i.e. before Cloudinary); Studio in a browser against a local build (tab race with the Nature answer delayed 2.5 s: All keeps 6/6; an undecodable image shows the new message and nothing is posted); reorder and tag logic checked directly; `tsc`, `eslint src backend`, `next build`.
+
+## Audit fixes, batch 3 (dead code, gallery jump, 2026-11-21)
+
+- **The gallery no longer jumps on load.** `/work` guessed the column count from the User-Agent, and a wrong guess (a desktop browser window 640–1023px wide) moved every card after hydration: layout shift 0.133 measured live. The server now renders all three arrangements, CSS shows the one for the width (`.masonry-at-N`), and the client keeps only the matching one. Hidden copies are `display:none`, so their lazy images never load and the visible images share URLs with them. `/work` no longer reads request headers; its `revalidate = 60` was dead (the page is per-request because of `?filter=` / `?photo=`) and was removed.
+- **Home makes one photos request**, not two in a row when nothing is starred.
+- **Dead code removed:** `Photo.aspect` + `aspectClass`, `Photo.frame`, `fetchFeaturedPhotos` (and its unused `limit`), the prev/next neighbours `fetchLightbox` computed for a page that now only redirects, the pre-D10 `cloudinaryUrl` / `cloudinarySrcSet` / `imageUrl` fallback (the API strips `imageUrl` from every response), and `images.remotePatterns` in `next.config.ts` (nothing uses `next/image`).
+
+Verified on a local production build: `/work` at 375 / 768 / 900 / 1366 px — server sends 3 arrangements, 1 remains after load with 1 / 2 / 2 / 3 columns, layout shift 0, no image downloaded twice, the viewer opens and closes; `/`, `/about`, `/contact`, `/work?filter=Nature` 200; `/lightbox/<id>` 307 to `/work?photo=<id>`, bad ids 404; `tsc`, `eslint src backend`, `next build`.

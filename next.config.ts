@@ -66,20 +66,10 @@ const nextConfig: NextConfig = {
   // changes, which swallowed clicks made mid-transition (measured: four quick
   // "Next" presses moved one photo). The gallery now opens photos in an
   // in-page viewer instead (REDESIGN.md, Phase R).
-  images: {
-    remotePatterns: [
-      // Cloudinary — used for all uploaded portfolio photos
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
-      // Google AI / Stitch design-reference images used on the home hero
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-    ],
-  },
+  //
+  // No `images.remotePatterns`: nothing uses next/image (plain <img> with
+  // signed Cloudinary renditions, by decision), so it configured nothing.
+  // Removed in the 2026-11-21 audit.
 };
 
 export default nextConfig;

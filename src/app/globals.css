@@ -1107,6 +1107,13 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     align-items: flex-start;
     gap: clamp(1rem, 2.2vw, 2rem);
 }
+/* Before the client knows the width, all three arrangements are in the page
+   and only the one for this width shows (PhotoBrowser.tsx). Breakpoints match
+   its matchMedia queries: 640px and 1024px. */
+.masonry-at-1, .masonry-at-2, .masonry-at-3 { display: none; }
+@media (max-width: 639.98px) { .masonry-at-1 { display: flex; } }
+@media (min-width: 640px) and (max-width: 1023.98px) { .masonry-at-2 { display: flex; } }
+@media (min-width: 1024px) { .masonry-at-3 { display: flex; } }
 .masonry-col {
     flex: 1 1 0;
     min-width: 0;

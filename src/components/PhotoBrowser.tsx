@@ -6,9 +6,15 @@ import Viewer, { GRID_SIZES, photoMeta, photoTitle } from "./Viewer";
 
 // ---------------------------------------------------------------------------
 // Column count — 1 / 2 / 3 at the 640px and 1024px breakpoints.
-// The server can't know the viewport, so it renders `initialColumns` (the
-// /work page guesses from the User-Agent: phone 1, tablet 2, desktop 3) and
-// the client corrects it after hydration if the guess was wrong.
+//
+// The server can't know the viewport. It used to render a guess from the
+// User-Agent and let the client correct it, which moved every card in a
+// desktop browser window between 640 and 1023px wide (layout shift 0.133,
+// measured 2026-11-21). Now the server (and the hydration pass) renders all
+// three arrangements and CSS shows only the one that fits (.masonry-at-N in
+// globals.css); once running, the client keeps just the matching one. The
+// hidden copies are display:none, so their lazy images never load, and the
+// visible images share URLs with them, so nothing downloads twice.
 // ---------------------------------------------------------------------------
 const QUERIES = ["(min-width: 640px)", "(min-width: 1024px)"];
 
@@ -55,7 +61,6 @@ export default function PhotoBrowser({
   label,
   basePath,
   query = {},
-  initialColumns = 3,
   initialPhotoId,
   eager = 0,
   layout = "masonry",
@@ -67,7 +72,6 @@ export default function PhotoBrowser({
   basePath: string;
   /** Extra query kept in the URL, e.g. { filter: "Nature" }. */
   query?: Record<string, string>;
-  initialColumns?: number;
   /** Open this photo on first render (a shared ?photo= link). */
   initialPhotoId?: string;
   /** Number of leading images to load eagerly. */
@@ -81,10 +85,9 @@ export default function PhotoBrowser({
   /** Classes for the "grid" layout's container, to change its columns. */
   gridClassName?: string;
 }) {
-  const columns = Math.min(
-    3,
-    useSyncExternalStore(subscribe, columnsNow, () => initialColumns)
-  );
+  // 0 = not known yet (server render and hydration): render every arrangement.
+  const measured = useSyncExternalStore(subscribe, columnsNow, () => 0);
+  const arrangements = measured ? [Math.min(3, measured)] : [1, 2, 3];
 
   const [index, setIndex] = useState<number | null>(() => {
     if (!initialPhotoId) return null;
@@ -178,13 +181,20 @@ export default function PhotoBrowser({
           {photos.map((photo, i) => card(photo, i))}
         </div>
       ) : (
-        <div className="masonry" role="list" aria-label={label}>
-          {distribute(photos, columns).map((col, c) => (
-            <div key={c} className="masonry-col">
-              {col.items.map(({ photo, index: i }) => card(photo, i))}
-            </div>
-          ))}
-        </div>
+        arrangements.map((columns) => (
+          <div
+            key={columns}
+            className={measured ? "masonry" : `masonry masonry-at-${columns}`}
+            role="list"
+            aria-label={label}
+          >
+            {distribute(photos, columns).map((col, c) => (
+              <div key={c} className="masonry-col">
+                {col.items.map(({ photo, index: i }) => card(photo, i))}
+              </div>
+            ))}
+          </div>
+        ))
       )}
 
       {index !== null && photos[index] && (

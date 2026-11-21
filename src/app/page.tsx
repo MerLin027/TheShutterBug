@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { fetchFeaturedPhotos, fetchPhotos, fetchSiteContent, heroImage, workStatementFor } from "@/lib/data";
+import { fetchPhotos, fetchSiteContent, heroImage, workStatementFor } from "@/lib/data";
 import SiteFooter from "@/components/SiteFooter";
 import Hero from "@/components/Hero";
 import SelectedFrames from "@/components/SelectedFrames";
@@ -12,14 +12,14 @@ export const revalidate = 60;
 export default async function Home() {
   // On failure Curated Work renders nothing, and the hero and statement fall
   // back to the default copy, so Home stays whole.
-  const [{ photos: featured }, content] = await Promise.all([
-    fetchFeaturedPhotos(),
-    fetchSiteContent(),
-  ]);
+  // One photos request serves both cases (it used to be two in a row when
+  // nothing was starred).
+  const [{ photos }, content] = await Promise.all([fetchPhotos(), fetchSiteContent()]);
+  const featured = photos.filter((p) => p.isFeatured);
   // Nothing starred yet: show the first six in the owner's gallery order, so
   // Home always has photographs below the statement (2026-11-21). Starring
   // any photo in the Studio switches this back to "Curated Work".
-  const frames = featured.length > 0 ? featured : (await fetchPhotos()).photos.slice(0, 6);
+  const frames = featured.length > 0 ? featured : photos.slice(0, 6);
   const framesAreFeatured = featured.length > 0;
   // Studio → Home page: the statement can be switched off or rewritten.
   const statement = workStatementFor(content);

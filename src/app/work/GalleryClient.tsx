@@ -58,13 +58,11 @@ export default function GalleryClient({
   failed = false,
   initialFilter,
   initialPhotoId,
-  initialColumns,
 }: {
   photos: Photo[];
   failed?: boolean;
   initialFilter?: string;
   initialPhotoId?: string;
-  initialColumns: number;
 }) {
   const [activeFilter, setActiveFilter] = useState<string>(normaliseFilter(initialFilter));
   // A shared ?photo= link opens the viewer once. Changing filter remounts the
@@ -124,7 +122,6 @@ export default function GalleryClient({
             label={activeFilter === "All" ? "All photographs" : `${activeFilter} photographs`}
             basePath="/work"
             query={activeFilter === "All" ? {} : { filter: activeFilter }}
-            initialColumns={initialColumns}
             initialPhotoId={sharedPhotoId}
             eager={6}
           />

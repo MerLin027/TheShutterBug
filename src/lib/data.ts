@@ -26,8 +26,6 @@ export type ApiPhoto = {
    * (Phase D10). The API no longer sends the stored original's URL or id.
    */
   images?: ImageSet | null;
-  /** Pre-D10 API only; kept so a deploy-order gap can't blank the gallery. */
-  imageUrl?: string;
   /** lowercase enum: 'nature' | 'objects' | 'monochrome' | 'urban' */
   category: string;
   tags: string[];
@@ -72,16 +70,8 @@ export type Photo = {
   /** Responsive candidates for grid cards. */
   srcSet: string;
   alt: string;
-  /** Tailwind aspect-ratio class derived from aspectRatio */
-  aspect: string;
   /** width / height, as stored. */
   ratio: number;
-  /**
-   * Contact-sheet frame number, "001". From the stored position, so it is
-   * stable per photo — it doesn't renumber under a filter, the way a real
-   * frame number doesn't change when you only print some of the roll.
-   */
-  frame: string;
   /** The owner's caption, or "" when none was given. */
   caption: string;
   /** Caption if present, else the category — for alt text and the lightbox. */
@@ -130,59 +120,13 @@ function apiFetch(path: string, tag: string): Promise<Response> {
 }
 
 // ---------------------------------------------------------------------------
-// Cloudinary delivery
+// Signed delivery sets (Phase D10)
+//
+// The API sends every photo as `images`: signed, size-capped renditions keyed
+// by width. The pre-D10 fallback that rewrote a raw Cloudinary URL
+// (cloudinaryUrl, cloudinarySrcSet) was removed in the 2026-11-21 audit: the
+// API strips imageUrl from every response, so it never ran.
 // ---------------------------------------------------------------------------
-
-const CLOUDINARY_HOST = "res.cloudinary.com";
-const UPLOAD_MARKER = "/image/upload/";
-/** A transformation component looks like `w_800` or `f_auto` — key_value. */
-const TRANSFORM_PART = /^[a-z]{1,3}_[^/]+$/;
-
-/**
- * Ask Cloudinary for a sized, format- and quality-optimised rendition.
- *
- * Every photo used to be served as its raw upload, so a 25 MB original was
- * what every visitor downloaded into a 315px grid card.
- *
- * - Returns `src` UNCHANGED unless it is an https URL on res.cloudinary.com
- *   with an /image/upload/ path. The About portrait is a free-text URL and the
- *   hero is Google-hosted; neither may be rewritten.
- * - Returns `src` unchanged if a transformation is already present, so it can
- *   never double-apply.
- * - `c_limit` is load-bearing: it only ever scales DOWN. Without it, a request
- *   for w_800 on a 600px test image produced a larger file than the original.
- */
-export function cloudinaryUrl(src: string, width: number): string {
-  if (!Number.isFinite(width) || width <= 0) return src;
-
-  let url: URL;
-  try {
-    url = new URL(src);
-  } catch {
-    return src;
-  }
-  if (url.protocol !== "https:" || url.hostname !== CLOUDINARY_HOST) return src;
-
-  const at = url.pathname.indexOf(UPLOAD_MARKER);
-  if (at === -1) return src;
-
-  const head = url.pathname.slice(0, at + UPLOAD_MARKER.length);
-  const rest = url.pathname.slice(at + UPLOAD_MARKER.length);
-  const firstSegment = rest.split("/")[0] ?? "";
-  if (firstSegment.split(",").every((part) => TRANSFORM_PART.test(part))) {
-    return src;
-  }
-
-  url.pathname = `${head}f_auto,q_auto,c_limit,w_${Math.round(width)}/${rest}`;
-  return url.toString();
-}
-
-/** Grid-card candidate widths. Largest covers a 390px phone at DPR 3. */
-const THUMB_WIDTHS = [480, 800, 1200] as const;
-
-function cloudinarySrcSet(src: string): string {
-  return THUMB_WIDTHS.map((w) => `${cloudinaryUrl(src, w)} ${w}w`).join(", ");
-}
 
 /** The signed widths in a set, ascending. */
 function widthsOf(set: ImageSet): number[] {
@@ -207,33 +151,14 @@ export function imageSetSrcSet(set: ImageSet, min = 0, max = Infinity): string {
     .join(", ");
 }
 
-/**
- * One rendition of a photo for the Studio's own thumbnails and previews:
- * the signed set when the API sent one, the pre-D10 transform otherwise.
- */
-export function photoImage(photo: Pick<ApiPhoto, "images" | "imageUrl">, width: number): string {
-  if (photo.images) return pickImage(photo.images, width);
-  return photo.imageUrl ? cloudinaryUrl(photo.imageUrl, width) : "";
+/** One rendition of a photo, for the Studio's own thumbnails and previews. */
+export function photoImage(photo: Pick<ApiPhoto, "images">, width: number): string {
+  return photo.images ? pickImage(photo.images, width) : "";
 }
 
 // ---------------------------------------------------------------------------
 // Adapter helpers
 // ---------------------------------------------------------------------------
-
-/** Convert an aspect-ratio number to the closest Tailwind aspect class. */
-function aspectClass(ratio: number): string {
-  // ratio = width / height
-  if (ratio <= 0.57) return "aspect-[9/16]";
-  if (ratio <= 0.68) return "aspect-[2/3]";
-  if (ratio <= 0.8)  return "aspect-[3/4]";
-  if (ratio <= 0.9)  return "aspect-[4/5]";
-  if (ratio <= 1.1)  return "aspect-square";
-  if (ratio <= 1.4)  return "aspect-[5/4]";
-  if (ratio <= 1.6)  return "aspect-[3/2]";
-  if (ratio <= 1.85) return "aspect-[16/9]";
-  if (ratio <= 2.1)  return "aspect-video";
-  return "aspect-[21/9]";
-}
 
 /** Capitalise the first letter so DB "nature" → "Nature". */
 function capitalise(s: string): string {
@@ -252,13 +177,11 @@ function toPhoto(raw: ApiPhoto): Photo {
   const ratio = Number.isFinite(raw.aspectRatio) && raw.aspectRatio > 0 ? raw.aspectRatio : 1.5;
   return {
     id: raw._id,
-    src: raw.images ? pickImage(raw.images, 2400) : cloudinaryUrl(raw.imageUrl ?? "", 2400),
-    thumb: raw.images ? pickImage(raw.images, 800) : cloudinaryUrl(raw.imageUrl ?? "", 800),
-    srcSet: raw.images ? imageSetSrcSet(raw.images, 480, 1200) : cloudinarySrcSet(raw.imageUrl ?? ""),
+    src: raw.images ? pickImage(raw.images, 2400) : "",
+    thumb: raw.images ? pickImage(raw.images, 800) : "",
+    srcSet: raw.images ? imageSetSrcSet(raw.images, 480, 1200) : "",
     alt: raw.caption || `${capitalise(raw.category)} photograph`,
-    aspect: aspectClass(ratio),
     ratio,
-    frame: String((Number.isFinite(raw.position) ? raw.position : 0) + 1).padStart(3, "0"),
     caption: raw.caption?.trim() ?? "",
     title: raw.caption || capitalise(raw.category),
     location: raw.location || "",
@@ -312,16 +235,6 @@ export async function fetchPhotos(category?: string): Promise<PhotoList> {
 }
 
 /**
- * Photos flagged `isFeatured`, for Home's "Selected frames". The API only
- * filters by category, so featured-filtering happens here.
- */
-export async function fetchFeaturedPhotos(limit?: number): Promise<PhotoList> {
-  const { photos, failed } = await fetchPhotos();
-  const featured = photos.filter((p) => p.isFeatured);
-  return { photos: limit ? featured.slice(0, limit) : featured, failed };
-}
-
-/**
  * One photo by id. `photo: null, failed: false` means it genuinely does not
  * exist (render the 404). `failed: true` means the API could not answer
  * (render the error page — telling a visitor a photograph is gone because
@@ -348,40 +261,27 @@ export async function fetchPhoto(id: string): Promise<{ photo: Photo | null; fai
 }
 
 /**
- * Everything the lightbox needs, in ONE list request where possible.
- *
- * It used to fetch the photo by id and, in parallel, the whole list to find
- * neighbours — the list already contained the photo, so the same document
- * arrived twice through two cache entries that could disagree in age. Now the
- * photo is read out of the list, and the by-id request is only a fallback for
- * an id that isn't in the filtered list (a stale ?filter= on a shared link).
- *
- * Navigation wraps: the last photo's "next" is the first, and vice versa.
+ * A photo for an old /lightbox/<id> link, which now only redirects to the
+ * gallery's viewer. Read from the (filtered) list, which is the cached
+ * request every gallery page shares; the by-id request is only a fallback
+ * for an id that isn't in the filtered list (a stale ?filter= on an old link).
+ * (It used to return prev/next neighbours too, for the lightbox page this
+ * route no longer renders; removed in the 2026-11-21 audit.)
  */
 export async function fetchLightbox(
   id: string,
   filter?: string
-): Promise<{ photo: Photo | null; prev: Photo | null; next: Photo | null; failed: boolean }> {
-  if (!OBJECT_ID.test(id)) return { photo: null, prev: null, next: null, failed: false };
+): Promise<{ photo: Photo | null; failed: boolean }> {
+  if (!OBJECT_ID.test(id)) return { photo: null, failed: false };
 
   const { photos: pool, failed } = await fetchPhotos(filter);
-  const idx = pool.findIndex((p) => p.id === id);
-
-  if (idx !== -1) {
-    const prev = pool.length > 1 ? pool[(idx - 1 + pool.length) % pool.length] : null;
-    const next = pool.length > 1 ? pool[(idx + 1) % pool.length] : null;
-    return { photo: pool[idx], prev, next, failed: false };
-  }
+  const found = pool.find((p) => p.id === id);
+  if (found) return { photo: found, failed: false };
 
   // Not in this pool. If the list itself failed, the single lookup almost
   // certainly will too, but try it: it is one request and may be cached.
   const single = await fetchPhoto(id);
-  return {
-    photo: single.photo,
-    prev: null,
-    next: null,
-    failed: single.failed || (failed && !single.photo),
-  };
+  return { photo: single.photo, failed: single.failed || (failed && !single.photo) };
 }
 
 // ---------------------------------------------------------------------------
@@ -480,9 +380,6 @@ export function heroImage(content: SiteContent): { src: string; srcSet?: string;
       alt: content.heroImageAlt,
     };
   }
-  const url = content.heroImageUrl;
-  const src = cloudinaryUrl(url, 2400);
-  const srcSet =
-    src === url ? undefined : [1200, 1800, 2400].map((w) => `${cloudinaryUrl(url, w)} ${w}w`).join(", ");
-  return { src, srcSet, alt: content.heroImageAlt };
+  // The built-in placeholder (no upload yet): a plain URL, used as is.
+  return { src: content.heroImageUrl, alt: content.heroImageAlt };
 }
