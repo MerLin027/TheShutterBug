@@ -45,6 +45,7 @@ build history**: where they disagree with this section, this section wins.
 - **Studio → Account:** change the sign-in email and password. The current password is required; any change signs out every other session (`tokenVersion`).
 - **Sign-in page:** 10 Unsplash photographs, credited, in a shuffle bag. No photo repeats until all ten have been shown.
 - **Footer:** wordmark, one line, ©. No links.
+- **Scale (2026-11-21):** the root is 90% on phones and **81% at ≥1024px**, so a visitor at 100% zoom sees what the owner saw at 90%. Display titles max out at 4.25rem. **About and Contact fit one screen** on 1024–1920px desktops: the About portrait's height follows the screen (4:5, capped), and Contact shows one of the owner's photos beside the form (the first Selected Work photo, else the first in the gallery; desktop only).
 - **Copy deterrent (public site only):** `src/components/CopyGuard.tsx` turns off right-click (except in text fields) and swallows F12, Ctrl/⌘+Shift+I/J/C, ⌘⌥I/J/C, Ctrl/⌘+U and Ctrl/⌘+S. It's a deterrent, not a lock: dev tools stay reachable from the browser menu. The Studio is exempt.
 - **Text and controls:** headings are in Title Case. Every text field shares one underline style, with browser autofill painted over. Busy buttons keep full colour (`aria-busy`).
 - **Security (Phase D):**

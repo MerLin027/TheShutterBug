@@ -31,7 +31,7 @@ export default function GallerySkeleton() {
       <main
         id="main"
         aria-busy="true"
-        className="flex-grow px-margin-mobile pb-28 pt-36 md:px-margin-desktop md:pb-36 md:pt-44"
+        className="flex-grow px-margin-mobile pb-24 pt-32 md:px-margin-desktop md:pb-28 md:pt-36"
       >
         <div className="site-container">
           <p role="status" className="sr-only">Loading the gallery</p>

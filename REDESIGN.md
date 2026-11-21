@@ -740,3 +740,31 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
   - `/`, `/work`, `/about` and `/contact` block all eight combinations; Ctrl+C/V, typing and F5 still work.
   - Right-click works in the contact message box; nothing is blocked on `/admin`.
   - The guard stays on after in-site navigation; 0 page or hydration errors.
+
+
+## Scale and motion pass (owner, 2026-11-21)
+**Audit (live, 100% zoom):**
+- Page titles were 72px on every desktop and the home title 137px, with ~140px of empty space above every title.
+- About was 1.35 screens tall at 1366×768 (1.18 at 1440×900): the 4:5 portrait filled its column, so it alone was taller than the screen.
+- Contact had a big title, an empty left column and a 6-row message box.
+- Missing motion: page changes, press feedback on most controls, the gallery filter swap, and the contact form's errors and "sent".
+
+**Task 1, scale (done):**
+- Root `font-size` is 81% at ≥1024px (90% below). Display titles are `clamp(2.5rem, 5vw, 4.25rem)`. Page padding is one step tighter on /work, /about, /contact, error and 404.
+- About: centred two-column spread; the portrait is `h-[min(100svh-11rem, 48rem)]` at 4:5.
+- Contact: `page.tsx` is now a server component that passes one of the owner's photos (signed) to `ContactClient`, which shows it under the lede on desktop. The message box went from 6 rows to 4.
+
+**Measured, production build at 100% zoom (the last line of real content vs the screen height):**
+
+| Screen | About | Contact |
+|---|---|---|
+| 1366×768 | 713 (fits) | 571 (fits) |
+| 1536×864 | 713 (fits) | 571 (fits) |
+| 1440×900 | 724 (fits) | 571 (fits) |
+| 1920×1080 | 814 (fits) | 571 (fits) |
+| 1024×768 | 713 (fits) | 510 (fits) |
+| 768×1024 | 817 (fits) | 492 (fits) |
+| 390×844 | 24 px over (stacked, expected) | fits |
+
+- Titles: 72 → 55 px. Home title: 137 → 123 px.
+- No overflow at any size.

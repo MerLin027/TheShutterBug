@@ -110,6 +110,15 @@ html {
     font-size: 90%;
     scroll-behavior: smooth;
 }
+/* Desktop renders at 81% (owner, 2026-11-21: "at 100% zoom the scale of the
+   website is too large"). 81% is what the owner saw at 90% browser zoom on
+   the 90% base, so a visitor at the usual 100% now sees the site the way the
+   owner does. Phones stay at 90%: smaller would hurt reading on a small
+   screen. (The media query is in px on purpose: rem in a media query is
+   always the browser default, not this.) */
+@media (min-width: 1024px) {
+    html { font-size: 81%; }
+}
 
 body {
     background-color: var(--color-paper);
@@ -707,7 +716,7 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 .display-title {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: clamp(2.75rem, 6vw, 5rem);
+    font-size: clamp(2.5rem, 5vw, 4.25rem);
     line-height: 1.02;
     letter-spacing: -0.01em;
     color: var(--color-fg);

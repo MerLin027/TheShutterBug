@@ -27,7 +27,7 @@ export default function Error({
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <SiteNav />
-      <main id="main" className="flex flex-1 items-center px-margin-mobile pb-28 pt-36 md:px-margin-desktop">
+      <main id="main" className="flex flex-1 items-center px-margin-mobile pb-24 pt-32 md:px-margin-desktop">
         <div role="alert" className="site-container">
           <p className="caps enter">Couldn&apos;t load</p>
           <h1 className="display-title enter mt-5 max-w-[14ch]" style={{ "--i": 1 } as CSSProperties}>
