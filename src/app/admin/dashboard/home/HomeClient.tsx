@@ -390,7 +390,7 @@ export default function HomeClient() {
           <div className="flex items-start justify-between gap-6">
             <div>
               <h2 id="work-heading" className="studio-heading mb-2">The Work</h2>
-              <p className="lede !text-[1.15rem]">The statement set large between the title and Selected work.</p>
+              <p className="lede !text-[1.15rem]">The statement set large between the title and Curated Work.</p>
             </div>
             <button
               type="button"
@@ -452,7 +452,7 @@ export default function HomeClient() {
         <section aria-labelledby="selected-heading" className="mt-16 border-t border-line pt-12">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 id="selected-heading" className="studio-heading mb-2">Selected Work</h2>
+              <h2 id="selected-heading" className="studio-heading mb-2">Curated Work</h2>
               <p className="lede !text-[1.15rem]">The starred photographs, in gallery order, below the statement.</p>
             </div>
             <Link href="/admin/dashboard/photos?filter=featured" className="text-link shrink-0 self-start sm:self-auto">

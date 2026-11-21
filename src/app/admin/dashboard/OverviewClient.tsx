@@ -90,8 +90,6 @@ export default function OverviewClient() {
   const latest = messages?.slice(0, 3) ?? [];
 
   const attention: { text: string; href: string; action: string }[] = [];
-  if (content && isPlaceholder(content.heroImageUrl))
-    attention.push({ text: "The home page background is still the demo photograph.", href: "/admin/dashboard/home", action: "Replace it" });
   if (content && isPlaceholder(content.aboutImageUrl))
     attention.push({ text: "The About portrait is still the demo image.", href: "/admin/dashboard/about", action: "Change it" });
   if (content?.bio?.includes("�"))
@@ -231,7 +229,7 @@ export default function OverviewClient() {
         {featured.length > 0 && (
           <section aria-labelledby="ov-featured" className="enter mt-16" style={{ "--i": 4 } as CSSProperties}>
             <div className="mb-4 flex items-baseline justify-between">
-              <h3 id="ov-featured" className="caps">Selected Work on Home</h3>
+              <h3 id="ov-featured" className="caps">Curated Work on Home</h3>
               <Link href="/admin/dashboard/photos?filter=featured" className="nav-link !h-auto">Edit</Link>
             </div>
             <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6">

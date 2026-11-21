@@ -92,8 +92,8 @@ export default function PhotoCard({ photo, onEdit, onDelete, onToggleFeatured }:
           type="button"
           onClick={() => onToggleFeatured(photo)}
           aria-pressed={photo.isFeatured}
-          aria-label={`Feature ${name} in Selected frames`}
-          title={photo.isFeatured ? "Featured in Selected frames" : "Feature in Selected frames"}
+          aria-label={`Feature ${name} in Curated Work`}
+          title={photo.isFeatured ? "Featured in Curated Work" : "Feature in Curated Work"}
           className="tool-btn shrink-0"
         >
           <Star size={18} fill={photo.isFeatured ? "currentColor" : "none"} aria-hidden="true" />

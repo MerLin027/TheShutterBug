@@ -167,7 +167,7 @@ export default function EditModal({
             onChange={(e) => setIsFeatured(e.target.checked)}
             className="checkbox"
           />
-          <span className="text-label text-fg">Feature in Selected frames</span>
+          <span className="text-label text-fg">Feature in Curated Work</span>
         </label>
 
         {error && (

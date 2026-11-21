@@ -1429,101 +1429,107 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     to   { background-color: rgb(16 15 13 / 0.45); }
 }
 
-/* 2. "The work": each word develops as it scrolls up the screen, from dim
-      to full, tied to scroll position — read along with the page. */
+/* 2. Section headers (HomeSection): a hairline draws across, then the
+      serif title tightens into place (the letter-spacing settle the owner
+      liked on the old closing line). */
+.home-rule { height: 1px; background: var(--color-line); transform-origin: left; }
+@supports (animation-timeline: view()) {
+    .home-rule {
+        animation: rule-draw linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 30%;
+    }
+    .home-title {
+        animation: title-in linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 35%;
+    }
+    .home-index {
+        animation: fade linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 25%;
+    }
+}
+@keyframes rule-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes title-in {
+    from { letter-spacing: 0.14em; opacity: 0.15; }
+    to   { letter-spacing: -0.005em; opacity: 1; }
+}
+/* On a phone the title only just fits; wide tracking would rewrap it. */
+@media (max-width: 767px) {
+    @keyframes title-in {
+        from { letter-spacing: 0.04em; opacity: 0.15; }
+        to   { letter-spacing: -0.005em; opacity: 1; }
+    }
+}
+
+/* 3. "The Work": each word develops as it scrolls up the screen, from
+      almost nothing to full, over a long stretch so it reads as it moves. */
 @supports (animation-timeline: view()) {
     .develop-word {
         animation: develop-word linear both;
         animation-timeline: view();
-        animation-range: entry 70% cover 42%;
+        animation-range: entry 100% cover 58%;
     }
 }
 @keyframes develop-word {
-    from { color: rgb(236 230 220 / 0.16); }
+    from { color: rgb(236 230 220 / 0.1); }
     to   { color: var(--color-fg); }
 }
 
-/* 3. Home's photographs: each drifts inside its frame as it passes (the
-      frame stays put, the print moves), and on a three-column desktop the
-      middle column runs a little slower than its neighbours, for depth. */
+/* 4. Home's photographs. Each is revealed by an upward wipe as it enters
+      (a print lifted out of the tray) while it settles from a slight zoom,
+      the second column a beat behind the first; then it drifts inside its
+      frame as it passes, and on desktop the second column runs slower. */
 @supports (animation-timeline: view()) {
     /* The frame clips its print (overflow: hidden), which makes it a scroll
        container: an anonymous view() on the img would track the frame, which
        never scrolls. A named timeline on the frame tracks the page. */
-    .home-frames .frame-media { view-timeline: --frame block; }
+    .home-frames .frame-media {
+        view-timeline: --frame block;
+        animation: frame-wipe linear both;
+        animation-timeline: view();
+        animation-range: entry 5% entry 95%;
+    }
+    .home-frames [role="listitem"]:nth-child(2n) .frame-media { animation-range: entry 25% cover 40%; }
     .home-frames .frame-media > img {
-        scale: 1.12;
-        animation: frame-drift linear both;
-        animation-timeline: --frame;
-        animation-range: cover;
+        animation: frame-settle linear both, frame-drift linear both;
+        animation-timeline: --frame, --frame;
+        animation-range: entry 0% cover 45%, cover 0% cover 100%;
     }
     @media (min-width: 1024px) {
-        .home-frames [role="listitem"]:nth-child(3n + 2) {
+        .home-frames [role="listitem"]:nth-child(2n) {
             animation: frame-lag linear both;
             animation-timeline: view();
             animation-range: cover;
         }
     }
 }
+@keyframes frame-wipe {
+    from { clip-path: inset(100% 0 0 0); }
+    to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes frame-settle {
+    from { scale: 1.32; }
+    to   { scale: 1.12; }
+}
 @keyframes frame-drift {
-    from { translate: 0 -5.5%; }
-    to   { translate: 0 5.5%; }
+    from { translate: 0 -8%; }
+    to   { translate: 0 8%; }
 }
 @keyframes frame-lag {
-    from { translate: 0 56px; }
-    to   { translate: 0 -56px; }
-}
-
-/* 4. Closing line before the footer: a large serif way into the gallery
-      that tightens into place as it arrives. */
-.closing-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35em;
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(2.25rem, 6vw, 5rem);
-    line-height: 1.05;
-    letter-spacing: -0.01em;
-    color: var(--color-fg);
-    transition: color 300ms var(--ease-brand), scale 220ms var(--ease-brand);
-}
-.closing-link:hover { color: #fff8ec; }
-.closing-link:active { scale: 0.985; transition-duration: 90ms; }
-.closing-arrow {
-    flex: none;
-    width: 0.55em;
-    height: 0.55em;
-    stroke-width: 1.25;
-    transition: translate 420ms var(--ease-brand);
-}
-.closing-link:hover .closing-arrow { translate: 0.18em 0; }
-@supports (animation-timeline: view()) {
-    .closing-link > span {
-        animation: closing-in linear both;
-        animation-timeline: view();
-        animation-range: entry 10% cover 38%;
-    }
-}
-@keyframes closing-in {
-    from { letter-spacing: 0.1em; opacity: 0.2; }
-    to   { letter-spacing: -0.01em; opacity: 1; }
-}
-/* A phone line only just fits; wide tracking would rewrap it mid-scroll. */
-@media (max-width: 767px) {
-    @keyframes closing-in {
-        from { letter-spacing: 0.02em; opacity: 0.2; }
-        to   { letter-spacing: -0.01em; opacity: 1; }
-    }
+    from { translate: 0 80px; }
+    to   { translate: 0 -80px; }
 }
 
 /* Reduced motion: none of the above. (Scroll-linked animations ignore the
    global duration override, so they have to be switched off by name.) */
 @media (prefers-reduced-motion: reduce) {
     .hero, .hero-scrim, .develop-word,
+    .home-rule, .home-title, .home-index,
+    .home-frames .frame-media,
     .home-frames .frame-media > img,
-    .home-frames [role="listitem"],
-    .closing-link > span {
+    .home-frames [role="listitem"] {
         animation: none !important;
     }
     .home-frames .frame-media > img { scale: none; }

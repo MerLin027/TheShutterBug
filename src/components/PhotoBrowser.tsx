@@ -59,6 +59,7 @@ export default function PhotoBrowser({
   initialPhotoId,
   eager = 0,
   layout = "masonry",
+  gridClassName = "grid items-start gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3",
 }: {
   photos: Photo[];
   label: string;
@@ -77,6 +78,8 @@ export default function PhotoBrowser({
    * viewport and a JS column count would flash on phones.
    */
   layout?: "masonry" | "grid";
+  /** Classes for the "grid" layout's container, to change its columns. */
+  gridClassName?: string;
 }) {
   const columns = Math.min(
     3,
@@ -171,7 +174,7 @@ export default function PhotoBrowser({
   return (
     <>
       {layout === "grid" ? (
-        <div role="list" aria-label={label} className="grid items-start gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+        <div role="list" aria-label={label} className={gridClassName}>
           {photos.map((photo, i) => card(photo, i))}
         </div>
       ) : (

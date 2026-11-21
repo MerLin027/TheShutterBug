@@ -409,7 +409,7 @@ export default function PhotosClient() {
               {activeCategory === "all"
                 ? "Upload the first one to start the gallery."
                 : activeCategory === "featured"
-                  ? "Star a photograph to show it in Selected work on the home page."
+                  ? "Star a photograph to show it in Curated Work on the home page."
                   : `Nothing in ${categoryLabel(activeCategory)} yet.`}
             </p>
             {activeCategory !== "featured" && (

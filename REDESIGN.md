@@ -878,3 +878,20 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 - No column lag on phones.
 - No overflow at any scroll position; 0 page errors.
 - Reduced motion: no clip, words at full colour.
+
+
+## Home revision (owner, same day: "hardly any animation while scrolling"; the two sections looked contradictory; rename Selected Work)
+- **Removed:**
+  - The Overview "home page background is still the demo photograph" alert.
+  - The "See the whole collection" closing line. Its letter-spacing settle was kept and moved to the section titles.
+- **One section shape:** the new `HomeSection` component has a hairline that draws across (`.home-rule`) and a numbered serif title that tightens in (`.home-title`) in a left four-column block, sticky on desktop, with content in the right eight. "The Work" and the photos both use it, and the numbers follow what's shown.
+- **Renamed** "Selected Work" → **"Curated Work"** on Home and in the Studio (Overview, Home page, the photo-card star, the edit modal and the empty state).
+- **Stronger scroll motion:**
+  - The words develop over `entry 100% → cover 58%`, from 10%.
+  - Photos wipe up (`clip-path`) and settle from a 1.32 zoom (the second column a beat later); drift is now ±8%.
+  - The second column lags ±80px on desktop. The photo grid is now 2 columns in the right 8/12 (`PhotoBrowser` gained `gridClassName`).
+- **Verified** (production build), 23 checks at 1366 and 390:
+  - Each effect measured mid-scroll: hairline 0.06 → 1, title 5.4 → 2.1px tracking, wipe 53% → 0%, zoom 1.27 → 1.13, drift, lag.
+  - The title stays pinned while the photos scroll (top 115 → 115).
+  - No overflow, 0 errors.
+  - Reduced motion: no clip, titles at rest.
