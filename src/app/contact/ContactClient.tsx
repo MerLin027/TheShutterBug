@@ -175,7 +175,7 @@ export default function ContactClient() {
 
       <main
         id="main"
-        className="flex-1 px-margin-mobile pb-24 pt-32 md:px-margin-desktop md:pb-24 md:pt-36"
+        className="flex-1 px-margin-mobile pb-24 pt-24 md:px-margin-desktop md:pb-24 md:pt-36"
       >
         {/* Asymmetric split: heading and intro left, form right. Was a
             centred stack with placeholder-only fields. */}

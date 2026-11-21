@@ -31,7 +31,7 @@ export default async function Work({
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <main id="main" className="flex-grow px-margin-mobile pb-24 pt-32 md:px-margin-desktop md:pb-28 md:pt-36">
+      <main id="main" className="flex-grow px-margin-mobile pb-24 pt-24 md:px-margin-desktop md:pb-28 md:pt-36">
         <div className="site-container">
           <GalleryClient
             photos={photos}

@@ -86,7 +86,7 @@ export default function GalleryClient({
         <p className="caps enter">The collection</p>
         <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <h1 className="display-title enter" style={{ "--i": 1 } as CSSProperties}>Gallery</h1>
-          <div role="group" aria-label="Filter by category" className="enter flex flex-wrap gap-x-7 gap-y-1" style={{ "--i": 2 } as CSSProperties}>
+          <div role="group" aria-label="Filter by category" className="enter tab-row flex flex-wrap gap-x-7 gap-y-1" style={{ "--i": 2 } as CSSProperties}>
             {FILTERS.map((filter) => (
               <button
                 key={filter}

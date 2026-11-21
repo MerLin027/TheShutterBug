@@ -22,7 +22,7 @@ export default async function About() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
 
-      <main id="main" className="flex-1 px-margin-mobile pb-24 pt-32 md:flex md:items-center md:px-margin-desktop md:pb-12 md:pt-28">
+      <main id="main" className="flex-1 px-margin-mobile pb-24 pt-24 md:flex md:items-center md:px-margin-desktop md:pb-12 md:pt-28">
         <div className="site-container grid items-start gap-12 md:grid-cols-12 md:items-center md:gap-16">
           <div className="frame-media enter aspect-[4/5] md:col-span-5 md:h-[min(calc(100svh-11rem),48rem)] md:w-auto md:max-w-full md:justify-self-start">
             {/* eslint-disable-next-line @next/next/no-img-element -- free-text URL from the Studio; any host */}

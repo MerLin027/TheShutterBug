@@ -827,3 +827,34 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 - Title clears the boat by 14–19 px at 8 sizes (390×844 to 1920×1080). Screenshots at 1917, 1366 and 390 show the boat and reflection clear of all text.
 - Title centre within 0.5 px of the screen centre.
 - All 8 viewer close paths still pass. No overflow.
+
+
+## Viewer refinements and phone pass (owner: "dealer's choice", 2026-11-21)
+
+**Phone audit (live, 390×844 and 360×740):** no sideways overflow anywhere. But:
+- Tap targets were under 44px almost everywhere: Menu 42×40, tabs 40 tall ("All" 25 wide), topic chips 39, text links 39, Studio tools 36×36, the switch 43×25, Overview links 18 tall.
+- Small caps were 11.7px.
+- The gallery filters wrapped, leaving "Urban" alone on a second line.
+- The Studio filters were cut off at "URBA" with no sign they scrolled.
+- Every page had a lot of empty space at the top.
+
+**Phone fixes**, all inside `@media (max-width: 767px)`:
+- 44px targets; 12.6px small caps and field labels.
+- One-row scrolling `.tab-row` with an edge fade.
+- Top padding `pt-24` (desktop keeps its `md:` values; the 404 and error pages gained an explicit `md:pt-32`, because they had none and the first try leaked onto desktop).
+- After: 0 small targets on 19 of 22 page checks. The remainders are "About the photographer" at 43px (rounded down by its reveal animation) and the Studio switch, which is 25px drawn but has a 45px hit area.
+
+**Viewer, all six refinements:**
+1. Phone arrows sit beside the caption, 44px.
+2. On phones the photo and caption are centred together (gap 14px) and the top bar is pinned.
+3. A click on the empty area closes. The photo, arrows and caption don't, nor does a swipe's own click: a 350 ms window, after a boolean guard was caught swallowing the next real tap.
+4. Tab and Shift+Tab are trapped inside.
+5. Closing fades out over 180 ms (unmount by timer, not animationend).
+6. Swipes follow the finger with a damped `translate`, separate from the entrance `transform`, and short drags spring back.
+
+**Verified:**
+- 19/19 viewer checks on phone and desktop.
+- All 7 Close paths still close.
+- **Desktop unchanged, proved two ways:**
+  - Pixel diffs. Two baselines of the old build differed on 5/33 pages (load timing), so the diffs alone were inconclusive. A 1–2px shift on Contact at 1024 was traced to full-page screenshot resizing, not layout: identical computed positions in the old and new builds.
+  - Layout fingerprint: every element's position, size, font, colour and padding on 13 views × 4 widths (768–1920). Old vs new differ only by added class names and the hidden phone arrows (0×0); the old build against itself showed the same two timing-noise views.

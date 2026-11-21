@@ -330,7 +330,7 @@ export default function PhotosClient() {
     <div
       role="group"
       aria-label="Filter by category"
-      className="-mx-4 mb-8 flex gap-x-7 overflow-x-auto px-4 md:mx-0 md:px-0"
+      className="tab-row -mx-4 mb-8 flex gap-x-7 overflow-x-auto px-4 md:mx-0 md:px-0"
     >
       {FILTERS.map((c) => (
         <button

@@ -11,7 +11,7 @@ import SiteFooter from "@/components/SiteFooter";
 export default function NotFound() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
-      <main id="main" className="flex flex-1 items-center px-margin-mobile pb-24 pt-32 md:px-margin-desktop">
+      <main id="main" className="flex flex-1 items-center px-margin-mobile pb-24 pt-24 md:px-margin-desktop md:pt-32">
         <div className="site-container">
           <p className="caps enter">404 · Empty frame</p>
           <h1 className="display-title enter mt-5 max-w-[14ch]" style={{ "--i": 1 } as CSSProperties}>

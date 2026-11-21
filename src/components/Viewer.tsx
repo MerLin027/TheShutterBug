@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Photo } from "@/lib/data";
@@ -36,8 +45,14 @@ export function photoMeta(p: Photo): string {
  *     sizes as the grid), and the sharp 2400px rendition fades in over it;
  *   - neighbours' sharp renditions are preloaded, so Next/Prev are instant;
  *   - each step is a functional state update, so rapid clicks all count.
- * Keyboard: ← → move, Escape closes. Touch: swipe. Focus moves in on open
- * and back to the card on close; the page behind can't scroll.
+ *
+ * Keyboard: ← → move, Escape closes, Tab stays inside the viewer. Touch:
+ * swipe, and the photo follows the finger. A click on the empty area around
+ * the photo closes. Closing fades out. Focus moves in on open and back to
+ * the card on close; the page behind can't scroll.
+ *
+ * Phones (< 768px, CSS): photo and caption are centred together and the
+ * arrows sit beside the caption, not on the photo's edges.
  *
  * Rendered into document.body (a portal), not inside the gallery. Inside,
  * any ancestor that becomes a stacking context (an opacity animation such
@@ -62,15 +77,33 @@ export default function Viewer({
   const count = photos.length;
   const [direction, setDirection] = useState(0);
   const [loaded, setLoaded] = useState<Record<string, true>>({});
+  // Closing fades out first (180 ms), then the parent unmounts the viewer.
+  const [closing, setClosing] = useState(false);
+  const dialog = useRef<HTMLDivElement>(null);
+  const figure = useRef<HTMLElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  // When the last swipe ended. The click that follows a swipe's touchend
+  // must not count as a tap on the empty area; a later tap must. (A plain
+  // boolean stayed set after a short drag and swallowed the next real tap.)
+  const swipedAt = useRef(0);
 
   const step = (delta: number) => {
     setDirection(delta);
     onStep(delta);
   };
 
-  // Keyboard, scroll lock, focus in/out.
+  const requestClose = useCallback(() => setClosing(true), []);
+
+  // Unmount once the fade has run. A timer rather than animationend, which a
+  // browser may skip (a background tab, reduced motion's near-zero duration).
+  useEffect(() => {
+    if (!closing) return;
+    const t = window.setTimeout(onClose, 190);
+    return () => window.clearTimeout(t);
+  }, [closing, onClose]);
+
+  // Scroll lock and focus in/out.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     closeButton.current?.focus();
@@ -84,13 +117,33 @@ export default function Viewer({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
       else if (e.key === "ArrowRight" && count > 1) { setDirection(1); onStep(1); }
       else if (e.key === "ArrowLeft" && count > 1) { setDirection(-1); onStep(-1); }
+      else if (e.key === "Tab" && dialog.current) {
+        // Keep focus inside: Tab from the last control goes to the first,
+        // Shift+Tab from the first to the last. The page behind is covered,
+        // so focus escaping there is focus lost.
+        const items = [...dialog.current.querySelectorAll<HTMLElement>("button")].filter(
+          (b) => b.offsetParent !== null
+        );
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement;
+        const inside = dialog.current.contains(active);
+        if (e.shiftKey && (active === first || !inside)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !inside)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [count, onClose, onStep]);
+  }, [count, requestClose, onStep]);
 
   // Preload the neighbours' sharp renditions so the next step is instant.
   useEffect(() => {
@@ -104,15 +157,47 @@ export default function Viewer({
 
   const markLoaded = (id: string) => setLoaded((m) => (m[id] ? m : { ...m, [id]: true }));
 
+  // Swipe: the photo follows the finger (a damped `translate`, which is
+  // separate from the entrance animation's `transform`), then either steps
+  // or springs back.
+  const setDrag = (px: number, animate: boolean) => {
+    const el = figure.current;
+    if (!el) return;
+    el.style.transition = animate ? "translate 320ms cubic-bezier(0.2, 0.7, 0.1, 1)" : "none";
+    el.style.translate = px ? `${px}px 0` : "";
+  };
   const onPointerDown = (e: PointerEvent) => {
     swipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const onPointerMove = (e: PointerEvent) => {
+    const s = swipeStart.current;
+    if (!s || count < 2 || e.pointerType === "mouse") return;
+    const dx = e.clientX - s.x;
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - s.y)) setDrag(dx * 0.55, false);
   };
   const onPointerUp = (e: PointerEvent) => {
     const s = swipeStart.current;
     swipeStart.current = null;
-    if (!s || count < 2) return;
+    if (!s) return;
     const dx = e.clientX - s.x;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.clientY - s.y)) step(dx < 0 ? 1 : -1);
+    if (Math.abs(dx) > 10) swipedAt.current = performance.now();
+    if (count > 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.clientY - s.y)) {
+      setDrag(0, false);
+      step(dx < 0 ? 1 : -1);
+    } else {
+      setDrag(0, true);
+    }
+  };
+  const onPointerCancel = () => {
+    swipeStart.current = null;
+    setDrag(0, true);
+  };
+
+  // A click on the empty dark area (not the photo, arrows or caption) closes.
+  const onBackdropClick = (e: MouseEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (performance.now() - swipedAt.current < 350) return;
+    requestClose();
   };
 
   // A shared ?photo= link renders this on the server too, where there is no
@@ -120,35 +205,49 @@ export default function Viewer({
   const isClient = useIsClient();
   if (!isClient) return null;
 
+  const prevButton = (className: string) => (
+    <button type="button" onClick={() => step(-1)} aria-label="Previous photograph" className={className}>
+      <ChevronLeft size={28} aria-hidden="true" />
+    </button>
+  );
+  const nextButton = (className: string) => (
+    <button type="button" onClick={() => step(1)} aria-label="Next photograph" className={className}>
+      <ChevronRight size={28} aria-hidden="true" />
+    </button>
+  );
+
   return createPortal(
     <div
+      ref={dialog}
       role="dialog"
       aria-modal="true"
       aria-label={`${photoTitle(photo)}, photograph ${index + 1} of ${count}`}
-      className="viewer"
+      className={closing ? "viewer viewer-closing" : "viewer"}
+      onClick={onBackdropClick}
     >
-      <div className="flex items-center justify-between px-margin-mobile py-4 md:px-margin-desktop">
+      <div className="viewer-top flex items-center justify-between px-margin-mobile py-4 md:px-margin-desktop">
         <span className="caps" aria-live="polite">
           {String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
         </span>
-        <button ref={closeButton} type="button" onClick={onClose} className="nav-link gap-2">
+        <button ref={closeButton} type="button" onClick={requestClose} className="nav-link gap-2">
           Close <X size={16} aria-hidden="true" />
         </button>
       </div>
 
-      <div className="viewer-stage" onPointerDown={onPointerDown} onPointerUp={onPointerUp}>
-        {count > 1 && (
-          <button
-            type="button"
-            onClick={() => step(-1)}
-            aria-label="Previous photograph"
-            className="viewer-arrow viewer-arrow-prev"
-          >
-            <ChevronLeft size={28} aria-hidden="true" />
-          </button>
-        )}
+      <div
+        className="viewer-stage"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onClick={onBackdropClick}
+      >
+        {/* Beside the photo on tablets and desktops; on a phone they would
+            sit on its edges, so there they move beside the caption. */}
+        {count > 1 && prevButton("viewer-arrow viewer-arrow-prev")}
 
         <figure
+          ref={figure}
           key={photo.id}
           className="viewer-figure"
           style={{ "--r": photo.ratio, "--dx": `${direction * 28}px` } as CSSProperties}
@@ -171,21 +270,16 @@ export default function Viewer({
           />
         </figure>
 
-        {count > 1 && (
-          <button
-            type="button"
-            onClick={() => step(1)}
-            aria-label="Next photograph"
-            className="viewer-arrow viewer-arrow-next"
-          >
-            <ChevronRight size={28} aria-hidden="true" />
-          </button>
-        )}
+        {count > 1 && nextButton("viewer-arrow viewer-arrow-next")}
       </div>
 
-      <div className="px-margin-mobile pb-7 pt-4 text-center md:px-margin-desktop">
-        <p className="cap-title">{photoTitle(photo)}</p>
-        {photoMeta(photo) && <p className="frame-meta mt-1">{photoMeta(photo)}</p>}
+      <div className="viewer-caption px-margin-mobile pb-7 pt-4 text-center md:px-margin-desktop">
+        {count > 1 && prevButton("viewer-arrow-inline md:hidden")}
+        <div>
+          <p className="cap-title">{photoTitle(photo)}</p>
+          {photoMeta(photo) && <p className="frame-meta mt-1">{photoMeta(photo)}</p>}
+        </div>
+        {count > 1 && nextButton("viewer-arrow-inline md:hidden")}
       </div>
     </div>,
     document.body

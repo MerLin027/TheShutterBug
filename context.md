@@ -47,6 +47,19 @@ build history**: where they disagree with this section, this section wins.
 - **One navbar** for the public site, rendered by the root layout (outside `template.tsx`), so it persists across pages; it returns null on `/admin`. When the page changes, the current-page underline retracts and the new one draws in. Pages must not render `<SiteNav />` themselves.
 - **Home hero composition:** the title group sits above the middle of the photo (`.hero-top { bottom: 51% }`) and the subtitle and link below it (`.hero-bottom { top: 72% }`), framing the boat and its reflection; it's centred horizontally. Measured clear of the boat from 390 to 1920 wide.
 - **Footer:** wordmark, one line, ©. No links.
+- **Phones (2026-11-21), all inside `@media (max-width: 767px)`, so tablets and desktops are untouched:**
+  - Tap targets are ≥44px: nav, tabs, text links, topic chips, buttons, the wordmark, Studio tools; the switch gets an invisible hit margin.
+  - Small caps and field labels go from 11.7px to 12.6px.
+  - Gallery and Studio filters are one row that scrolls sideways (`.tab-row`, fade at the edge).
+  - Top padding is one step less.
+  - **Desktop proof:** a layout fingerprint of 5,000+ elements (position, size, font, colour, padding) on 13 views at 768, 1024, 1366 and 1920 is identical to the build before; the only differences are added class names.
+  - Don't use `pointer: coarse` for these: touchscreen laptops report it.
+- **Viewer (2026-11-21):**
+  - Closing fades out (180 ms).
+  - A click on the empty area around the photo closes; a click on the photo, arrows or caption doesn't, and neither does the click that ends a swipe (350 ms guard).
+  - Tab is trapped inside.
+  - Swipes follow the finger (`translate`, damped).
+  - On phones the arrows sit beside the caption and the photo and caption are centred together.
 - **Scale (2026-11-21):**
   - The root is 90% on phones and **81% at ≥1024px on every page**, so a visitor at 100% zoom sees what the owner saw at 90%. **Never give one page a different root**: it resizes the shared navbar between pages (tried for Home, rejected as ugly). Home is larger instead through `.hero-content { zoom: 1.2 }` at ≥1024px (title 137px at 1366, 146px at 1920).
   - Display titles max out at 4.25rem.
