@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { fetchFeaturedPhotos, fetchSiteContent, heroImage, workStatementFor } from "@/lib/data";
+import { fetchFeaturedPhotos, fetchPhotos, fetchSiteContent, heroImage, workStatementFor } from "@/lib/data";
 import SiteFooter from "@/components/SiteFooter";
 import Hero from "@/components/Hero";
 import SelectedFrames from "@/components/SelectedFrames";
@@ -15,6 +15,11 @@ export default async function Home() {
     fetchFeaturedPhotos(),
     fetchSiteContent(),
   ]);
+  // Nothing starred yet: show the first six in the owner's gallery order, so
+  // Home always has photographs below the statement (2026-11-21). Starring
+  // any photo in the Studio switches this back to "Selected Work".
+  const frames = featured.length > 0 ? featured : (await fetchPhotos()).photos.slice(0, 6);
+  const framesAreFeatured = featured.length > 0;
   // Studio → Home page: the statement can be switched off or rewritten.
   const statement = workStatementFor(content);
 
@@ -30,8 +35,15 @@ export default async function Home() {
             <div className="site-container grid gap-10 md:grid-cols-12">
               <p className="caps reveal md:col-span-3">The work</p>
               <div className="md:col-span-9">
+                {/* Each word "develops" as it scrolls past: dim to full,
+                    like a print in the tray (globals.css, .develop-word).
+                    The sentence is still one paragraph to screen readers. */}
                 <p className="reveal font-[family-name:var(--font-display)] text-[clamp(1.75rem,3.4vw,3rem)] font-light leading-[1.25] text-fg">
-                  {statement}
+                  {statement.split(/(\s+)/).map((part, i) =>
+                    /^\s+$/.test(part) ? part : (
+                      <span key={i} className="develop-word">{part}</span>
+                    )
+                  )}
                 </p>
                 <Link href="/about" className="text-link reveal mt-8">
                   About the photographer
@@ -42,7 +54,18 @@ export default async function Home() {
           </section>
         )}
 
-        <SelectedFrames photos={featured} />
+        <SelectedFrames photos={frames} featured={framesAreFeatured} />
+
+        {/* Closing line: the page ends on the way into the gallery rather
+            than just stopping. It tightens into place as it arrives. */}
+        <section aria-label="The collection" className="px-margin-mobile pb-28 pt-8 md:px-margin-desktop md:pb-40 md:pt-12">
+          <div className="site-container">
+            <Link href="/work" className="closing-link">
+              <span>See the whole collection</span>
+              <ArrowRight aria-hidden="true" className="closing-arrow" />
+            </Link>
+          </div>
+        </section>
       </main>
       <SiteFooter />
     </div>

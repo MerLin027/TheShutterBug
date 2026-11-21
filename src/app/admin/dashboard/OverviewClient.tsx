@@ -97,7 +97,7 @@ export default function OverviewClient() {
   if (content?.bio?.includes("�"))
     attention.push({ text: "The About bio contains an unreadable character (�).", href: "/admin/dashboard/about", action: "Fix the text" });
   if (photos && photos.length > 0 && featured.length === 0)
-    attention.push({ text: "No photographs are featured, so Selected work is hidden on the home page.", href: "/admin/dashboard/photos", action: "Star some" });
+    attention.push({ text: "No photographs are featured, so the home page shows the first six from the gallery instead.", href: "/admin/dashboard/photos", action: "Star some" });
   if (photos && photos.length === 0)
     attention.push({ text: "The gallery is empty.", href: "/admin/dashboard/photos", action: "Upload photographs" });
 

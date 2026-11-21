@@ -47,6 +47,12 @@ build history**: where they disagree with this section, this section wins.
 - **One navbar** for the public site, rendered by the root layout (outside `template.tsx`), so it persists across pages; it returns null on `/admin`. When the page changes, the current-page underline retracts and the new one draws in. Pages must not render `<SiteNav />` themselves.
 - **Home hero composition:** the title group sits above the middle of the photo (`.hero-top { bottom: 51% }`) and the subtitle and link below it (`.hero-bottom { top: 72% }`), framing the boat and its reflection; it's centred horizontally. Measured clear of the boat from 390 to 1920 wide.
 - **Footer:** wordmark, one line, ©. No links.
+- **Home scroll (2026-11-21).** All scroll-driven CSS: no JS, off under reduced motion (listed by name, because scroll-linked animations ignore the global duration override), and Firefox shows the finished page.
+  - The hero draws in from the edges and dims as it leaves (`clip-path` on `.hero`, `background-color` on `.hero-scrim`).
+  - "The work" words develop from dim to full as they pass (`.develop-word`).
+  - Home's photos drift inside their frames, and on ≥1024px the middle column lags. This needs a **named** `view-timeline` on `.frame-media`: its `overflow: hidden` makes it a scroll container, so an anonymous `view()` on the img never moves.
+  - A closing "See the whole collection →" link tightens into place.
+  - **With nothing starred, Home shows the first six gallery photos as "From the Gallery"**; starring any switches it back to "Selected Work".
 - **Phones (2026-11-21), all inside `@media (max-width: 767px)`, so tablets and desktops are untouched:**
   - Tap targets are ≥44px: nav, tabs, text links, topic chips, buttons, the wordmark, Studio tools; the switch gets an invisible hit margin.
   - Small caps and field labels go from 11.7px to 12.6px.

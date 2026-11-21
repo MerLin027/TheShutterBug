@@ -1398,3 +1398,133 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     .viewer-caption { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
     .viewer-arrow-inline { display: inline-flex; }
 }
+
+/* ── Home scroll pass (owner, 2026-11-21: "while scrolling down it seems too
+   basic"). All scroll-driven CSS, no JavaScript; browsers without
+   scroll-driven animation (Firefox today) simply show the finished page.
+   Each uses its own property (clip-path, background-color, color,
+   translate, scale, letter-spacing), so none fight the existing hero,
+   parallax and reveal animations, which all stay. ─────────────────────── */
+
+/* 1. Hero → page: as the hero scrolls away the photograph draws in from the
+      edges and dims, like a print being laid down on the paper. */
+@supports (animation-timeline: scroll()) {
+    .hero {
+        animation: hero-print linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 100dvh;
+    }
+    .hero-scrim {
+        animation: hero-dim linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 100dvh;
+    }
+}
+@keyframes hero-print {
+    0%, 10% { clip-path: inset(0 0 0 0 round 0); }
+    100%    { clip-path: inset(6dvh 4.5vw 0 4.5vw round 14px); }
+}
+@keyframes hero-dim {
+    from { background-color: rgb(16 15 13 / 0); }
+    to   { background-color: rgb(16 15 13 / 0.45); }
+}
+
+/* 2. "The work": each word develops as it scrolls up the screen, from dim
+      to full, tied to scroll position — read along with the page. */
+@supports (animation-timeline: view()) {
+    .develop-word {
+        animation: develop-word linear both;
+        animation-timeline: view();
+        animation-range: entry 70% cover 42%;
+    }
+}
+@keyframes develop-word {
+    from { color: rgb(236 230 220 / 0.16); }
+    to   { color: var(--color-fg); }
+}
+
+/* 3. Home's photographs: each drifts inside its frame as it passes (the
+      frame stays put, the print moves), and on a three-column desktop the
+      middle column runs a little slower than its neighbours, for depth. */
+@supports (animation-timeline: view()) {
+    /* The frame clips its print (overflow: hidden), which makes it a scroll
+       container: an anonymous view() on the img would track the frame, which
+       never scrolls. A named timeline on the frame tracks the page. */
+    .home-frames .frame-media { view-timeline: --frame block; }
+    .home-frames .frame-media > img {
+        scale: 1.12;
+        animation: frame-drift linear both;
+        animation-timeline: --frame;
+        animation-range: cover;
+    }
+    @media (min-width: 1024px) {
+        .home-frames [role="listitem"]:nth-child(3n + 2) {
+            animation: frame-lag linear both;
+            animation-timeline: view();
+            animation-range: cover;
+        }
+    }
+}
+@keyframes frame-drift {
+    from { translate: 0 -5.5%; }
+    to   { translate: 0 5.5%; }
+}
+@keyframes frame-lag {
+    from { translate: 0 56px; }
+    to   { translate: 0 -56px; }
+}
+
+/* 4. Closing line before the footer: a large serif way into the gallery
+      that tightens into place as it arrives. */
+.closing-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.25rem, 6vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+    transition: color 300ms var(--ease-brand), scale 220ms var(--ease-brand);
+}
+.closing-link:hover { color: #fff8ec; }
+.closing-link:active { scale: 0.985; transition-duration: 90ms; }
+.closing-arrow {
+    flex: none;
+    width: 0.55em;
+    height: 0.55em;
+    stroke-width: 1.25;
+    transition: translate 420ms var(--ease-brand);
+}
+.closing-link:hover .closing-arrow { translate: 0.18em 0; }
+@supports (animation-timeline: view()) {
+    .closing-link > span {
+        animation: closing-in linear both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 38%;
+    }
+}
+@keyframes closing-in {
+    from { letter-spacing: 0.1em; opacity: 0.2; }
+    to   { letter-spacing: -0.01em; opacity: 1; }
+}
+/* A phone line only just fits; wide tracking would rewrap it mid-scroll. */
+@media (max-width: 767px) {
+    @keyframes closing-in {
+        from { letter-spacing: 0.02em; opacity: 0.2; }
+        to   { letter-spacing: -0.01em; opacity: 1; }
+    }
+}
+
+/* Reduced motion: none of the above. (Scroll-linked animations ignore the
+   global duration override, so they have to be switched off by name.) */
+@media (prefers-reduced-motion: reduce) {
+    .hero, .hero-scrim, .develop-word,
+    .home-frames .frame-media > img,
+    .home-frames [role="listitem"],
+    .closing-link > span {
+        animation: none !important;
+    }
+    .home-frames .frame-media > img { scale: none; }
+}

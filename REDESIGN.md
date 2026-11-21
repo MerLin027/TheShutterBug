@@ -858,3 +858,23 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 - **Desktop unchanged, proved two ways:**
   - Pixel diffs. Two baselines of the old build differed on 5/33 pages (load timing), so the diffs alone were inconclusive. A 1–2px shift on Contact at 1024 was traced to full-page screenshot resizing, not layout: identical computed positions in the old and new builds.
   - Layout fingerprint: every element's position, size, font, colour and padding on 13 views × 4 widths (768–1920). Old vs new differ only by added class names and the hidden phone arrows (0×0); the old build against itself showed the same two timing-noise views.
+
+
+## Home scroll pass (owner: "while scrolling down it seems too basic", 2026-11-21)
+**Audit:** below the hero there was one paragraph ("The work"), then the footer. Selected Work was hidden because nothing is starred.
+
+**Added** (all existing animations kept; scroll-driven CSS only):
+1. **Hero handoff:** `.hero` `clip-path` from `inset(0)` to `inset(6dvh 4.5vw 0 round 14px)`, and `.hero-scrim` darkens to 0.45 over the first screen of scroll.
+2. **Words develop:** the statement is split into `.develop-word` spans (still one `<p>`); each goes from 16% to full colour between `entry 70%` and `cover 42%`.
+3. **Photos:**
+   - Inner drift of ±5.5% at `scale: 1.12`, on a named `view-timeline: --frame` (an anonymous `view()` didn't move: the frame's `overflow: hidden` makes it a scroll container; caught by the test).
+   - On ≥1024px the middle column lags ±56px.
+   - Owner's call deferred to me, so: **nothing starred → the first six gallery photos as "From the Gallery"**. The Studio Overview hint now says so.
+4. **Closing link:** "See the whole collection →" (serif, clamp to 5rem). Letter-spacing tightens 0.1em → -0.01em as it enters (0.02em start on phones, so the line can't rewrap mid-scroll).
+
+**Verified** (production build), 21/21 at 1366×768 and 390×844:
+- Each effect measured at several scroll positions.
+- The existing hero lift/fade still runs.
+- No column lag on phones.
+- No overflow at any scroll position; 0 page errors.
+- Reduced motion: no clip, words at full colour.
