@@ -812,7 +812,8 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 }
 
 /* Navbar wordmark with the site's mark before it (owner, 2026-11-22). The
-   mark is artwork, not a photograph; a hairline ring keeps its black edge
+   mark is artwork, not a photograph, cut as a circle (the owner found the
+   rounded square "really bad"); a hairline ring keeps its black edge
    readable on the dark bar. */
 .brand {
     display: inline-flex;
@@ -823,8 +824,8 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     width: 2.1rem;
     height: 2.1rem;
     flex: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18);
 }
 
 .nav-link {
