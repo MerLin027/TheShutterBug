@@ -1209,3 +1209,48 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 }
 
 } /* end @layer components (Phase R) */
+
+/* ── Motion pass (owner, 2026-11-21) ─────────────────────────────────────
+   Adds motion only where there was none; every animation above stays.
+   Unlayered, after the components layer, so these transition lists are
+   the ones that apply. Each restates the existing list and adds `scale`,
+   because a new `transition` would otherwise drop the hover fades.
+
+   Press feedback uses the separate `scale` property, not `transform`: the
+   menu links run a `transform` entrance that holds its last frame, and a
+   pressed `transform` would never show through it. Down fast (90ms), back
+   slower (220ms): the :active rule's own transition is the one used while
+   pressing. */
+.tab           { transition: color var(--duration-micro) var(--ease-brand), scale 220ms var(--ease-brand); }
+.nav-link      { transition: color 200ms var(--ease-brand), scale 220ms var(--ease-brand); }
+.text-link     { transition: scale 220ms var(--ease-brand); }
+.studio-nav-row { transition: color 200ms var(--ease-brand), scale 220ms var(--ease-brand); }
+.switch        { transition: background-color 250ms var(--ease-brand), border-color 250ms var(--ease-brand), scale 220ms var(--ease-brand); }
+.menu-link     { transition: scale 220ms var(--ease-brand); }
+.photo-card .frame-media { transition: scale 260ms var(--ease-brand); }
+
+.tab:active, .nav-link:active, .text-link:active, .menu-link:active {
+    scale: 0.96;
+    transition-duration: 90ms;
+}
+.studio-nav-row:active { scale: 0.98; transition-duration: 90ms; }
+.switch:active:not(:disabled) { scale: 0.94; transition-duration: 90ms; }
+.photo-card:active .frame-media { scale: 0.985; transition-duration: 90ms; }
+
+/* Page change: the new page's content fades in (template.tsx adds
+   .page-enter on client-side navigations only, never on the first load).
+   Opacity only: a transform here would become the containing block for
+   the gallery's position:fixed viewer while it ran. Enter-only by design;
+   an exit would have to hold the old page, which is what froze clicks
+   under the experimental view transitions removed in Phase R. */
+@keyframes page-in { from { opacity: 0; } }
+.page-enter main { animation: page-in 280ms var(--ease-brand) both; }
+
+/* Gallery filter: the new set fades in instead of snapping. Opacity only,
+   for the same reason as above (the viewer lives inside). */
+.filter-swap { animation: page-in 300ms var(--ease-brand) both; }
+
+/* Messages that appear in answer to an action (a field error, "Message
+   sent", "Saved"): a short fade and settle, not a pop. */
+@keyframes msg-in { from { opacity: 0; transform: translateY(-3px); } }
+.field-error, .msg-in { animation: msg-in 220ms var(--ease-brand) both; }

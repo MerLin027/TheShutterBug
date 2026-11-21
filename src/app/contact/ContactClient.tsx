@@ -208,7 +208,7 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
             {status === "success" && (
               <div
                 role="status"
-                className="mb-8 flex items-start gap-3 rounded-control border border-line bg-card px-4 py-3"
+                className="msg-in mb-8 flex items-start gap-3 rounded-control border border-line bg-card px-4 py-3"
               >
                 <CircleCheck size={20} className="mt-0.5 text-accent" aria-hidden="true" />
                 {/* Owner's decision (2026-11-14): no reply promise. Nothing
@@ -272,7 +272,7 @@ export default function ContactClient({ photo }: { photo: Photo | null }) {
               </Field>
 
               {status === "error" && (
-                <div role="alert" className="flex items-start gap-2 text-error">
+                <div role="alert" className="msg-in flex items-start gap-2 text-error">
                   <CircleAlert size={18} className="mt-0.5" aria-hidden="true" />
                   <p className="text-body-md">{errorMsg}</p>
                 </div>

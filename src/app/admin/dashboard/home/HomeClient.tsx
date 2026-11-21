@@ -282,7 +282,7 @@ export default function HomeClient() {
 
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-8 md:px-8 md:pt-12">
         {loadError && (
-          <p role="alert" className="mb-8 text-body-md text-error">
+          <p role="alert" className="msg-in mb-8 text-body-md text-error">
             {loadError}
           </p>
         )}
@@ -333,7 +333,7 @@ export default function HomeClient() {
                 />
               </div>
               {uploadError && (
-                <p role="alert" className="text-body-md text-error">
+                <p role="alert" className="msg-in text-body-md text-error">
                   {uploadError}
                 </p>
               )}
@@ -360,7 +360,7 @@ export default function HomeClient() {
                 </button>
               </div>
               {uploadError && (
-                <p role="alert" className="mt-4 text-body-md text-error">
+                <p role="alert" className="msg-in mt-4 text-body-md text-error">
                   {uploadError}
                 </p>
               )}
@@ -438,12 +438,12 @@ export default function HomeClient() {
             )}
           </button>
           {saved && (
-            <p role="status" className="text-label text-fg-2">
+            <p role="status" className="msg-in text-label text-fg-2">
               Saved. The home page is updated.
             </p>
           )}
           {saveError && (
-            <p role="alert" className="text-body-md text-error">
+            <p role="alert" className="msg-in text-body-md text-error">
               {saveError}
             </p>
           )}

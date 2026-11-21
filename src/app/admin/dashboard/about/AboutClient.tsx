@@ -209,7 +209,7 @@ export default function AboutClient() {
           </div>
 
           {error && (
-            <p role="alert" className="text-body-md text-error">
+            <p role="alert" className="msg-in text-body-md text-error">
               {error}
             </p>
           )}
@@ -226,7 +226,7 @@ export default function AboutClient() {
               )}
             </button>
             {saved && (
-              <p role="status" className="text-label text-fg-2">
+              <p role="status" className="msg-in text-label text-fg-2">
                 Saved. The About page is updated.
               </p>
             )}

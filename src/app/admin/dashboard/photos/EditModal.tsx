@@ -171,7 +171,7 @@ export default function EditModal({
         </label>
 
         {error && (
-          <p role="alert" className="text-body-md text-error">
+          <p role="alert" className="msg-in text-body-md text-error">
             {error}
           </p>
         )}

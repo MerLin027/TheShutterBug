@@ -70,9 +70,13 @@ export default function GalleryClient({
   // A shared ?photo= link opens the viewer once. Changing filter remounts the
   // browser, so the hand-off is cleared then — or it would reopen every time.
   const [sharedPhotoId, setSharedPhotoId] = useState(initialPhotoId);
+  // After the first filter change, the new set fades in (.filter-swap)
+  // instead of snapping. Not on the first render: the page has its own entry.
+  const [swapped, setSwapped] = useState(false);
   const chooseFilter = (f: string) => {
     setActiveFilter(f);
     setSharedPhotoId(undefined);
+    setSwapped(true);
   };
   const visible = activeFilter === "All" ? photos : photos.filter((p) => p.category === activeFilter);
 
@@ -98,32 +102,34 @@ export default function GalleryClient({
         </div>
       </header>
 
-      {failed ? (
-        <LoadFailedState />
-      ) : photos.length === 0 ? (
-        <Notice icon={Camera} title="No Photographs Yet">
-          <p className="lede mt-4 max-w-md">The collection is empty for now.</p>
-        </Notice>
-      ) : visible.length === 0 ? (
-        <Notice icon={FunnelX} title={`No ${activeFilter} Photographs Yet`}>
-          <button type="button" onClick={() => chooseFilter("All")} className="text-link mt-6">
-            Show all
-          </button>
-        </Notice>
-      ) : (
-        <PhotoBrowser
-          // Re-key on filter so the masonry rebalances and any open photo
-          // index refers to the list being shown.
-          key={activeFilter}
-          photos={visible}
-          label={activeFilter === "All" ? "All photographs" : `${activeFilter} photographs`}
-          basePath="/work"
-          query={activeFilter === "All" ? {} : { filter: activeFilter }}
-          initialColumns={initialColumns}
-          initialPhotoId={sharedPhotoId}
-          eager={6}
-        />
-      )}
+      <div key={activeFilter} className={swapped ? "filter-swap" : undefined}>
+        {failed ? (
+          <LoadFailedState />
+        ) : photos.length === 0 ? (
+          <Notice icon={Camera} title="No Photographs Yet">
+            <p className="lede mt-4 max-w-md">The collection is empty for now.</p>
+          </Notice>
+        ) : visible.length === 0 ? (
+          <Notice icon={FunnelX} title={`No ${activeFilter} Photographs Yet`}>
+            <button type="button" onClick={() => chooseFilter("All")} className="text-link mt-6">
+              Show all
+            </button>
+          </Notice>
+        ) : (
+          <PhotoBrowser
+            // Re-key on filter so the masonry rebalances and any open photo
+            // index refers to the list being shown.
+            key={activeFilter}
+            photos={visible}
+            label={activeFilter === "All" ? "All photographs" : `${activeFilter} photographs`}
+            basePath="/work"
+            query={activeFilter === "All" ? {} : { filter: activeFilter }}
+            initialColumns={initialColumns}
+            initialPhotoId={sharedPhotoId}
+            eager={6}
+          />
+        )}
+      </div>
     </>
   );
 }

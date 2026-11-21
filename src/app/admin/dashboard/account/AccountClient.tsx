@@ -216,7 +216,7 @@ export default function AccountClient() {
           </div>
 
           {error && (
-            <p role="alert" className="text-body-md text-error">
+            <p role="alert" className="msg-in text-body-md text-error">
               {error}
             </p>
           )}
@@ -233,7 +233,7 @@ export default function AccountClient() {
               )}
             </button>
             {done && (
-              <p role="status" className="text-label text-fg-2">
+              <p role="status" className="msg-in text-label text-fg-2">
                 {done}
               </p>
             )}

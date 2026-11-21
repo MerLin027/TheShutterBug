@@ -768,3 +768,19 @@ Owner answers for D10: **no watermark**; **hide image URLs** from right-click an
 
 - Titles: 72 → 55 px. Home title: 137 → 123 px.
 - No overflow at any size.
+
+**Task 2, motion (done):** every existing animation is kept.
+- **Page change:** `src/app/template.tsx` adds `.page-enter` on client-side navigations only. A module flag is set after the first mount, so the first load and the hero entrance are untouched. `main` fades in over 280 ms, opacity only (a transform would become the containing block for the fixed viewer). Enter-only by design.
+- **Press:** `scale` 0.96 on nav links, tabs, text links and menu links; 0.98 on Studio rows; 0.94 on the switch; 0.985 on the photo-card frame. 90 ms in, 220 ms out. The separate `scale` property is used because `.menu-link` holds a `transform` entrance that would mask a pressed `transform`. Each transition list restates the original, so the hover fades survive.
+- **Gallery filter:** the result is wrapped in a `key`ed `.filter-swap` (opacity, 300 ms) after the first change only.
+- **Messages:** `.field-error` and `.msg-in` (15 status/alert messages across Contact and the Studio) get a 220 ms fade that settles 3 px.
+- **Verified** (production build, 1366×768), 13/13:
+  - No fade on the first load, and the hero animations are intact.
+  - Navigating to /about fades in over 280 ms.
+  - Four header clicks 60 ms apart end on the last one (no swallowed clicks).
+  - The nav link and tab press to 0.96.
+  - The filter swap fades, and the first render doesn't.
+  - The viewer opened mid-fade still covers the screen (top 0, height 768).
+  - Contact errors fade in.
+  - Reduced motion: the fade takes 0.01 ms.
+  - 0 console or hydration errors.

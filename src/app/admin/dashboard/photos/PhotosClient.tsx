@@ -486,7 +486,7 @@ export default function PhotosClient() {
             Cloudinary. It can&apos;t be undone.
           </p>
           {deleteError && (
-            <p role="alert" className="text-body-md text-error">
+            <p role="alert" className="msg-in text-body-md text-error">
               {deleteError}
             </p>
           )}

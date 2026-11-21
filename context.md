@@ -47,6 +47,12 @@ build history**: where they disagree with this section, this section wins.
 - **Footer:** wordmark, one line, ©. No links.
 - **Scale (2026-11-21):** the root is 90% on phones and **81% at ≥1024px**, so a visitor at 100% zoom sees what the owner saw at 90%. Display titles max out at 4.25rem. **About and Contact fit one screen** on 1024–1920px desktops: the About portrait's height follows the screen (4:5, capped), and Contact shows one of the owner's photos beside the form (the first Selected Work photo, else the first in the gallery; desktop only).
 - **Copy deterrent (public site only):** `src/components/CopyGuard.tsx` turns off right-click (except in text fields) and swallows F12, Ctrl/⌘+Shift+I/J/C, ⌘⌥I/J/C, Ctrl/⌘+U and Ctrl/⌘+S. It's a deterrent, not a lock: dev tools stay reachable from the browser menu. The Studio is exempt.
+- **Motion added (2026-11-21), on top of all the existing animations, which stay:**
+  - Page change: the new page's `main` fades in over 280 ms, on client-side navigations only (`src/app/template.tsx`), opacity only. No exit animation: an exit has to hold the old page, which is what froze clicks under the removed view transitions.
+  - Press feedback (the separate `scale` property, 90 ms down / 220 ms back) on nav links, tabs, text links, menu links, Studio rows, the switch and photo cards.
+  - The gallery filter set fades in (`.filter-swap`, opacity only, because the fixed viewer lives inside).
+  - Field errors and action messages fade in (`.msg-in`).
+  - Deliberately not animated: the footer, focus rings, Studio lists.
 - **Text and controls:** headings are in Title Case. Every text field shares one underline style, with browser autofill painted over. Busy buttons keep full colour (`aria-busy`).
 - **Security (Phase D):**
   - CSP keeps `script-src 'unsafe-inline'`, because nonces would make every page dynamic. `img-src https:`, because the About portrait is a free-text URL.

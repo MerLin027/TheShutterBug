@@ -272,7 +272,7 @@ export default function UploadModal({
         </div>
 
         {error && (
-          <p role="alert" className="text-body-md text-error">
+          <p role="alert" className="msg-in text-body-md text-error">
             {error}
           </p>
         )}
