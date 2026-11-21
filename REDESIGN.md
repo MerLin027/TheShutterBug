@@ -942,3 +942,13 @@ Verified: local API against the real DB, read-only (9/9: four empty fields → 4
 - **Dead code removed:** `Photo.aspect` + `aspectClass`, `Photo.frame`, `fetchFeaturedPhotos` (and its unused `limit`), the prev/next neighbours `fetchLightbox` computed for a page that now only redirects, the pre-D10 `cloudinaryUrl` / `cloudinarySrcSet` / `imageUrl` fallback (the API strips `imageUrl` from every response), and `images.remotePatterns` in `next.config.ts` (nothing uses `next/image`).
 
 Verified on a local production build: `/work` at 375 / 768 / 900 / 1366 px — server sends 3 arrangements, 1 remains after load with 1 / 2 / 2 / 3 columns, layout shift 0, no image downloaded twice, the viewer opens and closes; `/`, `/about`, `/contact`, `/work?filter=Nature` 200; `/lightbox/<id>` 307 to `/work?photo=<id>`, bad ids 404; `tsc`, `eslint src backend`, `next build`.
+
+## Site logo (owner, 2026-11-22: "use it as a logo for the site")
+
+The owner's artwork (`src/wp14667430.jpg`, a teal planet in a white triangle on a starfield; kept out of git) is the site's mark. The owner chose "tab icon + navbar mark".
+
+- Cropped to the planet and triangle (1100 px square from the 1440 original; the stars alone turned to noise at icon size) and written with sharp as palette PNGs: `src/app/icon.png` (256 px, the tab and bookmark icon), `src/app/apple-icon.png` (180 px, iOS home screen) and `src/assets/logo-mark.png` (128 px).
+- The default Next.js `favicon.ico` was removed so browsers use the new icon.
+- `SiteNav` shows the mark before "The Shutter Bug" (`.brand`, `.brand-mark` in globals.css): 2.1rem with rounded corners and a hairline ring. It is decorative (`alt=""`), so the link's name is still "The Shutter Bug". The footer, the Studio and the sign-in page are unchanged.
+
+Verified on a local production build: both icons are served (200, image/png) and linked in `<head>` with their sizes; the mark loads at 27 px on desktop and 30 px on a phone, centred on the wordmark, on `/` and `/work`; it doesn't appear in the Studio. `tsc`, `eslint src`, `next build`.

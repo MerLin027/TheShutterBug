@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+// The site's mark (owner, 2026-11-22), cropped from their artwork. Imported,
+// so Next serves it hashed and cached long-term; also the tab icon
+// (src/app/icon.png, apple-icon.png).
+import logoMark from "@/assets/logo-mark.png";
 
 const LINKS = [
   { href: "/work", label: "Gallery" },
@@ -62,7 +66,10 @@ export default function SiteNav() {
         aria-label="Primary"
         className="site-container relative flex h-[4.75rem] items-center justify-between"
       >
-        <Link href="/" className="wordmark" aria-current={pathname === "/" ? "page" : undefined}>
+        <Link href="/" className="wordmark brand" aria-current={pathname === "/" ? "page" : undefined}>
+          {/* Decorative: the link's name is the text beside it. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- a 128px static mark; no next/image by decision */}
+          <img src={logoMark.src} alt="" aria-hidden="true" width={128} height={128} className="brand-mark" />
           The Shutter Bug
         </Link>
 

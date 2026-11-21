@@ -811,6 +811,22 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     white-space: nowrap;
 }
 
+/* Navbar wordmark with the site's mark before it (owner, 2026-11-22). The
+   mark is artwork, not a photograph; a hairline ring keeps its black edge
+   readable on the dark bar. */
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+.brand-mark {
+    width: 2.1rem;
+    height: 2.1rem;
+    flex: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
 .nav-link {
     position: relative;
     display: inline-flex;
