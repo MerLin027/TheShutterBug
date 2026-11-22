@@ -3,6 +3,8 @@ import SiteFooter from "@/components/SiteFooter";
 import { fetchSiteContent, splitBio } from "@/lib/data";
 
 // A Save in Studio revalidates this immediately; 60 s is only the ceiling.
+export const metadata = { title: "About — The Shutter Bug" };
+
 export const revalidate = 60;
 
 /**

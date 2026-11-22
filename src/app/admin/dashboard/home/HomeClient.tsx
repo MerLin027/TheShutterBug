@@ -11,7 +11,7 @@ import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
-import { fitForUpload, MAX_SOURCE_BYTES } from "@/lib/fitUpload";
+import { fitForUpload, MAX_SOURCE_BYTES, ACCEPTED_IMAGE_TYPES, ACCEPT_ATTR, ACCEPTED_LABEL } from "@/lib/fitUpload";
 import { revalidatePublicPages } from "../../actions";
 
 /** In step with backend/models/SiteContent.js and config/cloudinary.js. */
@@ -170,8 +170,8 @@ export default function HomeClient() {
     e.target.value = ""; // picking the same file again still fires
     if (!f) return;
     setUploadError("");
-    if (!f.type.startsWith("image/")) {
-      setUploadError("Please choose an image file (JPEG, PNG, WebP…).");
+    if (!ACCEPTED_IMAGE_TYPES.includes(f.type)) {
+      setUploadError(`Please choose a photograph: ${ACCEPTED_LABEL}.`);
       return;
     }
     if (f.size > MAX_SOURCE_BYTES) {
@@ -321,7 +321,7 @@ export default function HomeClient() {
           <input
             ref={fileInput}
             type="file"
-            accept="image/*"
+            accept={ACCEPT_ATTR}
             className="sr-only"
             tabIndex={-1}
             aria-hidden="true"

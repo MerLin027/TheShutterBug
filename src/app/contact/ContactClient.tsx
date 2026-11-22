@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, useRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { apiUrl } from "@/lib/api";
 import SiteFooter from "@/components/SiteFooter";
 import Spinner from "@/components/Spinner";
@@ -165,6 +165,19 @@ export default function ContactClient() {
   }
 
   const isLoading = status === "loading";
+
+  // The API sleeps when idle (Render's free tier) and takes up to ~30 s to
+  // wake. A bare spinner for that long reads as broken, and invites a second
+  // click (2026-11-22 audit, FE-2). After 3 s, say what is happening.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!isLoading) return;
+    const t = window.setTimeout(() => setSlow(true), 3000);
+    return () => {
+      window.clearTimeout(t);
+      setSlow(false);
+    };
+  }, [isLoading]);
   const invalid = (field: keyof FieldErrors) =>
     fieldErrors[field]
       ? { "aria-invalid": true as const, "aria-describedby": `${field}-error` }
@@ -291,6 +304,11 @@ export default function ContactClient() {
                   )}
                 </span>
               </button>
+              {isLoading && slow && (
+                <p role="status" className="msg-in text-label text-fg-3">
+                  Waking the server after a quiet spell. This can take up to half a minute; your message is on its way.
+                </p>
+              )}
             </form>
           </div>
         </div>

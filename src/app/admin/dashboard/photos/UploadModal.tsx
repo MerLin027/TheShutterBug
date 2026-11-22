@@ -13,7 +13,7 @@ import { CATEGORIES, CATEGORY_LABELS } from "@/lib/categories";
 import StudioModal from "@/components/StudioModal";
 import Spinner from "@/components/Spinner";
 import { CloudUpload } from "lucide-react";
-import { fitForUpload, MAX_SOURCE_BYTES } from "@/lib/fitUpload";
+import { fitForUpload, MAX_SOURCE_BYTES, ACCEPTED_IMAGE_TYPES, ACCEPT_ATTR, ACCEPTED_LABEL } from "@/lib/fitUpload";
 
 /*
  * Size: a file over the image host's 10 MB cap is no longer refused. It is
@@ -47,8 +47,8 @@ export default function UploadModal({
 
   /** Client-side file validation (addition #4). */
   function validateFile(f: File): string | null {
-    if (!f.type.startsWith("image/")) {
-      return "Please select an image file (JPEG, PNG, WebP, etc.)";
+    if (!ACCEPTED_IMAGE_TYPES.includes(f.type)) {
+      return `Please choose a photograph: ${ACCEPTED_LABEL}.`;
     }
     if (f.size > MAX_SOURCE_BYTES) {
       return `File too large (${(f.size / 1024 / 1024).toFixed(0)} MB). Maximum is ${MAX_SOURCE_BYTES / 1024 / 1024} MB.`;
@@ -219,7 +219,7 @@ export default function UploadModal({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={ACCEPT_ATTR}
             onChange={handleFileChange}
             className="sr-only"
             aria-label="Choose an image file"

@@ -9,6 +9,8 @@ import SiteFooter from "@/components/SiteFooter";
 // and a wrong guess moved every card after load. PhotoBrowser now sends all
 // three arrangements and CSS shows the right one (2026-11-21 audit).
 
+export const metadata = { title: "Gallery — The Shutter Bug" };
+
 export default async function Work({
   searchParams,
 }: {

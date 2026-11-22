@@ -32,6 +32,25 @@
  * so a portrait shot stays upright.
  */
 
+/**
+ * The photo formats the API accepts (ALLOWED_IMAGE_TYPES in
+ * backend/config/cloudinary.js; change the two together). Used as the file
+ * choosers' `accept`, so a file the server would refuse (an SVG, say) can't
+ * be picked in the first place (2026-11-22 audit, FE-4).
+ */
+export const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/heic",
+  "image/heif",
+  "image/tiff",
+];
+export const ACCEPT_ATTR = ACCEPTED_IMAGE_TYPES.join(",");
+export const ACCEPTED_LABEL = "JPEG, PNG, WebP, GIF, AVIF, HEIC or TIFF";
+
 /** Cloudinary's cap, in bytes. */
 export const UPLOAD_LIMIT_BYTES = 10 * 1024 * 1024;
 /** Aim a little under the cap. */
