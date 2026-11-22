@@ -63,14 +63,18 @@ export default function PhotoCard({ photo, onEdit, onDelete, onToggleFeatured }:
         />
       </div>
 
-      {/* Two lines: the label gets the frame's full width (one shared line
-          with four buttons truncated it to "005 · O…" on a narrow frame),
-          then the tools — handle left, actions right. */}
+      {/* Always two lines, so every card in a row lines up: the title (or a
+          muted "Untitled", owner 2026-11-22: an untitled photo had no title
+          line and its label and tools sat higher than its neighbours'), then
+          the frame number and category. Then the tools. */}
       <div className="mt-3 min-w-0">
-        {photo.caption && (
-          <p className="truncate font-display text-[1.15rem] leading-tight text-fg">{photo.caption}</p>
-        )}
-        <p className="frame-meta mt-0.5 truncate">
+        <p
+          className={`truncate font-display text-[1.15rem] leading-tight ${photo.caption ? "text-fg" : "italic text-fg-3"}`}
+          title={photo.caption || undefined}
+        >
+          {photo.caption || "Untitled"}
+        </p>
+        <p className="frame-meta mt-0.5 truncate" title={`${frame} · ${categoryLabel(photo.category)}`}>
           {frame} · {categoryLabel(photo.category)}
         </p>
       </div>

@@ -541,6 +541,14 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 @media (min-width: 1024px) { .justified { --row: 18rem; } }
 @media (min-width: 1536px) { .justified { --row: 21rem; } }
 
+/* The Studio's grid: the same justified rows, sized for overview but not
+   cramped (owner, 2026-11-22). The rows were 11rem with 1.5rem gaps, so a
+   portrait frame came out ~145px wide and cut its label to "004 · MONOCH…".
+   Declared after .justified so it wins at every width. */
+.studio-frames { --row: 13rem; --gap: 2.5rem; row-gap: 3.5rem; }
+@media (min-width: 1024px) { .studio-frames { --row: 15.5rem; } }
+@media (min-width: 1536px) { .studio-frames { --row: 17rem; } }
+
 .frame-media {
     overflow: hidden;
     border-radius: var(--radius-photo);

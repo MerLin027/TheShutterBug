@@ -457,9 +457,9 @@ export default function PhotosClient() {
             <SortableContext items={photos.map((p) => p._id)} strategy={rectSortingStrategy}>
               {/* Same justified rows as the public gallery (task C2), so the
                   drag order here is the reading order there. */}
-              {/* A shorter row than the public grid: the Studio is for overview,
-                  so about four frames fit per row at 1440px instead of two. */}
-              <ul className="justified [--row:11rem] [--gap:1.5rem]" aria-label="Photographs, in gallery order">
+              {/* Shorter rows than the public grid (it is an overview), with
+                  room between frames: globals.css, .studio-frames. */}
+              <ul className="justified studio-frames" aria-label="Photographs, in gallery order">
                 {photos.map((photo) => (
                   <PhotoCard
                     key={photo._id}

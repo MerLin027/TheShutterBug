@@ -1055,3 +1055,9 @@ Removed the 2026-11-21 fallback that showed the first six gallery photos under "
 - Tokens issued before this change carry no `sid` and are refused: the owner signs in once after the deploy.
 - **Verified** on an isolated test database: 18 session checks (sign out kills only that token; 25 h idle refused, 23 h accepted; use refreshes lastSeen; legacy token refused; sign out everywhere; password change and two-step enable keep one session; code-step token still not a session), the two-step/upload suite re-run (27/29, the 2 being the credentials limiter, as before), and a browser run: Account shows "Only this browser is signed in", and after the Sign out button the copied token answers 401 (200 before). tsc and eslint clean.
 - **F2** (session in an httpOnly cookie via a same-domain API proxy) is deliberately a separate piece of work.
+
+## Studio Photographs: roomier grid, consistent cards (owner, 2026-11-22: "looks a bit cramped plus there are inconsistencies if i don't put a title")
+
+- Rows were 11rem with 1.5rem gaps, so portrait frames were ~145px wide and labels truncated ("004 · MONOCH…"). Now `.studio-frames` in globals.css: rows 13rem / 15.5rem (≥1024px) / 17rem (≥1536px), 2.5rem between frames, 3.5rem between rows (declared after `.justified`, so it wins at every width; the old Tailwind arbitrary values lost to the unlayered `.justified` breakpoints anyway).
+- Every card has a title line: the title, or a muted italic "Untitled", so an untitled photo's label and tools line up with its row. Full text on hover (`title`).
+- Verified on a local build with the real photo records copied read-only into the isolated test database (dropped afterwards): at 1892, 1366 and 390 px, every row's tool buttons share one line, no label is truncated, 1 card reads "Untitled".
