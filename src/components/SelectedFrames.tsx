@@ -6,19 +6,21 @@ import HomeSection from "./HomeSection";
 
 /**
  * Home's "Curated Work" (renamed from "Selected Work", owner, 2026-11-21):
- * the photos starred in the Studio, or, while none are, the first six in
- * gallery order under "From the Gallery". Same section shape as "The Work"
- * (HomeSection). The photos open in the same in-page viewer as the gallery.
- * Renders nothing if there are no photos at all (or the API was down).
+ * the photos starred in the Studio, and only those. Same section shape as
+ * "The Work" (HomeSection). The photos open in the same in-page viewer as the
+ * gallery. Renders nothing while none are starred (or the API was down).
+ *
+ * There used to be a fallback: with nothing starred, the first six gallery
+ * photos showed here as "From the Gallery". The owner removed it
+ * (2026-11-22): an unstarred upload appeared on Home, and starring is what
+ * decides what Home shows.
  */
 export default function SelectedFrames({
   photos,
-  featured = true,
   index,
   className = "",
 }: {
   photos: Photo[];
-  featured?: boolean;
   index: string;
   className?: string;
 }) {
@@ -28,7 +30,7 @@ export default function SelectedFrames({
     <HomeSection
       id="curated-work"
       index={index}
-      title={featured ? "Curated Work" : "From the Gallery"}
+      title="Curated Work"
       className={`home-frames pb-28 md:pb-40 ${className}`}
       aside={
         <Link href="/work" className="text-link">
@@ -39,7 +41,7 @@ export default function SelectedFrames({
     >
       <PhotoBrowser
         photos={photos}
-        label={featured ? "Curated work" : "From the gallery"}
+        label="Curated work"
         basePath="/"
         layout="grid"
         gridClassName="grid items-start gap-x-8 gap-y-12 sm:grid-cols-2"

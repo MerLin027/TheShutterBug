@@ -15,12 +15,10 @@ export default async function Home() {
   // One photos request serves both cases (it used to be two in a row when
   // nothing was starred).
   const [{ photos }, content] = await Promise.all([fetchPhotos(), fetchSiteContent()]);
-  const featured = photos.filter((p) => p.isFeatured);
-  // Nothing starred yet: show the first six in the owner's gallery order, so
-  // Home always has photographs below the statement (2026-11-21). Starring
-  // any photo in the Studio switches this back to "Curated Work".
-  const frames = featured.length > 0 ? featured : photos.slice(0, 6);
-  const framesAreFeatured = featured.length > 0;
+  // Only starred photos appear on Home. The "From the Gallery" fallback
+  // (first six when none were starred) was removed at the owner's request
+  // (2026-11-22): an unstarred upload showed up there.
+  const frames = photos.filter((p) => p.isFeatured);
   // Studio → Home page: the statement can be switched off or rewritten.
   const statement = workStatementFor(content);
 
@@ -61,7 +59,6 @@ export default async function Home() {
 
         <SelectedFrames
           photos={frames}
-          featured={framesAreFeatured}
           index={statement ? "02" : "01"}
           className={statement ? "pt-20 md:pt-28" : "pt-28 md:pt-40"}
         />
