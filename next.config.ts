@@ -62,6 +62,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // The API through this site's own domain (audit F2, 2026-11-22): the
+  // browser only ever talks to this origin, so the Studio session can be an
+  // httpOnly, SameSite=Strict cookie (vercel.app and onrender.com can't share
+  // one). Vercel proxies these to Render (120 s limit, which covers a cold
+  // start). The few per-visitor rate-limited routes go through src/proxy.ts
+  // first, which adds the signed visitor address.
+  async rewrites() {
+    return [{ source: "/api/:path*", destination: `${API_ORIGIN}/api/:path*` }];
+  },
   // No experimental viewTransition any more: it froze the page during route
   // changes, which swallowed clicks made mid-transition (measured: four quick
   // "Next" presses moved one photo). The gallery now opens photos in an
