@@ -145,6 +145,7 @@ node scripts/seedAdmin.js
 
 ```bash
 npm install
+cp .env.example .env.local   # then fill it in
 npm run dev              # http://localhost:3000
 ```
 
@@ -217,14 +218,6 @@ Two things worth knowing:
 - **Render's free tier idles.** Nothing keeps it awake, so the first request
   after ~15 quiet minutes waits for a cold start (up to about 30 seconds); the
   Studio and the contact form say so while they wait.
-
----
-
-## Project notes
-
-`context.md` is the project's build record — what each phase and stage changed,
-and the reasoning behind decisions that aren't obvious from the code. It's worth
-reading before making structural changes.
 
 ---
 

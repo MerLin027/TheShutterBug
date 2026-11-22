@@ -21,9 +21,16 @@ backend/node_modules
 # production
 /build
 
-# misc
+# misc: OS and editor files, logs, local caches
 .DS_Store
+Thumbs.db
+desktop.ini
 *.pem
+*.log
+.idea/
+.vscode/
+*.swp
+.eslintcache
 
 # vendored Claude skill packs — third-party, ~12 MB, not project code
 .claude/
@@ -42,8 +49,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files: real values never go to GitHub. The .env.example files hold
+# placeholders only and ARE committed.
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -51,3 +60,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# personal viva notes (not part of the project)
+docs/VIVA_GUIDE.md
+
+# Project records: kept on the owner's machine, not published (owner,
+# 2026-11-22). context.md and REDESIGN.md are the build and change logs;
+# docs/ holds the original spec and personal notes.
+context.md
+REDESIGN.md
+docs/
+
+# Loose files that aren't part of the site
+src/wp14667430.jpg
