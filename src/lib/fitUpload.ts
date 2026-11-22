@@ -18,8 +18,17 @@
  *    still at QUALITY_FLOOR or better. Visitors are never sent more than
  *    2400 px wide, so this only affects the stored copy.
  *
- * Canvas re-encoding drops EXIF (camera data, GPS) and converts colour to
- * sRGB, which is what the site serves anyway. Orientation is applied first,
+ * Colour: Cloudinary keeps an image's colour profile through to visitors
+ * (measured 2026-11-22: a Display P3 upload is delivered with the identical
+ * P3 profile). So a wide-gamut source (Display P3, Adobe RGB, ProPhoto...)
+ * is fitted on a Display P3 canvas and the output is tagged P3; converting
+ * it to sRGB would visibly flatten its saturated colours on wide-gamut
+ * screens. An untagged or sRGB source stays sRGB.
+ *
+ * Chrome's encoder keeps full colour detail (4:4:4) only at quality 1.0 and
+ * halves it (4:2:0) below that, so 1.0 is tried first.
+ *
+ * Re-encoding drops EXIF (camera data, GPS). Orientation is applied first,
  * so a portrait shot stays upright.
  */
 
@@ -47,6 +56,87 @@ export type FitResult = {
   quality?: number;
 };
 
+/* ─── Colour profile detection ─────────────────────────────────────────── */
+
+/** sRGB's red primary, X (D50), is 0.436; Display P3 0.515, Adobe RGB 0.609. */
+const SRGB_RED_X_MAX = 0.46;
+
+/** True if an ICC profile is plainly sRGB (or close enough to it). */
+function iccIsSrgb(icc: Uint8Array): boolean {
+  if (icc.length < 132) return true;
+  const v = new DataView(icc.buffer, icc.byteOffset, icc.byteLength);
+  const tags = v.getUint32(128);
+  for (let t = 0; t < tags && 132 + t * 12 + 12 <= icc.length; t++) {
+    const at = 132 + t * 12;
+    if (v.getUint32(at) === 0x7258595a /* 'rXYZ' */) {
+      const off = v.getUint32(at + 4);
+      if (off + 12 > icc.length) break;
+      return v.getInt32(off + 8) / 65536 <= SRGB_RED_X_MAX;
+    }
+  }
+  // No primaries to read (a LUT-based profile): trust its name.
+  return /sRGB/i.test(new TextDecoder("latin1").decode(icc));
+}
+
+async function inflate(data: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream("deflate"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/**
+ * Whether the file carries a wide-gamut colour profile. Reads only the
+ * header (profiles sit before the image data in JPEG, PNG and WebP). Any
+ * doubt answers true: a P3 canvas holds every sRGB colour too.
+ */
+async function isWideGamut(file: File): Promise<boolean> {
+  try {
+    const b = new Uint8Array(await file.slice(0, 1024 * 1024).arrayBuffer());
+    const v = new DataView(b.buffer);
+    const tag = (at: number, s: string) => s.split("").every((c, k) => b[at + k] === c.charCodeAt(0));
+
+    if (b[0] === 0xff && b[1] === 0xd8) {
+      // JPEG: APP2 "ICC_PROFILE" segments, in order.
+      const parts: Uint8Array[] = [];
+      for (let i = 2; i + 4 < b.length && b[i] === 0xff; ) {
+        const marker = b[i + 1];
+        const len = v.getUint16(i + 2);
+        if (marker === 0xe2 && tag(i + 4, "ICC_PROFILE")) parts.push(b.subarray(i + 18, i + 2 + len));
+        if (marker === 0xda) break;
+        i += 2 + len;
+      }
+      if (!parts.length) return false;
+      const icc = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+      parts.reduce((o, p) => (icc.set(p, o), o + p.length), 0);
+      return !iccIsSrgb(icc);
+    }
+    if (tag(1, "PNG")) {
+      for (let i = 8; i + 8 < b.length; ) {
+        const len = v.getUint32(i);
+        if (tag(i + 4, "sRGB") || tag(i + 4, "IDAT")) return false;
+        if (tag(i + 4, "cICP")) return true;
+        if (tag(i + 4, "iCCP")) {
+          const body = b.subarray(i + 8, i + 8 + len);
+          const nul = body.indexOf(0);
+          return !iccIsSrgb(await inflate(body.subarray(nul + 2)));
+        }
+        i += 12 + len;
+      }
+      return false;
+    }
+    if (tag(0, "RIFF") && tag(8, "WEBP")) {
+      for (let i = 12; i + 8 < b.length; ) {
+        const len = v.getUint32(i + 4, true);
+        if (tag(i, "ICCP")) return !iccIsSrgb(b.subarray(i + 8, i + 8 + len));
+        i += 8 + len + (len & 1);
+      }
+      return false;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 type Source = { draw: CanvasImageSource; width: number; height: number; close: () => void };
 
 async function decode(file: File): Promise<Source> {
@@ -70,14 +160,14 @@ async function decode(file: File): Promise<Source> {
   }
 }
 
-function encoder(src: Source) {
+function encoder(src: Source, colorSpace: PredefinedColorSpace) {
   const canvas = document.createElement("canvas");
   let drawnScale = -1;
   return async function encode(scale: number, quality: number): Promise<Blob | null> {
     if (scale !== drawnScale) {
       canvas.width = Math.max(1, Math.round(src.width * scale));
       canvas.height = Math.max(1, Math.round(src.height * scale));
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { colorSpace });
       if (!ctx) return null;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
@@ -101,9 +191,10 @@ export async function fitForUpload(file: File): Promise<FitResult> {
     return { file, changed: false, width: 0, height: 0 };
   }
 
+  const wide = await isWideGamut(file);
   const src = await decode(file);
   try {
-    const encode = encoder(src);
+    const encode = encoder(src, wide ? "display-p3" : "srgb");
     const pixels = src.width * src.height;
     let scale = 1;
 
@@ -117,7 +208,11 @@ export async function fitForUpload(file: File): Promise<FitResult> {
     if (!blob) throw new Error("This browser couldn't prepare the image");
 
     if (blob.size <= TARGET_BYTES) {
-      // It fits: find the highest quality that still does.
+      // Quality 1.0 is the only setting that keeps full colour detail
+      // (4:4:4) in Chrome, so if that fits, it wins outright.
+      const top = await encode(scale, 1);
+      if (top && top.size <= TARGET_BYTES) return finish(top, 1);
+      // Otherwise the highest quality below 1.0 that fits.
       let lo = QUALITY_FLOOR;
       let best = blob;
       let hi = 1;
