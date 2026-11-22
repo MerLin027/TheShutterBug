@@ -1527,19 +1527,19 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 .home-rule { height: 1px; background: var(--color-line); transform-origin: left; }
 @supports (animation-timeline: view()) {
     .home-rule {
-        animation: rule-draw linear both;
-        animation-timeline: view();
-        animation-range: entry 0% cover 45%;
+        animation: rule-draw linear both, settle-rule linear forwards;
+        animation-timeline: view(), scroll(root);
+        animation-range: entry 0% cover 45%, calc(100% - 30dvh) 100%;
     }
     .home-title {
-        animation: title-in linear both;
-        animation-timeline: view();
-        animation-range: entry 0% cover 50%;
+        animation: title-in linear both, settle-title linear forwards;
+        animation-timeline: view(), scroll(root);
+        animation-range: entry 0% cover 50%, calc(100% - 30dvh) 100%;
     }
     .home-index {
-        animation: fade linear both;
-        animation-timeline: view();
-        animation-range: entry 0% cover 40%;
+        animation: fade linear both, settle-opacity linear forwards;
+        animation-timeline: view(), scroll(root);
+        animation-range: entry 0% cover 40%, calc(100% - 30dvh) 100%;
     }
 }
 @keyframes rule-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -1559,9 +1559,9 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
       almost nothing to full, over a long stretch so it reads as it moves. */
 @supports (animation-timeline: view()) {
     .develop-word {
-        animation: develop-word linear both;
-        animation-timeline: view();
-        animation-range: entry 100% cover 72%;
+        animation: develop-word linear both, settle-color linear forwards;
+        animation-timeline: view(), scroll(root);
+        animation-range: entry 100% cover 72%, calc(100% - 30dvh) 100%;
     }
 }
 @keyframes develop-word {
@@ -1579,15 +1579,15 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
        never scrolls. A named timeline on the frame tracks the page. */
     .home-frames .frame-media {
         view-timeline: --frame block;
-        animation: frame-wipe linear both;
-        animation-timeline: view();
-        animation-range: entry 5% cover 35%;
+        animation: frame-wipe linear both, settle-clip linear forwards;
+        animation-timeline: view(), scroll(root);
+        animation-range: entry 5% cover 35%, calc(100% - 30dvh) 100%;
     }
-    .home-frames [role="listitem"]:nth-child(2n) .frame-media { animation-range: entry 25% cover 55%; }
+    .home-frames [role="listitem"]:nth-child(2n) .frame-media { animation-range: entry 25% cover 55%, calc(100% - 30dvh) 100%; }
     .home-frames .frame-media > img {
-        animation: frame-settle linear both, frame-drift linear both;
-        animation-timeline: --frame, --frame;
-        animation-range: entry 0% cover 60%, cover 0% cover 100%;
+        animation: frame-settle linear both, frame-drift linear both, settle-scale linear forwards;
+        animation-timeline: --frame, --frame, scroll(root);
+        animation-range: entry 0% cover 60%, cover 0% cover 100%, calc(100% - 30dvh) 100%;
     }
     @media (min-width: 1024px) {
         .home-frames [role="listitem"]:nth-child(2n) {
@@ -1597,6 +1597,25 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
         }
     }
 }
+/* 5. Finishing at the foot of the page (owner, 2026-11-22: with nothing
+      featured, The Work is the last section and "the amount of scroll
+      required to properly display that element isn't there": the page ended
+      with the words still half-developed). Each animation above that ends at
+      a point the element may never reach on a short page (or for the last
+      row of photos) is paired with a settle on the page's own scroll: over
+      the last 30dvh of the page it carries whatever is unfinished to its
+      final state. The keyframes have no `from`, so each settle starts from
+      wherever its partner currently is, with no jump; anything already
+      finished is unchanged. Fill is `forwards` only, so before that stretch
+      the partner animation alone applies. The drift and the second-column lag
+      are parallax and carry on as they are. */
+@keyframes settle-rule    { to { transform: scaleX(1); } }
+@keyframes settle-title   { to { letter-spacing: -0.005em; opacity: 1; } }
+@keyframes settle-opacity { to { opacity: 1; } }
+@keyframes settle-color   { to { color: var(--color-fg); } }
+@keyframes settle-clip    { to { clip-path: inset(0 0 0 0); } }
+@keyframes settle-scale   { to { scale: 1.12; } }
+
 @keyframes frame-wipe {
     from { clip-path: inset(100% 0 0 0); }
     to   { clip-path: inset(0 0 0 0); }

@@ -33,7 +33,15 @@ export default async function Home() {
             numbered, a hairline that draws across, a serif title on the
             left that stays pinned on desktop, content on the right. */}
         {statement && (
-          <HomeSection id="the-work" index="01" title="The Work" className="pt-28 md:pt-40">
+          // With no photographs (SelectedFrames renders nothing) this is the
+          // last section, and it needs the bottom space the photo section
+          // normally gives; its link sat on the footer's line (2026-11-22).
+          <HomeSection
+            id="the-work"
+            index="01"
+            title="The Work"
+            className={frames.length > 0 ? "pt-28 md:pt-40" : "pb-28 pt-28 md:pb-40 md:pt-40"}
+          >
             {/* Each word "develops" as it scrolls past, dim to full, like a
                 print in the tray (globals.css, .develop-word). It is still
                 one paragraph to screen readers. */}
