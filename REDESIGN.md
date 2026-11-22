@@ -1020,3 +1020,11 @@ Cause, reproduced locally against the real Atlas and Cloudinary: the Cloudinary 
 - **Limit.** `MAX_UPLOAD_BYTES` (backend/config/cloudinary.js), the photo Upload modal and the Studio → Home hero picker are now 10 MB. A bigger file is refused in the browser before it is sent, with its size in the message, and by multer on the server.
 - **Errors.** `errorHandler` maps a Cloudinary 4xx to a 400 with a message the owner can act on (too large, too high a resolution, unreadable file) and logs Cloudinary's text. The plan also lists 25 megapixels, but a 26.9 MP probe uploaded and delivered fine, so nothing blocks on resolution.
 - **Verified** (probes uploaded via the real route and deleted): 11.2 MB → 400 "maximum size is 10 MB" (was 500 "Server Error"); a 26.9 MP PNG → 201, delivered at 320 and 2400 px; a non-image → 400 "couldn't read this file"; a normal upload → 201. tsc and eslint clean.
+
+## Uploads: oversized files are fitted automatically (owner, 2026-11-22: "The automated shrinkage. I need maximum quality." / "No cropping No distortion as well. No noise. No quality compromise.")
+
+`src/lib/fitUpload.ts`, used by the photo Upload modal and the Studio → Home hero picker, before the file is sent:
+- **Under 10 MB:** sent untouched, original bytes.
+- **Over:** re-encoded as JPEG at **full resolution**, at the highest quality from 0.95 to 1.0 that fits (binary search). Only if 0.95 at full resolution is still too big are pixels given up, as few as fit (searched), never quality below 0.95 (no visible JPEG noise). Never crops; proportions are kept (within rounding to whole pixels). Orientation is applied; EXIF is dropped and colour is sRGB (what the site serves). Safari's 16.7 MP canvas cap is handled. Sources over 150 MB are refused (memory).
+- The button reads "Preparing image…" while it works (2 to 6 s for 24 to 45 MP on a desktop).
+- **Verified** in Chrome: 6.5 MB JPEG → untouched (same object); 42 MB camera-like 24 MP PNG → 6000×4000 at q 0.984, 9.35 MB; extreme-grain 24 MP → 5704×3803 at 0.95, 9.85 MB; 45 MP → 4889×3259 at 0.95, 9.79 MB; portrait ratio exact. End to end through the Studio (local build + local API, probe deleted): a 42.2 MB file → 201, stored by Cloudinary as 6000×4000 jpg, 8.97 MB. tsc and eslint clean.

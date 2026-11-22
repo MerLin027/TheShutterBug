@@ -13,17 +13,13 @@ import { CATEGORIES, CATEGORY_LABELS } from "@/lib/categories";
 import StudioModal from "@/components/StudioModal";
 import Spinner from "@/components/Spinner";
 import { CloudUpload } from "lucide-react";
+import { fitForUpload, MAX_SOURCE_BYTES } from "@/lib/fitUpload";
 
-/**
- * Client-side ceiling, in step with MAX_UPLOAD_BYTES in
- * backend/config/cloudinary.js (10 MB, the Cloudinary Free plan's own cap).
- * Change the two together. Both were 25 MB until 2026-11-22, and a file
- * between 10 and 25 MB was refused by Cloudinary as a bare "Server Error".
- *
- * This is UX only. The server limit is the one that enforces anything.
+/*
+ * Size: a file over the image host's 10 MB cap is no longer refused. It is
+ * fitted under it at the highest quality that fits (src/lib/fitUpload.ts,
+ * owner 2026-11-22); one under the cap is sent untouched.
  */
-const MAX_FILE_SIZE_MB = 10;
-const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type Props = {
   onClose: () => void;
@@ -47,6 +43,7 @@ export default function UploadModal({
   const [tags, setTags] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,8 +52,8 @@ export default function UploadModal({
     if (!f.type.startsWith("image/")) {
       return "Please select an image file (JPEG, PNG, WebP, etc.)";
     }
-    if (f.size > MAX_FILE_SIZE) {
-      return `File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Maximum is ${MAX_FILE_SIZE_MB} MB.`;
+    if (f.size > MAX_SOURCE_BYTES) {
+      return `File too large (${(f.size / 1024 / 1024).toFixed(0)} MB). Maximum is ${MAX_SOURCE_BYTES / 1024 / 1024} MB.`;
     }
     return null;
   }
@@ -147,9 +144,22 @@ export default function UploadModal({
       return;
     }
 
+    // Over the host's cap: fit it, at the highest quality that fits.
+    let toSend: File = file;
+    try {
+      setPreparing(true);
+      toSend = (await fitForUpload(file)).file;
+    } catch {
+      setError("This image is too large to prepare in this browser. Export it as a JPEG under 10 MB and try again.");
+      setUploading(false);
+      return;
+    } finally {
+      setPreparing(false);
+    }
+
     try {
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image", toSend);
       formData.append("category", category);
       formData.append("caption", caption);
       formData.append("location", location);
@@ -206,7 +216,7 @@ export default function UploadModal({
             <span className="flex flex-col items-center gap-3 py-4">
               <CloudUpload size={28} className="text-fg-3" aria-hidden="true" />
               <span className="text-label font-medium text-fg">Drop an image here, or choose a file</span>
-              <span className="frame-meta">Images only · up to {MAX_FILE_SIZE_MB} MB</span>
+              <span className="frame-meta">Images only · files over 10 MB are fitted at top quality</span>
             </span>
           )}
           <input
@@ -292,7 +302,7 @@ export default function UploadModal({
           {uploading ? (
             <>
               <Spinner />
-              Uploading…
+              {preparing ? "Preparing image…" : "Uploading…"}
             </>
           ) : (
             <>

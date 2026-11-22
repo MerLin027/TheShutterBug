@@ -11,12 +11,12 @@ import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
+import { fitForUpload, MAX_SOURCE_BYTES } from "@/lib/fitUpload";
 import { revalidatePublicPages } from "../../actions";
 
 /** In step with backend/models/SiteContent.js and config/cloudinary.js. */
 const STATEMENT_MAX = 1000;
 const ALT_MAX = 300;
-const MAX_FILE_MB = 10;
 
 /** The preview URL for the hero as the API sends it: a signed display size
  *  for an uploaded hero (Phase D10), or the placeholder's own URL. */
@@ -54,6 +54,7 @@ export default function HomeClient() {
   const [newPreview, setNewPreview] = useState<string | null>(null);
   const [newAlt, setNewAlt] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
   const [downloading, setDownloading] = useState(false);
@@ -173,8 +174,8 @@ export default function HomeClient() {
       setUploadError("Please choose an image file (JPEG, PNG, WebP…).");
       return;
     }
-    if (f.size > MAX_FILE_MB * 1024 * 1024) {
-      setUploadError(`That image is over ${MAX_FILE_MB} MB.`);
+    if (f.size > MAX_SOURCE_BYTES) {
+      setUploadError(`That image is over ${MAX_SOURCE_BYTES / 1024 / 1024} MB.`);
       return;
     }
     setNewFile(f);
@@ -197,9 +198,22 @@ export default function HomeClient() {
     }
     setUploading(true);
     setUploadError("");
+    // Over the host's 10 MB cap: fit it at the highest quality that fits
+    // (src/lib/fitUpload.ts). A smaller file is sent untouched.
+    let toSend: File = newFile;
+    try {
+      setPreparing(true);
+      toSend = (await fitForUpload(newFile)).file;
+    } catch {
+      setUploadError("This image is too large to prepare in this browser. Export it as a JPEG under 10 MB and try again.");
+      setUploading(false);
+      return;
+    } finally {
+      setPreparing(false);
+    }
     try {
       const form = new FormData();
-      form.append("image", newFile);
+      form.append("image", toSend);
       form.append("alt", newAlt.trim());
       const res = await fetch(apiUrl("/api/site-content/hero"), {
         method: "POST",
@@ -340,7 +354,7 @@ export default function HomeClient() {
               <div className="flex flex-wrap gap-3">
                 <button type="button" onClick={handleUpload} disabled={uploading} aria-busy={uploading} className="btn btn-primary">
                   {uploading ? <Spinner /> : <ImageUp size={18} aria-hidden="true" />}
-                  {uploading ? "Uploading…" : "Use this photograph"}
+                  {uploading ? (preparing ? "Preparing image…" : "Uploading…") : "Use this photograph"}
                 </button>
                 <button type="button" onClick={cancelReplace} disabled={uploading} className="btn btn-quiet">
                   Cancel
@@ -365,7 +379,7 @@ export default function HomeClient() {
                 </p>
               )}
               <p className="mt-3 text-label text-fg-3">
-                Images up to {MAX_FILE_MB} MB. Landscape works best; the edges are cropped on phones.
+                Files over 10 MB are fitted at top quality. Landscape works best; the edges are cropped on phones.
               </p>
 
               <div className="mt-8">
