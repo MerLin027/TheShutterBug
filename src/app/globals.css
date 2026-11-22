@@ -772,8 +772,14 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
 
 /* ── Header / navbar ───────────────────────────────────────────────────── */
 /* No box. Wordmark left, small-caps links right. Transparent over the hero;
-   a solid, softly blurred band fades in as the page scrolls (scroll-driven,
-   0→160px). Without scroll-driven support the band is simply always on. */
+   a frosted band fades in as the page scrolls (scroll-driven, 0→160px).
+   Without scroll-driven support the band is simply always on.
+
+   Frosted, not near-solid (owner, 2026-11-22: the 78% band "kinda looks
+   bad"; chose a translucent bar from mock-ups). A light tint with a strong
+   blur lets the page's colour glow through, and the edge is a faint
+   hairline instead of a hard line. The owner allowed this one exception to
+   "no glass over a photograph": the navbar passes over photos as you scroll. */
 .site-header {
     position: fixed;
     inset-inline: 0;
@@ -784,9 +790,10 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     content: "";
     position: absolute;
     inset: 0;
-    background: rgb(16 15 13 / 0.78);
-    backdrop-filter: blur(14px) saturate(1.15);
-    border-bottom: 1px solid var(--color-line);
+    background: rgb(16 15 13 / 0.42);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    backdrop-filter: blur(22px) saturate(1.4);
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
     pointer-events: none;
 }
 @supports (animation-timeline: scroll()) {

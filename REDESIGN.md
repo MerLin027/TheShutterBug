@@ -1000,3 +1000,9 @@ Verified on a local production build, 28/28:
   - **Visibility and clicks.** Hidden only at the very top; visible from the first moment, so the slow start is seen (a version gated by `visibility` until halfway popped in half-developed). `pointer-events` keeps the mouse off it until ~60 %, when most letters are in.
   - **Reduced motion.** Letters only fade.
   - **Verified** at 1366×768 and a 390 px phone: no link under the mouse at the top; the first letter starts only once the hero is ≤ 0.17 visible; never complete while the hero still shows; letters arrive in turn and are visible while developing; clickable only with ≥ 12 of 13 letters in; every letter settles (blur 0, brightness 1, paper white) by the bottom of the short page; "The Shutter Bug" with spaces; Gallery unchanged; reduced motion has no blur or movement.
+
+## Navbar: frosted (owner, 2026-11-22: "the navbar kinda looks bad here, how about we make the navbar translucent?")
+
+Mock-ups on the live page compared the current bar, a frosted bar and a no-bar soft fade. In the soft fade, the nav links collided with the hero title as it scrolled under them. The owner chose frosted everywhere, and explicitly allowed it as the one exception to "liquid glass never over a photograph" (AGENTS.md updated).
+- `.site-header::before`: `rgb(16 15 13 / 0.42)` (was 0.78), `backdrop-filter: blur(22px) saturate(1.4)` (was 14px / 1.15, now with the `-webkit-` prefix too), and the edge is a hairline `rgb(255 255 255 / 0.06)` instead of `--color-line`. The scroll-driven fade-in (0→160px) is unchanged.
+- Checked by screenshot at 1917×717 below the hero, over the hero photo and over the About portrait, and on a 390 px phone over the photo: the links and wordmark stay readable and the photo's colour glows through.
