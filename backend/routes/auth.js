@@ -5,11 +5,23 @@ import AdminUser from '../models/AdminUser.js';
 import { protect } from '../middleware/auth.js';
 import {
   loginLimiter,
+  codeLimiter,
   credentialsLimiter,
   accountLocked,
   recordFailedSignIn,
 } from '../middleware/rateLimit.js';
+import { securityEvent } from '../middleware/securityLog.js';
 import { EMAIL_REGEX } from '../models/Contact.js';
+import {
+  generateSecret,
+  verifyCode,
+  otpauthUrl,
+  sealSecret,
+  openSecret,
+  generateRecoveryCodes,
+  hashRecoveryCode,
+  looksLikeRecoveryCode,
+} from '../config/totp.js';
 
 const router = express.Router();
 
@@ -38,6 +50,44 @@ const generateToken = (user) => {
 const SALT_ROUNDS = 12;
 const DUMMY_HASH = bcrypt.hashSync(Math.random().toString(36), SALT_ROUNDS);
 
+/**
+ * The half-way token between the password step and the code step: it names
+ * the account and proves the password was right, lives five minutes, and
+ * middleware/auth.js refuses it as a session (it carries `purpose`).
+ */
+const CODE_STEP_LIFETIME = '5m';
+const generateCodeStepToken = (user) =>
+  jwt.sign({ id: user._id, v: user.tokenVersion ?? 0, purpose: 'second-step' }, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: CODE_STEP_LIFETIME,
+  });
+
+/**
+ * Check a second-step code: a 6-digit authenticator code, or one of the
+ * recovery codes. On success the user document is updated (the code's time
+ * step recorded so it can't be replayed, or the recovery code removed) and
+ * the caller must save it. Returns 'code' | 'recovery' | null.
+ */
+function checkSecondFactor(user, code) {
+  if (typeof code !== 'string') return null;
+  const trimmed = code.trim().replace(/\s+/g, '');
+  if (/^\d{6}$/.test(trimmed)) {
+    const secret = openSecret(user.totpSecret);
+    if (!secret) return null;
+    const step = verifyCode(secret, trimmed, user.totpLastStep ?? -1);
+    if (step === null) return null;
+    user.totpLastStep = step;
+    return 'code';
+  }
+  if (looksLikeRecoveryCode(trimmed)) {
+    const i = user.recoveryCodes.indexOf(hashRecoveryCode(trimmed));
+    if (i === -1) return null;
+    user.recoveryCodes.splice(i, 1);
+    return 'recovery';
+  }
+  return null;
+}
+
 /** New-password rule: length is what matters (NIST SP 800-63B). */
 export const PASSWORD_MIN = 12;
 /** Longest input accepted at all (sign-in, current password). */
@@ -65,6 +115,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 
   if (accountLocked()) {
+    securityEvent(req, 'login.paused');
     return res.status(429).json({
       message: 'Too many failed sign-ins. Sign-in is paused; please try again within the hour.',
     });
@@ -80,14 +131,75 @@ router.post('/login', loginLimiter, async (req, res) => {
   // account" from "wrong password" tells an attacker which emails are real.
   if (!user || !passwordOk) {
     recordFailedSignIn();
+    securityEvent(req, 'login.failed', { reason: user ? 'wrong password' : 'unknown email' });
     return res.status(401).json({ message: 'Invalid email or password' });
   }
 
+  // Two-step sign-in on: the password alone doesn't open the Studio. Hand
+  // back a five-minute token for the code step instead of a session.
+  if (user.totpEnabled) {
+    securityEvent(req, 'login.code_required');
+    return res.json({ codeRequired: true, codeToken: generateCodeStepToken(user) });
+  }
+
+  securityEvent(req, 'login.succeeded', { secondStep: false });
   // passwordHash is never included in the response.
   res.json({
     _id: user._id,
     email: user.email,
     token: generateToken(user),
+  });
+});
+
+// @route   POST /api/auth/login/verify
+// @desc    Second sign-in step: the authenticator code (or a recovery code)
+// @access  Public, with the five-minute token from a correct password
+//
+// Body: { codeToken, code }
+router.post('/login/verify', codeLimiter, async (req, res) => {
+  const { codeToken, code } = req.body;
+  if (typeof codeToken !== 'string' || typeof code !== 'string' || codeToken.length > 2048 || code.length > 40) {
+    return res.status(400).json({ message: 'Enter the code from your authenticator app' });
+  }
+  if (accountLocked()) {
+    securityEvent(req, 'login.paused');
+    return res.status(429).json({
+      message: 'Too many failed sign-ins. Sign-in is paused; please try again within the hour.',
+    });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(codeToken, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+  } catch {
+    return res.status(401).json({ message: 'That sign-in took too long. Please start again.', restart: true });
+  }
+  if (decoded.purpose !== 'second-step') {
+    return res.status(401).json({ message: 'Please start again.', restart: true });
+  }
+
+  const user = await AdminUser.findById(decoded.id);
+  if (!user || !user.totpEnabled || (decoded.v ?? 0) !== (user.tokenVersion ?? 0)) {
+    return res.status(401).json({ message: 'Please start again.', restart: true });
+  }
+
+  const used = checkSecondFactor(user, code);
+  if (!used) {
+    recordFailedSignIn();
+    securityEvent(req, 'login.code_failed');
+    return res.status(401).json({ message: "That code didn't work. Check your app and try again." });
+  }
+  await user.save();
+
+  if (used === 'recovery') {
+    securityEvent(req, '2fa.recovery_code_used', { left: user.recoveryCodes.length });
+  }
+  securityEvent(req, 'login.succeeded', { secondStep: used });
+  res.json({
+    _id: user._id,
+    email: user.email,
+    token: generateToken(user),
+    ...(used === 'recovery' ? { recoveryCodesLeft: user.recoveryCodes.length } : {}),
   });
 });
 
@@ -132,6 +244,7 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
 
   const user = await AdminUser.findById(req.user._id);
   if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    securityEvent(req, 'credentials.failed', { reason: 'wrong current password' });
     return res.status(403).json({ message: 'Your current password is incorrect' });
   }
 
@@ -178,9 +291,117 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
     throw err;
   }
 
-  console.log(`[auth] credentials changed (${[emailChanged && 'email', passwordChanged && 'password'].filter(Boolean).join(' + ')}); other sessions signed out`);
+  securityEvent(req, 'credentials.changed', {
+    changed: [emailChanged && 'email', passwordChanged && 'password'].filter(Boolean).join(' + '),
+  });
 
   res.json({ email: user.email, token: generateToken(user) });
+});
+
+// -- Two-step sign-in management (Studio -> Account) --------------------------
+//
+// Every change here needs the current password (and turning it off needs a
+// code as well), is rate-limited like a credentials change, and bumps
+// tokenVersion, which signs out every other browser.
+
+/** Wrong current password -> 403 (not 401: a typo mustn't sign the owner out). */
+async function userWithPassword(req, res) {
+  const { currentPassword } = req.body;
+  if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > PASSWORD_MAX) {
+    res.status(400).json({ message: 'Enter your current password' });
+    return null;
+  }
+  const user = await AdminUser.findById(req.user._id);
+  if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    securityEvent(req, '2fa.failed', { reason: 'wrong current password' });
+    res.status(403).json({ message: 'Your current password is incorrect' });
+    return null;
+  }
+  return user;
+}
+
+// @route   GET /api/auth/2fa
+// @desc    Is two-step sign-in on, and how many recovery codes are left?
+// @access  Private
+router.get('/2fa', protect, async (req, res) => {
+  const user = await AdminUser.findById(req.user._id).select('totpEnabled recoveryCodes');
+  res.json({ enabled: !!user?.totpEnabled, recoveryCodesLeft: user?.recoveryCodes?.length ?? 0 });
+});
+
+// @route   POST /api/auth/2fa/setup
+// @desc    Start turning it on: a new secret for the authenticator app
+// @access  Private + current password. Body: { currentPassword }
+router.post('/2fa/setup', credentialsLimiter, protect, async (req, res) => {
+  const user = await userWithPassword(req, res);
+  if (!user) return;
+  if (user.totpEnabled) {
+    return res.status(409).json({ message: 'Two-step sign-in is already on' });
+  }
+  const secret = generateSecret();
+  user.totpPending = sealSecret(secret);
+  await user.save();
+  securityEvent(req, '2fa.setup_started');
+  // The secret goes to the signed-in owner once, to put in their app.
+  res.json({ secret, otpauthUrl: otpauthUrl(secret, user.email) });
+});
+
+// @route   POST /api/auth/2fa/enable
+// @desc    Finish turning it on: the first code from the app proves it works
+// @access  Private. Body: { code }
+router.post('/2fa/enable', credentialsLimiter, protect, async (req, res) => {
+  const user = await AdminUser.findById(req.user._id);
+  if (!user?.totpPending) {
+    return res.status(400).json({ message: 'Start again: set up the authenticator app first' });
+  }
+  const { code } = req.body;
+  if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
+    return res.status(400).json({ message: 'Enter the 6-digit code from your app' });
+  }
+  const pending = openSecret(user.totpPending);
+  const step = pending ? verifyCode(pending, code.trim(), -1) : null;
+  if (step === null) {
+    securityEvent(req, '2fa.failed', { reason: 'wrong code while turning on' });
+    return res.status(400).json({ message: "That code didn't work. Check the app's clock and try the newest code." });
+  }
+
+  const recoveryCodes = generateRecoveryCodes();
+  user.totpSecret = user.totpPending;
+  user.totpPending = '';
+  user.totpEnabled = true;
+  user.totpLastStep = step;
+  user.recoveryCodes = recoveryCodes.map(hashRecoveryCode);
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+  await user.save();
+
+  securityEvent(req, '2fa.enabled');
+  // The recovery codes are shown once and never again (only hashes are kept).
+  res.json({ enabled: true, recoveryCodes, token: generateToken(user) });
+});
+
+// @route   POST /api/auth/2fa/disable
+// @desc    Turn it off
+// @access  Private + current password + a code (or recovery code).
+//          Body: { currentPassword, code }
+router.post('/2fa/disable', credentialsLimiter, protect, async (req, res) => {
+  const user = await userWithPassword(req, res);
+  if (!user) return;
+  if (!user.totpEnabled) {
+    return res.status(409).json({ message: 'Two-step sign-in is already off' });
+  }
+  if (!checkSecondFactor(user, req.body.code)) {
+    securityEvent(req, '2fa.failed', { reason: 'wrong code while turning off' });
+    return res.status(400).json({ message: "That code didn't work. Use a current code from your app, or a recovery code." });
+  }
+  user.totpEnabled = false;
+  user.totpSecret = '';
+  user.totpPending = '';
+  user.totpLastStep = -1;
+  user.recoveryCodes = [];
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+  await user.save();
+
+  securityEvent(req, '2fa.disabled');
+  res.json({ enabled: false, token: generateToken(user) });
 });
 
 // There is deliberately no POST /register route.

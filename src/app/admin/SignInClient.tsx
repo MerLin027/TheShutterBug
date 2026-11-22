@@ -78,6 +78,44 @@ export default function SignInClient({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Two-step sign-in: after a correct password the API hands back a
+  // five-minute token for the code step instead of a session.
+  const [codeToken, setCodeToken] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+
+  function finishSignIn(data: { token: string; email?: string }) {
+    localStorage.setItem("admin_token", data.token);
+    localStorage.setItem("admin_email", data.email ?? "");
+    router.replace("/admin/dashboard");
+  }
+
+  async function handleCode(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(apiUrl("/api/auth/login/verify"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codeToken, code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (data.restart) {
+          setCodeToken(null);
+          setCode("");
+          setPassword("");
+        }
+        setError(data.message || "That code didn't work.");
+        setLoading(false);
+        return;
+      }
+      finishSignIn(data);
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+      setLoading(false);
+    }
+  }
 
   // This page's redirect runs the other way — away from the form when a
   // session already exists — so the hook's own guard is off. Reading the
@@ -110,9 +148,13 @@ export default function SignInClient({
         return;
       }
 
-      localStorage.setItem("admin_token", data.token);
-      localStorage.setItem("admin_email", data.email ?? "");
-      router.replace("/admin/dashboard");
+      if (data.codeRequired && typeof data.codeToken === "string") {
+        setCodeToken(data.codeToken);
+        setLoading(false);
+        return;
+      }
+
+      finishSignIn(data);
     } catch {
       setError("Couldn't reach the server. It may be waking up, so try again in a moment.");
       setLoading(false);
@@ -181,6 +223,57 @@ export default function SignInClient({
             The gallery, the About page and your messages.
           </p>
 
+          {codeToken ? (
+            <form className="enter mt-12 flex flex-col gap-8" onSubmit={handleCode}>
+              <div>
+                <label htmlFor="admin-code" className="field-label">
+                  Code from your authenticator app
+                </label>
+                <input
+                  id="admin-code"
+                  className="field tracking-[0.2em]"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="one-time-code"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  maxLength={20}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  aria-describedby="admin-code-hint"
+                  autoFocus
+                  required
+                />
+                <p id="admin-code-hint" className="mt-2 text-label text-fg-3">
+                  The 6 digits your app shows now. Lost your phone? Enter one of your recovery codes instead.
+                </p>
+              </div>
+
+              {error && (
+                <p role="alert" className="text-body-md text-error">
+                  {error}
+                </p>
+              )}
+
+              <button className="btn btn-primary mt-2 w-full" type="submit" disabled={loading} aria-busy={loading}>
+                {loading && <Spinner />}
+                {loading ? "Checking…" : "Continue"}
+              </button>
+              <button
+                type="button"
+                className="text-link w-fit"
+                onClick={() => {
+                  setCodeToken(null);
+                  setCode("");
+                  setPassword("");
+                  setError("");
+                }}
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+                Start again
+              </button>
+            </form>
+          ) : (
           <form
             className="enter mt-12 flex flex-col gap-8"
             style={{ "--i": 4 } as CSSProperties}
@@ -228,6 +321,7 @@ export default function SignInClient({
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
+          )}
 
           <Link href="/" className="text-link enter mt-10" style={{ "--i": 5 } as CSSProperties}>
             <ArrowLeft size={16} aria-hidden="true" />

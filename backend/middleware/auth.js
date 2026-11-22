@@ -1,5 +1,9 @@
 import jwt from 'jsonwebtoken';
 import AdminUser from '../models/AdminUser.js';
+import { securityEvent } from './securityLog.js';
+
+/** Never loaded into req.user: hashes and two-step secrets. */
+const HIDDEN = '-passwordHash -totpSecret -totpPending -recoveryCodes';
 
 export const protect = async (req, res, next) => {
   let token;
@@ -20,12 +24,20 @@ export const protect = async (req, res, next) => {
   try {
     token = req.headers.authorization.split(' ')[1];
     decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-  } catch {
+  } catch (err) {
     // Expired, malformed, wrong signature or algorithm.
+    securityEvent(req, 'token.rejected', { reason: err?.name === 'TokenExpiredError' ? 'expired' : 'invalid' });
     return res.status(401).json({ message: 'Not authorized, token failed' });
   }
 
-  req.user = await AdminUser.findById(decoded.id).select('-passwordHash');
+  // A half-signed-in token (password right, code not yet given) is only
+  // good for POST /api/auth/login/verify, never as a session.
+  if (decoded.purpose) {
+    securityEvent(req, 'token.rejected', { reason: 'not a session token' });
+    return res.status(401).json({ message: 'Not authorized, token failed' });
+  }
+
+  req.user = await AdminUser.findById(decoded.id).select(HIDDEN);
 
   if (!req.user) {
     return res.status(401).json({ message: 'Not authorized, user not found' });
@@ -33,6 +45,7 @@ export const protect = async (req, res, next) => {
 
   // Issued before the last email/password change: signed out.
   if ((decoded.v ?? 0) !== (req.user.tokenVersion ?? 0)) {
+    securityEvent(req, 'token.rejected', { reason: 'signed out by a credentials change' });
     return res.status(401).json({ message: 'Not authorized, session ended' });
   }
 

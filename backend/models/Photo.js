@@ -12,6 +12,9 @@ import { signedImageSet } from '../config/cloudinary.js';
  */
 export const CATEGORIES = ['nature', 'objects', 'monochrome', 'urban'];
 
+/** Text limits, in step with the Studio's Upload and Edit forms. */
+export const PHOTO_TEXT_MAX = { caption: 200, location: 200, tag: 50, tags: 30 };
+
 const photoSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
@@ -35,16 +38,22 @@ const photoSchema = new mongoose.Schema({
     required: true
   },
   tags: {
-    type: [String],
-    default: []
+    type: [{ type: String, maxlength: PHOTO_TEXT_MAX.tag }],
+    default: [],
+    validate: {
+      validator: (v) => v.length <= PHOTO_TEXT_MAX.tags,
+      message: `At most ${PHOTO_TEXT_MAX.tags} tags`,
+    },
   },
   caption: {
     type: String,
-    default: ''
+    default: '',
+    maxlength: [PHOTO_TEXT_MAX.caption, `Title must be ${PHOTO_TEXT_MAX.caption} characters or fewer`],
   },
   location: {
     type: String,
-    default: ''
+    default: '',
+    maxlength: [PHOTO_TEXT_MAX.location, `Location must be ${PHOTO_TEXT_MAX.location} characters or fewer`],
   },
   position: {
     type: Number,

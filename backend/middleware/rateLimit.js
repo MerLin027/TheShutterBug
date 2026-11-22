@@ -65,6 +65,19 @@ export const loginLimiter = rateLimit({
   message: 'Too many sign-in attempts. Please wait 15 minutes and try again.',
 });
 
+/**
+ * The second sign-in step (the 6-digit code): 5 tries per 15 minutes per
+ * address, counted separately from the password step so a normal two-step
+ * sign-in doesn't use up two of the five password attempts. Wrong codes
+ * also count toward the account-wide pause below.
+ */
+export const codeLimiter = rateLimit({
+  name: 'login-code',
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many code attempts. Please wait 15 minutes and try again.',
+});
+
 /** Contact form: 5 messages per hour per address. */
 export const contactLimiter = rateLimit({
   name: 'contact',

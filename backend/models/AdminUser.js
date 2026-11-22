@@ -20,7 +20,17 @@ const adminUserSchema = new mongoose.Schema({
   tokenVersion: {
     type: Number,
     default: 0
-  }
+  },
+  // Two-step sign-in (2026-11-22, config/totp.js). The secret is stored
+  // sealed (AES-256-GCM); `totpPending` holds a new secret between setup and
+  // the first correct code. `totpLastStep` stops a code being used twice.
+  // Recovery codes are SHA-256 hashes, each removed when used. None of this
+  // is ever sent to a client.
+  totpEnabled: { type: Boolean, default: false },
+  totpSecret: { type: String, default: '' },
+  totpPending: { type: String, default: '' },
+  totpLastStep: { type: Number, default: -1 },
+  recoveryCodes: { type: [String], default: [] }
 }, { timestamps: true });
 
 export default mongoose.model('AdminUser', adminUserSchema);

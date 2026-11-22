@@ -1,6 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import Photo, { CATEGORIES } from '../models/Photo.js';
+import Photo, { CATEGORIES, PHOTO_TEXT_MAX } from '../models/Photo.js';
 import { protect } from '../middleware/auth.js';
 import { upload, uploadImage, releaseAsset, PROTECTED_TYPE } from '../config/cloudinary.js';
 
@@ -17,6 +17,29 @@ const MAX_REORDER_ITEMS = 500;
 function parseTags(tags) {
   const list = Array.isArray(tags) ? tags : String(tags).split(',');
   return list.map((t) => String(t).trim()).filter(Boolean);
+}
+
+/**
+ * Type and length checks for the text a photo carries (2026-11-22 audit,
+ * OWASP input validation). Anything present must be text (or, for tags, a
+ * list of text) within the Studio forms' limits; an object or a 1 MB caption
+ * used to reach Mongoose. Returns an error message, or null.
+ */
+function metaError({ caption, location, tags }) {
+  for (const [name, value] of [['Title', caption], ['Location', location]]) {
+    if (value === undefined) continue;
+    if (typeof value !== 'string') return `${name} must be text`;
+    const max = name === 'Title' ? PHOTO_TEXT_MAX.caption : PHOTO_TEXT_MAX.location;
+    if (value.length > max) return `${name} must be ${max} characters or fewer`;
+  }
+  if (tags !== undefined) {
+    const isText = typeof tags === 'string' || (Array.isArray(tags) && tags.every((t) => typeof t === 'string'));
+    if (!isText) return 'Tags must be text';
+    const list = parseTags(tags);
+    if (list.length > PHOTO_TEXT_MAX.tags) return `At most ${PHOTO_TEXT_MAX.tags} tags`;
+    if (list.some((t) => t.length > PHOTO_TEXT_MAX.tag)) return `Each tag must be ${PHOTO_TEXT_MAX.tag} characters or fewer`;
+  }
+  return null;
 }
 
 // @route   GET /api/photos
@@ -131,6 +154,8 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
   if (!CATEGORIES.includes(req.body.category)) {
     return res.status(400).json({ message: `Choose a category: ${CATEGORIES.join(', ')}` });
   }
+  const badMeta = metaError(req.body);
+  if (badMeta) return res.status(400).json({ message: badMeta });
   if (req.body.aspectRatio !== undefined) {
     const ratio = parseFloat(req.body.aspectRatio);
     if (!Number.isFinite(ratio) || ratio <= 0) {
@@ -195,6 +220,12 @@ router.put('/:id', protect, async (req, res) => {
   }
 
   const { category, tags, caption, location, position, isFeatured, aspectRatio } = req.body;
+
+  const badMeta = metaError(req.body);
+  if (badMeta) return res.status(400).json({ message: badMeta });
+  if (category !== undefined && !CATEGORIES.includes(category)) {
+    return res.status(400).json({ message: `Choose a category: ${CATEGORIES.join(', ')}` });
+  }
 
   // Fields are picked explicitly — never assign req.body wholesale, or a
   // caller could set _id, timestamps, or anything added to the schema later.
