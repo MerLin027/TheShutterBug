@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { apiUrl } from "@/lib/api";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
-import TwoStepSection from "./TwoStepSection";
 import SessionsSection from "./SessionsSection";
 
 /** In step with PASSWORD_MIN in backend/routes/auth.js. */
@@ -17,34 +16,12 @@ const PASSWORD_MIN = 12;
  * Studio → Account (owner request, 2026-11-15): change the sign-in email
  * and/or password. Backed by PUT /api/auth/credentials, which asks for the
  * current password again, signs out every other session, and hands this one
- * a fresh token.
+ * a fresh session.
  */
 export default function AccountClient() {
-  const { token, email: storedEmail, ready, signOut, updateSession } = useAdminToken();
-
-  // The signed-in address, asked of the server: the copy saved at sign-in
-  // can be missing (cleared storage, an older session), and comparing a new
-  // email against a blank would misjudge what changed. The stored copy is
-  // only the first guess.
-  const [accountEmail, setAccountEmail] = useState<string | null>(null);
-  const email = accountEmail ?? storedEmail;
-  useEffect(() => {
-    if (!token) return;
-    let cancelled = false;
-    fetch(apiUrl("/api/auth/me"), { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
-      .then(async (res) => {
-        if (cancelled) return;
-        if (res.status === 401) return signOut();
-        if (res.ok) {
-          const data: { email?: string } = await res.json().catch(() => ({}));
-          if (!cancelled && data.email) setAccountEmail(data.email);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [token, signOut]);
+  // `email` is the server's answer (the session hook asks GET /api/auth/me),
+  // so a new email is always compared against the real one.
+  const { signedIn, email, ready, signOut, updateSession } = useAdminToken();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newEmail, setNewEmail] = useState<string | null>(null);
@@ -87,7 +64,7 @@ export default function AccountClient() {
     try {
       const res = await fetch(apiUrl("/api/auth/credentials"), {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           currentPassword,
           ...(emailChanged ? { email: emailValue.trim() } : {}),
@@ -99,12 +76,12 @@ export default function AccountClient() {
         return;
       }
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.token) {
+      if (!res.ok || !data.email) {
         setError(data.message || "Couldn't save. Please try again.");
         return;
       }
-      updateSession(data.token, data.email);
-      setAccountEmail(data.email);
+      // The API has already replaced this browser's session cookie.
+      updateSession(data.email);
       setCurrentPassword("");
       setNewEmail(null);
       setNewPassword("");
@@ -123,7 +100,7 @@ export default function AccountClient() {
     }
   }
 
-  if (!ready || !token) {
+  if (!ready || !signedIn) {
     return <StudioBoot />;
   }
 
@@ -242,9 +219,7 @@ export default function AccountClient() {
           </div>
         </form>
 
-        <TwoStepSection token={token} email={email} signOut={signOut} updateSession={updateSession} />
-
-        <SessionsSection token={token} signOut={signOut} />
+        <SessionsSection signOut={signOut} />
       </div>
     </StudioShell>
   );

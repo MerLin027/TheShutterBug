@@ -26,14 +26,12 @@ type Props = {
   onSuccess: () => void;
   /** Token expired mid-upload — clear the session and return to login. */
   onUnauthorized: () => void;
-  token: string;
 };
 
 export default function UploadModal({
   onClose,
   onSuccess,
   onUnauthorized,
-  token,
 }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -168,7 +166,6 @@ export default function UploadModal({
 
       const res = await fetch(apiUrl("/api/photos"), {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 

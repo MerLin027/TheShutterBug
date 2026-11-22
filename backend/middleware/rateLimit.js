@@ -9,16 +9,35 @@
  * Keyed on the visitor's address (clientIp below).
  */
 
+import crypto from 'node:crypto';
+
+function sameKey(given, expected) {
+  const a = Buffer.from(String(given));
+  const b = Buffer.from(String(expected));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 /**
- * The visitor's address. Render sits behind Cloudflare, which sets
- * CF-Connecting-IP to the address that connected to it and overwrites any
- * value a client sends, so it can't be forged. `req.ip` was the key before
- * (2026-11-21 audit): with `trust proxy 1` it resolved to whichever proxy
- * relayed the request, so one visitor's five requests read "remaining"
- * 4, 4, 3, 2, 3 — the limit was spread over proxies, not visitors. Falls back
- * to req.ip when the header is absent (local runs).
+ * The visitor's address.
+ *
+ * Since audit F2 (2026-11-22) the browser reaches this API through the
+ * site's own domain: Vercel proxies /api/* here, so CF-Connecting-IP is
+ * Vercel's address, not the visitor's. For the per-visitor limited routes
+ * the site's proxy (src/proxy.ts) adds the visitor's address together with
+ * PROXY_KEY, a secret set in both dashboards. That address is trusted only
+ * when the key matches, so someone calling Render directly can't pick their
+ * own address to dodge a limit.
+ *
+ * Otherwise: CF-Connecting-IP (Render sits behind Cloudflare, which sets it
+ * and overwrites any value a client sends), then req.ip (local runs).
  */
 export function clientIp(req) {
+  const key = process.env.PROXY_KEY;
+  const given = req.headers['x-sb-proxy-key'];
+  const visitor = req.headers['x-sb-visitor-ip'];
+  if (key && typeof given === 'string' && typeof visitor === 'string' && visitor.length > 0 && visitor.length <= 64) {
+    if (sameKey(given, key)) return visitor.trim();
+  }
   const cf = req.headers['cf-connecting-ip'];
   if (typeof cf === 'string' && cf.length > 0 && cf.length <= 64) return cf.trim();
   return req.ip || 'unknown';
@@ -63,19 +82,6 @@ export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: 'Too many sign-in attempts. Please wait 15 minutes and try again.',
-});
-
-/**
- * The second sign-in step (the 6-digit code): 5 tries per 15 minutes per
- * address, counted separately from the password step so a normal two-step
- * sign-in doesn't use up two of the five password attempts. Wrong codes
- * also count toward the account-wide pause below.
- */
-export const codeLimiter = rateLimit({
-  name: 'login-code',
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: 'Too many code attempts. Please wait 15 minutes and try again.',
 });
 
 /** Contact form: 5 messages per hour per address. */

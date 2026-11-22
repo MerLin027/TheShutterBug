@@ -30,7 +30,7 @@ const SEED_IMAGE =
  */
 export default function AboutClient() {
   // Effect-based session read, not a lazy initialiser — see useAdminToken.
-  const { token, ready, signOut } = useAdminToken();
+  const { signedIn, ready, signOut } = useAdminToken();
 
   const [quote, setQuote] = useState(SEED_QUOTE);
   const [bio, setBio] = useState(SEED_BIO);
@@ -53,7 +53,7 @@ export default function AboutClient() {
   // Load the current About copy. GET is public, but there's no point firing it
   // before we know the admin is staying on the page.
   useEffect(() => {
-    if (!token) return;
+    if (!signedIn) return;
 
     let cancelled = false;
 
@@ -89,7 +89,7 @@ export default function AboutClient() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [signedIn]);
 
   async function handleSave() {
     setError("");
@@ -101,7 +101,6 @@ export default function AboutClient() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ quote, bio, aboutImageUrl: imageUrl }),
       });
@@ -130,7 +129,7 @@ export default function AboutClient() {
       // the save already succeeded, so a failure here must not be reported as
       // "save failed" — worst case the page updates 60 s later on its own.
       try {
-        await revalidatePublicPages(token);
+        await revalidatePublicPages();
       } catch {
         console.error("[about] revalidate failed after a successful save");
       }
@@ -145,8 +144,8 @@ export default function AboutClient() {
     }
   }
 
-  if (!ready || !token || loading) {
-    return <StudioBoot label={ready && token ? "Loading the Studio" : undefined} />;
+  if (!ready || !signedIn || loading) {
+    return <StudioBoot label={ready && signedIn ? "Loading the Studio" : undefined} />;
   }
 
   return (

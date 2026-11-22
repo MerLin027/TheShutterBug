@@ -14,7 +14,6 @@ type Props = {
   onSuccess: () => void;
   /** Token expired mid-edit — clear the session and return to login. */
   onUnauthorized: () => void;
-  token: string;
 };
 
 export default function EditModal({
@@ -22,7 +21,6 @@ export default function EditModal({
   onClose,
   onSuccess,
   onUnauthorized,
-  token,
 }: Props) {
   const [category, setCategory] = useState(photo.category);
   const [caption, setCaption] = useState(photo.caption);
@@ -42,7 +40,6 @@ export default function EditModal({
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           category,

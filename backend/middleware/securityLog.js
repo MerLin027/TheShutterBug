@@ -9,10 +9,9 @@ import { clientIp } from './rateLimit.js';
  * a password, code, token or the email someone typed (a password typed
  * into the email box would land in the log).
  *
- * Events: login.succeeded, login.failed, login.paused, login.code_required,
- * login.code_failed, token.rejected, credentials.changed,
- * credentials.failed, 2fa.setup_started, 2fa.enabled, 2fa.disabled,
- * 2fa.failed, 2fa.recovery_code_used.
+ * Events: login.succeeded, login.failed, login.paused, session.rejected,
+ * credentials.changed, credentials.failed, logout, logout.everywhere,
+ * cross_site.blocked.
  */
 export function securityEvent(req, event, details = {}) {
   console.warn(

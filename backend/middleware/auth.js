@@ -1,18 +1,23 @@
 import jwt from 'jsonwebtoken';
 import AdminUser from '../models/AdminUser.js';
 import { securityEvent } from './securityLog.js';
-import { SESSION_IDLE_MS, SEEN_WRITE_INTERVAL_MS } from '../config/sessions.js';
+import {
+  SESSION_IDLE_MS,
+  SEEN_WRITE_INTERVAL_MS,
+  readSessionCookie,
+  clearSessionCookie,
+} from '../config/sessions.js';
 
-/** Never loaded into req.user: hashes and two-step secrets. */
-const HIDDEN = '-passwordHash -totpSecret -totpPending -recoveryCodes';
+/** Never loaded into req.user. */
+const HIDDEN = '-passwordHash';
 
 /**
  * The token's session must still exist and have been used within the last
- * day. Signing out deletes it, so a copied token stops working at once
- * (it used to stay valid for up to 7 days after "Sign out"). Use keeps it
- * alive: lastSeen is refreshed, at most every few minutes to spare the DB.
+ * day. Signing out deletes it, so a session stops working at once. Use
+ * keeps it alive: lastSeen is refreshed, at most every few minutes to spare
+ * the DB.
  */
-async function sessionAlive(req, user, sid) {
+async function sessionAlive(user, sid) {
   if (typeof sid !== 'string') return 'no session id (issued before sessions existed)';
   const session = user.sessions?.find((s) => s.sid === sid);
   if (!session) return 'signed out';
@@ -24,56 +29,46 @@ async function sessionAlive(req, user, sid) {
   return null;
 }
 
+/**
+ * The session comes ONLY from the httpOnly cookie (audit F2, 2026-11-22).
+ * An Authorization: Bearer header is no longer accepted: a token that a
+ * script could hold is exactly what this change removed.
+ */
 export const protect = async (req, res, next) => {
-  let token;
-
-  // Note the trailing space: 'Bearer' alone also matched 'Bearerxyz', which
-  // then failed safely a step later (split(' ')[1] is undefined and jwt.verify
-  // throws a 401) but for the wrong reason.
-  if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+  const token = readSessionCookie(req);
+  if (!token) {
+    return res.status(401).json({ message: 'Not signed in' });
   }
 
+  // A refused session also clears the cookie, so the browser stops sending
+  // a dead one.
+  const refuse = (reason) => {
+    securityEvent(req, 'session.rejected', { reason });
+    clearSessionCookie(res);
+    return res.status(401).json({ message: 'Your session has ended. Please sign in again.' });
+  };
+
   // Only a bad token is a 401. The database lookup used to sit inside this
-  // same try, so an Atlas outage answered 401 "token failed" and the Studio,
-  // which treats 401 as "session over", deleted a perfectly good token and
-  // signed the owner out (2026-11-21 audit). A DB failure now reaches
-  // errorHandler as a 500 and the session survives it.
+  // same try, so an Atlas outage answered 401 and the Studio, which treats
+  // 401 as "session over", signed the owner out (2026-11-21 audit). A DB
+  // failure now reaches errorHandler as a 500 and the session survives it.
   let decoded;
   try {
-    token = req.headers.authorization.split(' ')[1];
     decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
   } catch (err) {
     // Expired, malformed, wrong signature or algorithm.
-    securityEvent(req, 'token.rejected', { reason: err?.name === 'TokenExpiredError' ? 'expired' : 'invalid' });
-    return res.status(401).json({ message: 'Not authorized, token failed' });
-  }
-
-  // A half-signed-in token (password right, code not yet given) is only
-  // good for POST /api/auth/login/verify, never as a session.
-  if (decoded.purpose) {
-    securityEvent(req, 'token.rejected', { reason: 'not a session token' });
-    return res.status(401).json({ message: 'Not authorized, token failed' });
+    return refuse(err?.name === 'TokenExpiredError' ? 'expired' : 'invalid');
   }
 
   req.user = await AdminUser.findById(decoded.id).select(HIDDEN);
+  if (!req.user) return refuse('user not found');
 
-  if (!req.user) {
-    return res.status(401).json({ message: 'Not authorized, user not found' });
-  }
+  // Issued before the last email/password change or "sign out everywhere".
+  if ((decoded.v ?? 0) !== (req.user.tokenVersion ?? 0)) return refuse('signed out by an account change');
 
-  // Issued before the last email/password change: signed out.
-  if ((decoded.v ?? 0) !== (req.user.tokenVersion ?? 0)) {
-    securityEvent(req, 'token.rejected', { reason: 'signed out by a credentials change' });
-    return res.status(401).json({ message: 'Not authorized, session ended' });
-  }
+  const ended = await sessionAlive(req.user, decoded.sid);
+  if (ended) return refuse(ended);
 
-  const ended = await sessionAlive(req, req.user, decoded.sid);
-  if (ended) {
-    securityEvent(req, 'token.rejected', { reason: ended });
-    return res.status(401).json({ message: 'Not authorized, session ended' });
-  }
   req.sessionId = decoded.sid;
-
   return next();
 };

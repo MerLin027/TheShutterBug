@@ -36,7 +36,7 @@ function shortDate(iso: string) {
  * blank the others.
  */
 export default function OverviewClient() {
-  const { token, email, ready, signOut } = useAdminToken();
+  const { signedIn, email, ready, signOut } = useAdminToken();
 
   const [photos, setPhotos] = useState<ApiPhoto[] | null>(null);
   const [messages, setMessages] = useState<Message[] | null>(null);
@@ -45,10 +45,8 @@ export default function OverviewClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (!signedIn) return;
     let cancelled = false;
-    const auth = { headers: { Authorization: `Bearer ${token}` } };
-
     async function get<T>(path: string, init?: RequestInit): Promise<T | null> {
       try {
         const res = await fetch(apiUrl(path), { cache: "no-store", ...init });
@@ -64,8 +62,8 @@ export default function OverviewClient() {
 
     (async () => {
       const [p, m, c] = await Promise.all([
-        get<ApiPhoto[]>("/api/photos", auth),
-        get<Message[]>("/api/contact", auth),
+        get<ApiPhoto[]>("/api/photos"),
+        get<Message[]>("/api/contact"),
         get<Content>("/api/site-content"),
       ]);
       if (cancelled) return;
@@ -79,9 +77,9 @@ export default function OverviewClient() {
     return () => {
       cancelled = true;
     };
-  }, [token, signOut]);
+  }, [signedIn, signOut]);
 
-  if (!ready || !token || loading) return <StudioBoot label={ready && token ? "Loading the Studio" : undefined} />;
+  if (!ready || !signedIn || loading) return <StudioBoot label={ready && signedIn ? "Loading the Studio" : undefined} />;
 
   const featured = photos?.filter((p) => p.isFeatured) ?? [];
   const byCategory = CATEGORIES.map((c) => ({ c, n: photos?.filter((p) => p.category === c).length ?? 0 })).filter(

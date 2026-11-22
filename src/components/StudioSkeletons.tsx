@@ -42,7 +42,7 @@ export function MessageListSkeleton() {
 }
 
 /**
- * The Studio's full-screen wait: before the localStorage token check resolves
+ * The Studio's full-screen wait: before the session check resolves
  * (both the server and the client's first pass render this — see
  * useAdminToken for why that matters for hydration), and while a page's first
  * data loads.

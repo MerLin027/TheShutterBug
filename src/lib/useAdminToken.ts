@@ -2,118 +2,124 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiUrl } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
-// useAdminToken — the Studio's session, read once and shared.
+// useAdminToken — the Studio's session, asked once and shared.
 //
-// WHY THIS EXISTS, AND WHY IT USES AN EFFECT RATHER THAN A LAZY INITIALISER
+// THE SESSION IS AN httpOnly COOKIE (audit F2, 2026-11-22)
 //
-// All four Studio surfaces used to do this:
+// It used to be a JWT in localStorage, which any script on the page could
+// read and send elsewhere. Now the API sets it as an httpOnly, Secure,
+// SameSite=Strict cookie on this site's own domain (/api/* is proxied to the
+// API, next.config.ts), and the browser attaches it to every /api request by
+// itself. No script, ours included, can read it. So "am I signed in?" is a
+// question for the server: GET /api/auth/me answers 200 with the email, or
+// 401. That answer is fetched once per page load and shared by every hook
+// instance on the page (the shell and the page both use this hook).
 //
-//     const [token] = useState(() =>
-//       typeof window === "undefined" ? null : localStorage.getItem("admin_token")
-//     );
-//
-// which looks like it avoids an extra render, and does — at the cost of a
-// hydration mismatch on every signed-in visit. The lazy initialiser runs on
-// the server too, where `window` is undefined, so the server renders
-// <StudioBoot /> while the client's first pass renders the full dashboard.
-// React then finds two different trees for the same markup and warns (and in
-// development, throws a recoverable error and re-renders the whole subtree).
-//
-// localStorage simply does not exist at SSR time. There is no initialiser that
-// can read it and match. The fix is to make BOTH passes render the same thing —
-// the boot screen — and let an effect, which only ever runs on the client,
-// supply the real answer immediately afterwards. The visible cost is one extra
-// frame of "Checking your session", which is what that screen is for.
-//
-// `ready` is what distinguishes "we haven't looked yet" from "we looked and
-// there's no token". Without it every page would redirect to /admin on its
-// first render, before the check had run.
+// WHY AN EFFECT, NOT A LAZY INITIALISER: the server can't know the answer
+// either, so BOTH render passes produce the boot screen (<StudioBoot />) and
+// the client's effect supplies the answer. `ready` distinguishes "not asked
+// yet" from "asked, and signed out"; without it every page would redirect to
+// /admin on its first render.
 // ---------------------------------------------------------------------------
 
-type AdminSession = {
-  /** null until `ready`, then the stored JWT or null if there isn't one. */
-  token: string | null;
-  /** The signed-in address, "" when absent. Display only. */
-  email: string;
-  /** False until the localStorage read has happened on the client. */
+type Session = { signedIn: boolean; email: string };
+
+type AdminSession = Session & {
+  /** False until the server has answered. */
   ready: boolean;
   /**
-   * Clear both keys and return to the login page. Local only: for when the
-   * server has already refused the token (a 401), so there is nothing to end.
+   * Local only: forget the session and go to the sign-in page. For when the
+   * server has already refused it (a 401), so there is nothing to end.
    */
   signOut: () => void;
   /**
-   * The Sign out button: end this session ON THE SERVER first (the token is
-   * dead from then on, even if copied), then sign out locally. Signs out
-   * locally even if the server can't be reached.
+   * The Sign out button: end the session ON THE SERVER (which also clears the
+   * cookie), then go to the sign-in page.
    */
   endSession: () => Promise<void>;
-  /** Store a fresh token and email (after a credentials change). */
-  updateSession: (token: string, email: string) => void;
+  /** After signing in or changing the email: record the new state. */
+  updateSession: (email: string) => void;
 };
+
+/** One answer per page load, shared by every hook instance. */
+let sessionPromise: Promise<Session> | null = null;
+
+const SIGNED_OUT: Session = { signedIn: false, email: "" };
+
+async function askServer(): Promise<Session> {
+  // The API may be waking from sleep (~30 s on Render's free tier); the
+  // proxy allows 120 s. A 5xx (database blip) is retried a few times rather
+  // than treated as "signed out", which would bounce the owner to sign-in.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "same-origin" });
+      if (res.ok) {
+        const data: { email?: string } = await res.json().catch(() => ({}));
+        return { signedIn: true, email: data.email ?? "" };
+      }
+      if (res.status === 401) return SIGNED_OUT;
+    } catch {
+      /* network: retry */
+    }
+    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+  }
+  return SIGNED_OUT;
+}
+
+function loadSession(): Promise<Session> {
+  sessionPromise ??= askServer();
+  return sessionPromise;
+}
 
 export function useAdminToken(
   { redirectWhenMissing = true }: { redirectWhenMissing?: boolean } = {}
 ): AdminSession {
   const router = useRouter();
-
-  const [session, setSession] = useState<{
-    token: string | null;
-    email: string;
-    ready: boolean;
-  }>({ token: null, email: "", ready: false });
+  const [session, setSession] = useState<Session & { ready: boolean }>({ ...SIGNED_OUT, ready: false });
 
   useEffect(() => {
-    // Client-only by construction — effects don't run during SSR, which is
-    // the whole point. The lint rule guards against effects that set state
-    // derivable during render; this one reads a browser API that cannot be.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSession({
-      token: localStorage.getItem("admin_token"),
-      email: localStorage.getItem("admin_email") ?? "",
-      ready: true,
+    let cancelled = false;
+    loadSession().then((s) => {
+      if (!cancelled) setSession({ ...s, ready: true });
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Guard: once we've actually looked and there's no token, leave.
-  // Opt-out exists for the login page, whose redirect runs the other way.
+  // Guard: once the server has answered "signed out", leave.
+  // Opt-out exists for the sign-in page, whose redirect runs the other way.
   useEffect(() => {
-    if (redirectWhenMissing && session.ready && !session.token) {
+    if (redirectWhenMissing && session.ready && !session.signedIn) {
       router.replace("/admin");
     }
-  }, [redirectWhenMissing, session.ready, session.token, router]);
+  }, [redirectWhenMissing, session.ready, session.signedIn, router]);
 
   const signOut = useCallback(() => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_email");
-    setSession({ token: null, email: "", ready: true });
+    sessionPromise = Promise.resolve(SIGNED_OUT);
+    setSession({ ...SIGNED_OUT, ready: true });
     router.replace("/admin");
   }, [router]);
 
   const endSession = useCallback(async () => {
-    const token = localStorage.getItem("admin_token");
-    if (token) {
-      try {
-        await fetch(apiUrl("/api/auth/logout"), {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          keepalive: true,
-          signal: AbortSignal.timeout(8000),
-        });
-      } catch {
-        /* unreachable: still sign out here; the session idles out in a day */
-      }
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch {
+      /* unreachable: the session still ends by itself after a day unused */
     }
     signOut();
   }, [signOut]);
 
-  const updateSession = useCallback((token: string, email: string) => {
-    localStorage.setItem("admin_token", token);
-    localStorage.setItem("admin_email", email);
-    setSession({ token, email, ready: true });
+  const updateSession = useCallback((email: string) => {
+    const next = { signedIn: true, email };
+    sessionPromise = Promise.resolve(next);
+    setSession({ ...next, ready: true });
   }, []);
 
   return { ...session, signOut, endSession, updateSession };

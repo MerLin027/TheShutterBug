@@ -73,11 +73,11 @@ const filterLabel = (f: Filter) =>
  */
 export default function PhotosClient() {
   // ── Auth state ──────────────────────────────────────────────────────────
-  // See useAdminToken for why this is an effect rather than a lazy
-  // initialiser: localStorage doesn't exist at SSR time, so reading it during
-  // the first render made the server and client disagree about which tree to
-  // paint. The hook also owns the redirect when there's no token.
-  const { token, ready, signOut } = useAdminToken();
+  // The session is an httpOnly cookie only the server can see; the hook asks
+  // GET /api/auth/me after the first render (see useAdminToken for why both
+  // passes render the boot screen). It also owns the redirect when there's
+  // no session.
+  const { signedIn, ready, signOut } = useAdminToken();
 
   // ── Data state ──────────────────────────────────────────────────────────
   const [photos, setPhotos] = useState<ApiPhoto[]>([]);
@@ -114,7 +114,7 @@ export default function PhotosClient() {
   // (2026-11-21 audit). A failed refresh only delays the public pages ≤60 s.
   async function refreshPublic() {
     try {
-      await revalidatePublicPages(token);
+      await revalidatePublicPages();
     } catch (err) {
       console.error("[admin] revalidate failed after a successful change:", err);
     }
@@ -136,11 +136,13 @@ export default function PhotosClient() {
   // (2026-11-21 audit).
   const latestFetch = useRef(0);
   const fetchPhotos = useCallback(async () => {
-    if (!token) return;
+    if (!signedIn) return;
     const requestId = ++latestFetch.current;
     const stale = () => requestId !== latestFetch.current;
 
-    const url = new URL(apiUrl("/api/photos"));
+    // A relative path in the browser (the /api proxy), so build the query
+    // against this page's origin.
+    const url = new URL(apiUrl("/api/photos"), window.location.origin);
     // "featured" isn't an API filter: fetch everything and keep the
     // starred ones. Reordering still works on the subset — handleDragEnd
     // only permutes the positions the visible photos already hold.
@@ -149,9 +151,7 @@ export default function PhotosClient() {
     }
 
     try {
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(url.toString());
 
       if (res.status === 401) {
         signOut();
@@ -175,7 +175,7 @@ export default function PhotosClient() {
     } finally {
       if (!stale()) setLoading(false);
     }
-  }, [token, activeCategory, signOut]);
+  }, [signedIn, activeCategory, signOut]);
 
   // Fetch on mount and when category changes.
   // The fetchPhotos callback calls setPhotos/setLoading internally, but
@@ -188,15 +188,14 @@ export default function PhotosClient() {
 
   // ── Delete handler ──────────────────────────────────────────────────────
   async function handleDelete() {
-    if (!deletingPhoto || !token) return;
+    if (!deletingPhoto || !signedIn) return;
     setDeleting(true);
     setDeleteError("");
 
     try {
       const res = await fetch(apiUrl(`/api/photos/${deletingPhoto._id}`), {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        });
 
       if (res.status === 401) {
         signOut();
@@ -239,7 +238,7 @@ export default function PhotosClient() {
   // filtered or not, and it cannot touch a photo that isn't on screen.
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    if (!over || active.id === over.id || !token) return;
+    if (!over || active.id === over.id || !signedIn) return;
 
     const oldIndex = photos.findIndex((p) => p._id === active.id);
     const newIndex = photos.findIndex((p) => p._id === over.id);
@@ -271,7 +270,6 @@ export default function PhotosClient() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ items }),
       });
@@ -298,7 +296,7 @@ export default function PhotosClient() {
 
   // ── Featured toggle (§1.8) — optimistic, with rollback on failure ───────
   async function handleToggleFeatured(photo: ApiPhoto) {
-    if (!token) return;
+    if (!signedIn) return;
     const nextValue = !photo.isFeatured;
     const rollback = () =>
       setPhotos((prev) =>
@@ -315,7 +313,6 @@ export default function PhotosClient() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ isFeatured: nextValue }),
       });
@@ -348,9 +345,9 @@ export default function PhotosClient() {
     setDeleteError("");
   }
 
-  // ── Pre-auth: the session read hasn't happened yet, or there's no token
+  // ── Pre-auth: the session read hasn't happened yet, or there's no session
   //    and the hook's redirect is in flight ─────────────────────────────────
-  if (!ready || !token) {
+  if (!ready || !signedIn) {
     return <StudioBoot />;
   }
 
@@ -475,9 +472,8 @@ export default function PhotosClient() {
         )}
       </div>
 
-      {showUpload && token && (
+      {showUpload && signedIn && (
         <UploadModal
-          token={token}
           onUnauthorized={signOut}
           onClose={() => setShowUpload(false)}
           onSuccess={async () => {
@@ -488,10 +484,9 @@ export default function PhotosClient() {
         />
       )}
 
-      {editingPhoto && token && (
+      {editingPhoto && signedIn && (
         <EditModal
           photo={editingPhoto}
-          token={token}
           onUnauthorized={signOut}
           onClose={() => setEditingPhoto(null)}
           onSuccess={async () => {

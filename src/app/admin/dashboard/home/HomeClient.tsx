@@ -32,7 +32,7 @@ function heroPreviewUrl(data: { heroImages?: Record<string, string> | null; hero
  * revalidated so Home changes at once.
  */
 export default function HomeClient() {
-  const { token, ready, signOut } = useAdminToken();
+  const { signedIn, ready, signOut } = useAdminToken();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -75,7 +75,7 @@ export default function HomeClient() {
   }, [newPreview]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!signedIn) return;
     let cancelled = false;
     (async () => {
       try {
@@ -112,12 +112,12 @@ export default function HomeClient() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [signedIn]);
 
   async function refreshPublic() {
     // The change already landed; a failed revalidate only delays it ≤60 s.
     try {
-      await revalidatePublicPages(token);
+      await revalidatePublicPages();
     } catch {
       console.error("[home] revalidate failed after a successful change");
     }
@@ -138,7 +138,7 @@ export default function HomeClient() {
     try {
       const res = await fetch(apiUrl("/api/site-content"), {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           heroImageAlt: heroAlt.trim(),
           showWorkStatement: showStatement,
@@ -217,7 +217,6 @@ export default function HomeClient() {
       form.append("alt", newAlt.trim());
       const res = await fetch(apiUrl("/api/site-content/hero"), {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
       if (res.status === 401) {
@@ -246,7 +245,6 @@ export default function HomeClient() {
       // The public site only ever gets signed display sizes (Phase D10). The
       // stored file comes from an owner-only route as a five-minute link.
       const res = await fetch(apiUrl("/api/site-content/hero/download"), {
-        headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
       if (res.status === 401) {
@@ -286,8 +284,8 @@ export default function HomeClient() {
     }
   }
 
-  if (!ready || !token || loading) {
-    return <StudioBoot label={ready && token ? "Loading the Studio" : undefined} />;
+  if (!ready || !signedIn || loading) {
+    return <StudioBoot label={ready && signedIn ? "Loading the Studio" : undefined} />;
   }
 
   return (

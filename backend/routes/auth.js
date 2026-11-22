@@ -3,50 +3,33 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import AdminUser from '../models/AdminUser.js';
 import { protect } from '../middleware/auth.js';
-import {
-  loginLimiter,
-  codeLimiter,
-  credentialsLimiter,
-  accountLocked,
-  recordFailedSignIn,
-} from '../middleware/rateLimit.js';
+import { loginLimiter, credentialsLimiter, accountLocked, recordFailedSignIn } from '../middleware/rateLimit.js';
 import { securityEvent } from '../middleware/securityLog.js';
 import { EMAIL_REGEX } from '../models/Contact.js';
-import { startSession } from '../config/sessions.js';
-import {
-  generateSecret,
-  verifyCode,
-  otpauthUrl,
-  sealSecret,
-  openSecret,
-  generateRecoveryCodes,
-  hashRecoveryCode,
-  looksLikeRecoveryCode,
-} from '../config/totp.js';
+import { startSession, setSessionCookie, clearSessionCookie, TOKEN_LIFETIME } from '../config/sessions.js';
 
 const router = express.Router();
 
-// Session length. Was 30 days (D5, 2026-11-15): the token sits in
-// localStorage, so a stolen one was good for a month. A week keeps the
-// owner from signing in daily while bounding that window. Moving the token
-// to an httpOnly cookie would close it properly; that needs the API and the
-// site on one domain (they're on onrender.com and vercel.app), so it is
-// recorded in REDESIGN.md as a follow-up rather than done here.
-const TOKEN_LIFETIME = '7d';
-
-// Generate JWT. HS256 is pinned on both sides (here and in middleware/auth.js)
-// so a token can't name a different algorithm.
-// `v` is the account's tokenVersion at issue time (see models/AdminUser.js);
-// `sid` names the session (config/sessions.js), which signing out deletes.
-// Starts a session on `user` and SAVES it, so call it last.
-const issueSession = async (user, { only = false } = {}) => {
+// The session is a JWT in an httpOnly, Secure, SameSite=Strict cookie
+// (audit F2, 2026-11-22; config/sessions.js). It used to be returned in the
+// response body and kept in localStorage, where any script on the page could
+// read it. No response carries the token now.
+//
+// HS256 is pinned on both sides (here and in middleware/auth.js) so a token
+// can't name a different algorithm. `v` is the account's tokenVersion at
+// issue time (models/AdminUser.js); `sid` names the session, which signing
+// out deletes.
+//
+// Starts a session on `user`, SAVES the user, and sets the cookie; call it last.
+async function issueSession(res, user, { only = false } = {}) {
   const sid = startSession(user, { only });
   await user.save();
-  return jwt.sign({ id: user._id, v: user.tokenVersion ?? 0, sid }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ id: user._id, v: user.tokenVersion ?? 0, sid }, process.env.JWT_SECRET, {
     algorithm: 'HS256',
     expiresIn: TOKEN_LIFETIME,
   });
-};
+  setSessionCookie(res, token);
+}
 
 // A real bcrypt hash of a random string, at the same cost as stored hashes
 // (scripts/seedAdmin.js). Compared against when the email matches no
@@ -54,44 +37,6 @@ const issueSession = async (user, { only = false } = {}) => {
 // response time doesn't reveal which emails exist (D3).
 const SALT_ROUNDS = 12;
 const DUMMY_HASH = bcrypt.hashSync(Math.random().toString(36), SALT_ROUNDS);
-
-/**
- * The half-way token between the password step and the code step: it names
- * the account and proves the password was right, lives five minutes, and
- * middleware/auth.js refuses it as a session (it carries `purpose`).
- */
-const CODE_STEP_LIFETIME = '5m';
-const generateCodeStepToken = (user) =>
-  jwt.sign({ id: user._id, v: user.tokenVersion ?? 0, purpose: 'second-step' }, process.env.JWT_SECRET, {
-    algorithm: 'HS256',
-    expiresIn: CODE_STEP_LIFETIME,
-  });
-
-/**
- * Check a second-step code: a 6-digit authenticator code, or one of the
- * recovery codes. On success the user document is updated (the code's time
- * step recorded so it can't be replayed, or the recovery code removed) and
- * the caller must save it. Returns 'code' | 'recovery' | null.
- */
-function checkSecondFactor(user, code) {
-  if (typeof code !== 'string') return null;
-  const trimmed = code.trim().replace(/\s+/g, '');
-  if (/^\d{6}$/.test(trimmed)) {
-    const secret = openSecret(user.totpSecret);
-    if (!secret) return null;
-    const step = verifyCode(secret, trimmed, user.totpLastStep ?? -1);
-    if (step === null) return null;
-    user.totpLastStep = step;
-    return 'code';
-  }
-  if (looksLikeRecoveryCode(trimmed)) {
-    const i = user.recoveryCodes.indexOf(hashRecoveryCode(trimmed));
-    if (i === -1) return null;
-    user.recoveryCodes.splice(i, 1);
-    return 'recovery';
-  }
-  return null;
-}
 
 /** New-password rule: length is what matters (NIST SP 800-63B). */
 export const PASSWORD_MIN = 12;
@@ -101,7 +46,7 @@ const PASSWORD_MAX = 200;
 const BCRYPT_MAX_BYTES = 72;
 
 // @route   POST /api/auth/login
-// @desc    Auth user & get token
+// @desc    Sign in: sets the session cookie
 // @access  Public
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -115,7 +60,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   // so there was no bypass, but login should not answer for an account the
   // caller never named.
   if (typeof email !== 'string' || typeof password !== 'string' || !email || !password ||
-      email.length > 254 || password.length > 200) {
+      email.length > 254 || password.length > PASSWORD_MAX) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
@@ -140,82 +85,19 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(401).json({ message: 'Invalid email or password' });
   }
 
-  // Two-step sign-in on: the password alone doesn't open the Studio. Hand
-  // back a five-minute token for the code step instead of a session.
-  if (user.totpEnabled) {
-    securityEvent(req, 'login.code_required');
-    return res.json({ codeRequired: true, codeToken: generateCodeStepToken(user) });
-  }
-
-  securityEvent(req, 'login.succeeded', { secondStep: false });
-  const token = await issueSession(user);
-  // passwordHash is never included in the response.
-  res.json({
-    _id: user._id,
-    email: user.email,
-    token,
-  });
-});
-
-// @route   POST /api/auth/login/verify
-// @desc    Second sign-in step: the authenticator code (or a recovery code)
-// @access  Public, with the five-minute token from a correct password
-//
-// Body: { codeToken, code }
-router.post('/login/verify', codeLimiter, async (req, res) => {
-  const { codeToken, code } = req.body;
-  if (typeof codeToken !== 'string' || typeof code !== 'string' || codeToken.length > 2048 || code.length > 40) {
-    return res.status(400).json({ message: 'Enter the code from your authenticator app' });
-  }
-  if (accountLocked()) {
-    securityEvent(req, 'login.paused');
-    return res.status(429).json({
-      message: 'Too many failed sign-ins. Sign-in is paused; please try again within the hour.',
-    });
-  }
-
-  let decoded;
-  try {
-    decoded = jwt.verify(codeToken, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-  } catch {
-    return res.status(401).json({ message: 'That sign-in took too long. Please start again.', restart: true });
-  }
-  if (decoded.purpose !== 'second-step') {
-    return res.status(401).json({ message: 'Please start again.', restart: true });
-  }
-
-  const user = await AdminUser.findById(decoded.id);
-  if (!user || !user.totpEnabled || (decoded.v ?? 0) !== (user.tokenVersion ?? 0)) {
-    return res.status(401).json({ message: 'Please start again.', restart: true });
-  }
-
-  const used = checkSecondFactor(user, code);
-  if (!used) {
-    recordFailedSignIn();
-    securityEvent(req, 'login.code_failed');
-    return res.status(401).json({ message: "That code didn't work. Check your app and try again." });
-  }
-  const token = await issueSession(user); // also saves the used code / step
-
-  if (used === 'recovery') {
-    securityEvent(req, '2fa.recovery_code_used', { left: user.recoveryCodes.length });
-  }
-  securityEvent(req, 'login.succeeded', { secondStep: used });
-  res.json({
-    _id: user._id,
-    email: user.email,
-    token,
-    ...(used === 'recovery' ? { recoveryCodesLeft: user.recoveryCodes.length } : {}),
-  });
+  await issueSession(res, user);
+  securityEvent(req, 'login.succeeded');
+  // passwordHash and the token are never included in the response.
+  res.json({ email: user.email });
 });
 
 // @route   GET /api/auth/me
-// @desc    Who is this token for? (200 with the email, or 401)
+// @desc    Who is this session for? (200 with the email, or 401)
 // @access  Private
 //
-// Lets the site's server confirm a token before acting on it: the
-// revalidatePublicPages Server Action is a public endpoint and only purges
-// the cache for a caller whose token passes here (D9).
+// The Studio asks this on load to know whether it is signed in (the cookie
+// can't be read by script). The revalidatePublicPages Server Action also
+// forwards the cookie here and only purges the cache when it passes (D9).
 router.get('/me', protect, (req, res) => {
   res.json({ email: req.user.email });
 });
@@ -226,15 +108,15 @@ router.get('/me', protect, (req, res) => {
 //
 // Body: { currentPassword, email?, newPassword? }
 //
-// - The current password is asked for again even though the caller holds a
-//   valid token: a token left in an unattended browser (or stolen from
-//   localStorage) must not be enough to take the account over.
+// - The current password is asked for again even though the caller has a
+//   valid session: a browser left unattended must not be enough to take the
+//   account over.
 // - A wrong current password answers 403, not 401: the Studio treats 401 as
 //   "session over" and signs the owner out, which a typo shouldn't do.
-// - Any change bumps tokenVersion, which signs out every other session; the
-//   caller gets a fresh token so this one carries on.
+// - Any change bumps tokenVersion and keeps only a fresh session for this
+//   browser, which signs out every other one.
 // - Rate-limited like login, so the current-password check can't be used to
-//   guess the password from a stolen token.
+//   guess the password from a hijacked session.
 router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
   const { currentPassword, email, newPassword } = req.body;
 
@@ -288,10 +170,8 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
   if (emailChanged) user.email = nextEmail;
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
 
-  // A credentials change ends every other session; this one gets a fresh one.
-  let token;
   try {
-    token = await issueSession(user, { only: true });
+    await issueSession(res, user, { only: true });
   } catch (err) {
     if (err?.code === 11000) {
       return res.status(409).json({ message: 'That email is already in use' });
@@ -303,113 +183,7 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
     changed: [emailChanged && 'email', passwordChanged && 'password'].filter(Boolean).join(' + '),
   });
 
-  res.json({ email: user.email, token });
-});
-
-// -- Two-step sign-in management (Studio -> Account) --------------------------
-//
-// Every change here needs the current password (and turning it off needs a
-// code as well), is rate-limited like a credentials change, and bumps
-// tokenVersion, which signs out every other browser.
-
-/** Wrong current password -> 403 (not 401: a typo mustn't sign the owner out). */
-async function userWithPassword(req, res) {
-  const { currentPassword } = req.body;
-  if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > PASSWORD_MAX) {
-    res.status(400).json({ message: 'Enter your current password' });
-    return null;
-  }
-  const user = await AdminUser.findById(req.user._id);
-  if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
-    securityEvent(req, '2fa.failed', { reason: 'wrong current password' });
-    res.status(403).json({ message: 'Your current password is incorrect' });
-    return null;
-  }
-  return user;
-}
-
-// @route   GET /api/auth/2fa
-// @desc    Is two-step sign-in on, and how many recovery codes are left?
-// @access  Private
-router.get('/2fa', protect, async (req, res) => {
-  const user = await AdminUser.findById(req.user._id).select('totpEnabled recoveryCodes');
-  res.json({ enabled: !!user?.totpEnabled, recoveryCodesLeft: user?.recoveryCodes?.length ?? 0 });
-});
-
-// @route   POST /api/auth/2fa/setup
-// @desc    Start turning it on: a new secret for the authenticator app
-// @access  Private + current password. Body: { currentPassword }
-router.post('/2fa/setup', credentialsLimiter, protect, async (req, res) => {
-  const user = await userWithPassword(req, res);
-  if (!user) return;
-  if (user.totpEnabled) {
-    return res.status(409).json({ message: 'Two-step sign-in is already on' });
-  }
-  const secret = generateSecret();
-  user.totpPending = sealSecret(secret);
-  await user.save();
-  securityEvent(req, '2fa.setup_started');
-  // The secret goes to the signed-in owner once, to put in their app.
-  res.json({ secret, otpauthUrl: otpauthUrl(secret, user.email) });
-});
-
-// @route   POST /api/auth/2fa/enable
-// @desc    Finish turning it on: the first code from the app proves it works
-// @access  Private. Body: { code }
-router.post('/2fa/enable', credentialsLimiter, protect, async (req, res) => {
-  const user = await AdminUser.findById(req.user._id);
-  if (!user?.totpPending) {
-    return res.status(400).json({ message: 'Start again: set up the authenticator app first' });
-  }
-  const { code } = req.body;
-  if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
-    return res.status(400).json({ message: 'Enter the 6-digit code from your app' });
-  }
-  const pending = openSecret(user.totpPending);
-  const step = pending ? verifyCode(pending, code.trim(), -1) : null;
-  if (step === null) {
-    securityEvent(req, '2fa.failed', { reason: 'wrong code while turning on' });
-    return res.status(400).json({ message: "That code didn't work. Check the app's clock and try the newest code." });
-  }
-
-  const recoveryCodes = generateRecoveryCodes();
-  user.totpSecret = user.totpPending;
-  user.totpPending = '';
-  user.totpEnabled = true;
-  user.totpLastStep = step;
-  user.recoveryCodes = recoveryCodes.map(hashRecoveryCode);
-  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
-  const token = await issueSession(user, { only: true });
-
-  securityEvent(req, '2fa.enabled');
-  // The recovery codes are shown once and never again (only hashes are kept).
-  res.json({ enabled: true, recoveryCodes, token });
-});
-
-// @route   POST /api/auth/2fa/disable
-// @desc    Turn it off
-// @access  Private + current password + a code (or recovery code).
-//          Body: { currentPassword, code }
-router.post('/2fa/disable', credentialsLimiter, protect, async (req, res) => {
-  const user = await userWithPassword(req, res);
-  if (!user) return;
-  if (!user.totpEnabled) {
-    return res.status(409).json({ message: 'Two-step sign-in is already off' });
-  }
-  if (!checkSecondFactor(user, req.body.code)) {
-    securityEvent(req, '2fa.failed', { reason: 'wrong code while turning off' });
-    return res.status(400).json({ message: "That code didn't work. Use a current code from your app, or a recovery code." });
-  }
-  user.totpEnabled = false;
-  user.totpSecret = '';
-  user.totpPending = '';
-  user.totpLastStep = -1;
-  user.recoveryCodes = [];
-  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
-  const token = await issueSession(user, { only: true });
-
-  securityEvent(req, '2fa.disabled');
-  res.json({ enabled: false, token });
+  res.json({ email: user.email });
 });
 
 // -- Sessions ------------------------------------------------------------------
@@ -423,10 +197,11 @@ router.get('/sessions', protect, async (req, res) => {
 });
 
 // @route   POST /api/auth/logout
-// @desc    Sign out: delete this session on the server, so the token is dead
+// @desc    Sign out: delete this session on the server and clear the cookie
 // @access  Private
 router.post('/logout', protect, async (req, res) => {
   await AdminUser.updateOne({ _id: req.user._id }, { $pull: { sessions: { sid: req.sessionId } } });
+  clearSessionCookie(res);
   securityEvent(req, 'logout');
   res.json({ message: 'Signed out' });
 });
@@ -436,6 +211,7 @@ router.post('/logout', protect, async (req, res) => {
 // @access  Private
 router.post('/logout-all', protect, async (req, res) => {
   await AdminUser.updateOne({ _id: req.user._id }, { $set: { sessions: [] }, $inc: { tokenVersion: 1 } });
+  clearSessionCookie(res);
   securityEvent(req, 'logout.everywhere');
   res.json({ message: 'Signed out everywhere' });
 });

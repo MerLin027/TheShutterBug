@@ -16,9 +16,14 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://theshutterbug.onrender.com";
 
 /**
- * Build an absolute API URL from a leading-slash path.
- * `apiUrl("/api/photos")` → "https://…/api/photos".
+ * The address for an API path.
+ *
+ * In the browser it is the path itself ("/api/photos"): the site proxies
+ * /api/* to the API (next.config.ts), so the Studio's httpOnly session cookie
+ * is first-party and every call is same-origin (audit F2, 2026-11-22). On
+ * the server (page data, Server Actions) it is the API's full address, which
+ * is the direct route and needs no cookie.
  */
 export function apiUrl(path: string): string {
-  return `${API_URL}${path}`;
+  return typeof window === "undefined" ? `${API_URL}${path}` : path;
 }

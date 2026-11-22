@@ -21,16 +21,6 @@ const adminUserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  // Two-step sign-in (2026-11-22, config/totp.js). The secret is stored
-  // sealed (AES-256-GCM); `totpPending` holds a new secret between setup and
-  // the first correct code. `totpLastStep` stops a code being used twice.
-  // Recovery codes are SHA-256 hashes, each removed when used. None of this
-  // is ever sent to a client.
-  totpEnabled: { type: Boolean, default: false },
-  totpSecret: { type: String, default: '' },
-  totpPending: { type: String, default: '' },
-  totpLastStep: { type: Number, default: -1 },
-  recoveryCodes: { type: [String], default: [] },
   // Signed-in sessions (2026-11-22; OWASP session management). Every token
   // names one by `sid`; middleware/auth.js refuses a token whose session is
   // gone (signed out) or idle for over a day. Kept short: at most

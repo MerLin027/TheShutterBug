@@ -3,9 +3,9 @@
 import './config/env.js';
 
 import express from 'express';
-import cors from 'cors';
 import { connectDB, dbState } from './config/db.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
+import { securityEvent } from './middleware/securityLog.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 import authRoutes from './routes/auth.js';
@@ -27,26 +27,36 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(securityHeaders);
 
-// Middleware
+// The site's own origins (audit F2, 2026-11-22).
 //
-// CORS allowlist. The deployed frontend is always allowed; localhost is added
-// only outside production so `npm run dev` can talk to this API directly.
-// Without the dev entry every client-side Studio call (upload, edit, featured
-// toggle, account save) is blocked by the browser and can only be tested
-// against a deployed build.
-//
-// No `credentials` flag — auth travels as an Authorization: Bearer header,
-// not a cookie.
-const allowedOrigins = ['https://the-shutter-bug.vercel.app'];
+// No CORS any more. The browser reaches this API only through the site's
+// own domain (next.config.ts rewrites /api/* here), so every call it makes
+// is same-origin and needs no CORS headers; without them, no other website
+// can read a response from this API in a visitor's browser. The site's own
+// pages fetch from their server, which CORS never applies to.
+const SITE_ORIGINS = ['https://the-shutter-bug.vercel.app'];
 if (process.env.NODE_ENV !== 'production') {
-  allowedOrigins.push('http://localhost:3000');
+  SITE_ORIGINS.push('http://localhost:3000');
 }
 
-// maxAge: the browser may reuse a preflight answer for 2 hours (Chrome's
-// cap). Every Studio request carries an Authorization header, so each one
-// used to send an OPTIONS round trip to Render first (2026-11-22, measured:
-// the Overview's load began with two preflights).
-app.use(cors({ origin: allowedOrigins, maxAge: 7200 }));
+// Cross-site request forgery guard. The session cookie is SameSite=Strict
+// already (config/sessions.js); as a second lock, any request that changes
+// something must come from the site itself. Browsers send Origin and
+// Sec-Fetch-Site on such requests and a page can't forge them. A request
+// with neither (a script or curl) carries no visitor's cookie, so it gains
+// nothing from this API that it couldn't do anyway.
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+app.use((req, res, next) => {
+  if (SAFE_METHODS.has(req.method)) return next();
+  const origin = req.headers.origin;
+  const fetchSite = req.headers['sec-fetch-site'];
+  if (fetchSite === 'cross-site' || fetchSite === 'same-site' || (origin && !SITE_ORIGINS.includes(origin))) {
+    securityEvent(req, 'cross_site.blocked', { method: req.method, path: req.path, origin: origin || null });
+    return res.status(403).json({ message: 'This request must come from the site itself.' });
+  }
+  next();
+});
+
 // 100 kB is far above the largest legitimate body (a 5000-character
 // message, or the About copy) and keeps oversized payloads out.
 app.use(express.json({ limit: '100kb' }));

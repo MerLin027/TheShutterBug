@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { cookies } from "next/headers";
 import { PHOTOS_TAG, SITE_CONTENT_TAG } from "@/lib/data";
 import { API_URL } from "@/lib/api";
 
@@ -28,15 +29,23 @@ import { API_URL } from "@/lib/api";
  * Gated (Phase D9). A Server Action is a public POST endpoint: anyone who
  * finds its id can call it, and before this anyone could purge the cache on
  * every public page at will. Now it acts only for a caller whose Studio
- * token the API accepts (GET /api/auth/me), and otherwise does nothing.
+ * session the API accepts (GET /api/auth/me), and otherwise does nothing.
  * Returns whether it purged.
+ *
+ * The session is the httpOnly cookie (audit F2): the browser sends it with
+ * this action's request because the site and the cookie share a domain, and
+ * it is passed on to the API here, server to server. Nothing on the page
+ * ever sees it.
  */
-export async function revalidatePublicPages(token: string | null): Promise<boolean> {
-  if (typeof token !== "string" || token.length === 0 || token.length > 2048) return false;
+const SESSION_COOKIE = "__Host-sb_session";
+
+export async function revalidatePublicPages(): Promise<boolean> {
+  const session = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!session || session.length > 4096) return false;
 
   try {
     const res = await fetch(`${API_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Cookie: `${SESSION_COOKIE}=${session}` },
       cache: "no-store",
       signal: AbortSignal.timeout(45_000),
     });

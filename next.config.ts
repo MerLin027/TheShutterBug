@@ -22,7 +22,7 @@ const API_ORIGIN = (() => {
  * - img-src allows any https: host. The About portrait is a free-text URL the
  *   owner can point anywhere (a settled decision), so a fixed host list would
  *   break it silently; images can't run code.
- * - connect-src: this site and the API only.
+ * - connect-src: this site only (the API is proxied under /api).
  * - frame-ancestors 'none': the site can't be framed (clickjacking).
  */
 const csp = [
@@ -31,7 +31,9 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self' ${API_ORIGIN}${isDev ? " http://localhost:5000 http://127.0.0.1:5000 ws: wss:" : ""}`,
+  // 'self' only: the browser reaches the API through this site's /api proxy
+  // (audit F2), never the API's own address.
+  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
   "media-src 'self'",
   "object-src 'none'",
   "frame-src 'none'",

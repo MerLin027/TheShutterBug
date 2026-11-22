@@ -9,14 +9,14 @@ import Spinner from "@/components/Spinner";
  * How many browsers hold a live session, and a button that ends all of them
  * on the server, this one included (backend/config/sessions.js).
  */
-export default function SessionsSection({ token, signOut }: { token: string; signOut: () => void }) {
+export default function SessionsSection({ signOut }: { signOut: () => void }) {
   const [count, setCount] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    fetch(apiUrl("/api/auth/sessions"), { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+    fetch(apiUrl("/api/auth/sessions"), { cache: "no-store" })
       .then(async (res) => {
         if (cancelled) return;
         if (res.status === 401) return signOut();
@@ -26,7 +26,7 @@ export default function SessionsSection({ token, signOut }: { token: string; sig
     return () => {
       cancelled = true;
     };
-  }, [token, signOut]);
+  }, [signOut]);
 
   async function signOutEverywhere() {
     setError("");
@@ -34,7 +34,6 @@ export default function SessionsSection({ token, signOut }: { token: string; sig
     try {
       const res = await fetch(apiUrl("/api/auth/logout-all"), {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok || res.status === 401) {
         signOut();

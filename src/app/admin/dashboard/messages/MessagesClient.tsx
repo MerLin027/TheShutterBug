@@ -30,7 +30,7 @@ function formatDate(iso: string) {
 
 export default function MessagesClient() {
   // Effect-based session read, not a lazy initialiser — see useAdminToken.
-  const { token, ready, signOut } = useAdminToken();
+  const { signedIn, ready, signOut } = useAdminToken();
 
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,13 +49,11 @@ export default function MessagesClient() {
   const [deleteError, setDeleteError] = useState("");
 
   const fetchMessages = useCallback(async () => {
-    if (!token) return;
+    if (!signedIn) return;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(apiUrl("/api/contact"), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(apiUrl("/api/contact"));
       if (res.status === 401) {
         signOut();
         return;
@@ -71,7 +69,7 @@ export default function MessagesClient() {
     } finally {
       setLoading(false);
     }
-  }, [token, signOut]);
+  }, [signedIn, signOut]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -85,15 +83,14 @@ export default function MessagesClient() {
   // No revalidatePublicPages() here, unlike the photo and account mutations:
   // messages are never rendered on a public page.
   async function handleDelete() {
-    if (!deletingMessage || !token) return;
+    if (!deletingMessage || !signedIn) return;
     setDeleting(true);
     setDeleteError("");
 
     try {
       const res = await fetch(apiUrl(`/api/contact/${deletingMessage._id}`), {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        });
 
       if (res.status === 401) {
         signOut();
@@ -117,7 +114,7 @@ export default function MessagesClient() {
     }
   }
 
-  if (!ready || !token) {
+  if (!ready || !signedIn) {
     return <StudioBoot />;
   }
 

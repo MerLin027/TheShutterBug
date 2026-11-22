@@ -88,8 +88,9 @@ build history**: where they disagree with this section, this section wins.
   - Login and contact are rate-limited in memory.
   - The contact form has a honeypot and length caps.
   - JWT: 7 days, HS256 pinned.
-  - Two-step sign-in (TOTP, 2026-11-22): optional, turned on in Studio → Account. Secret sealed with a key derived from JWT_SECRET (changing JWT_SECRET means re-enrolling). Locked out? `node --env-file=.env scripts/resetTwoFactor.js --apply` in backend/.
-  - Sessions (2026-11-22): every token names a session stored on the admin (`sessions`, backend/config/sessions.js). Sign out deletes it server-side; idle > 24 h ends it; 7 days max. "Sign out everywhere" is in Studio → Account. A token without a `sid` is refused, so a hand-minted test token must go through the real sign-in (test on an isolated database, never the real admin).
+  - Session (2026-11-22, audit F2): an httpOnly, Secure, SameSite=Strict cookie `__Host-sb_session` on the SITE's domain. The browser reaches the API only through the site (`next.config.ts` rewrites `/api/*` to Render; `src/proxy.ts` adds the signed visitor address for login, credentials and contact). Nothing is in localStorage; `protect` reads only the cookie (no Bearer). Each cookie's JWT names a session on the admin (`sessions`): Sign out deletes it server-side, idle > 24 h ends it, 7 days max; "Sign out everywhere" in Studio → Account. State-changing requests from another origin get 403 (server.js); no CORS at all.
+  - `PROXY_KEY` (same value in the Vercel AND Render dashboards) lets the API trust the visitor address the site's proxy passes on; without it, login/contact rate limits key on Vercel's address.
+  - Two-step sign-in was built and then removed at the owner's request (2026-11-22).
   - Security events are logged as JSON lines with `"security":true` (middleware/securityLog.js); search the Render log for them.
 - **Never give a route that redirects or 404s a `loading.tsx`.** The response streams, and the status is committed as 200 (Stage 5).
 - **CORS allows only the production site.** Vercel preview URLs show the gallery's load-failed state, and that is expected.
@@ -98,7 +99,6 @@ build history**: where they disagree with this section, this section wins.
 - Set a strong password in Studio → Account (the current one is 7 characters).
 - Upload a real hero photo and a real About portrait.
 - Star photos so Curated Work shows on Home (only starred photos appear there; there is no fallback).
-- Turn on two-step sign-in in Studio → Account and keep the recovery codes somewhere safe.
 
 ## What this is
 A personal photography portfolio website for a nature/object photographer.
