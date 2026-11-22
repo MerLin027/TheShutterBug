@@ -956,3 +956,22 @@ The owner saved `https://drive.google.com/file/d/<id>/view?usp=sharing` as the p
 The Studio About field shows the stored (rewritten) address after a save, and gains a hint: a Drive link works if the file is shared as "Anyone with the link". No new host was needed: CSP `img-src` already allows https, and the hero placeholder already came from lh3.googleusercontent.com.
 
 Verified: the rewrite unit-checked on 4 Drive link forms (plus a folder link, a normal URL and junk, all passed through unchanged); `/about` on a local build against the live API loads the portrait at 2000×2667 with no console errors, desktop and phone; `tsc`, `eslint src backend`, `next build`.
+
+## Studio: the wait on /admin (owner, 2026-11-22: "switching to /admin takes a lot of time")
+
+Measured first:
+- Signed out, `/admin` is quick: the form appears at ~0.75 s and the photo at ~1.2–1.6 s (the page never touches the API).
+- Signed in, `/admin` redirects to the Overview, which loads three API requests before drawing anything. Warm, that took ~0.2–0.45 s. With Render asleep (~30 s to wake; nothing keeps it awake, by the owner's choice), the whole Studio was a blank "Checking your session" screen for the full wake-up.
+- Every authorised request also sent a CORS preflight to Render first.
+
+Changes:
+- **The sign-in page wakes the API on open:** one plain GET to `/api/health`, so no preflight, and nothing is read. The ~30 s start-up runs while the owner types, or while the Overview is already on its way. Only in the Studio; the public site never does this.
+- **The Studio's wait screen says what's happening.** `StudioBoot` reads "Loading the Studio" once the session is known. After 3 s it adds "The server is waking up after a quiet spell. This can take up to half a minute." (Overview, Home and About use it.)
+- **CORS `maxAge: 7200`.** The browser reuses a preflight answer for 2 hours per URL, so repeat requests skip that round trip. Requests made with `cache: "no-store"` (the Overview's) don't use the preflight cache, so the saving shows on the other Studio pages.
+
+Verified locally (local build + local API on the real DB, read-only, a locally minted session):
+- Signed out, opening `/admin` sends exactly one `GET /api/health`.
+- Signed in and warm, the redirect happens at ~120 ms and the Overview fills at ~0.2 s.
+- With every API request held for 12 s, the waking note appears at 3.2 s and the Overview fills at 12.2 s.
+- On the Photographs page, a list already loaded (All) skips the preflight; each other list's first request still sends one, then it's cached.
+- `tsc`, `eslint src backend`, `next build`.

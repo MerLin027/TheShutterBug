@@ -81,7 +81,7 @@ export default function OverviewClient() {
     };
   }, [token, signOut]);
 
-  if (!ready || !token || loading) return <StudioBoot />;
+  if (!ready || !token || loading) return <StudioBoot label={ready && token ? "Loading the Studio" : undefined} />;
 
   const featured = photos?.filter((p) => p.isFeatured) ?? [];
   const byCategory = CATEGORIES.map((c) => ({ c, n: photos?.filter((p) => p.category === c).length ?? 0 })).filter(

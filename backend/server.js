@@ -42,7 +42,11 @@ if (process.env.NODE_ENV !== 'production') {
   allowedOrigins.push('http://localhost:3000');
 }
 
-app.use(cors({ origin: allowedOrigins }));
+// maxAge: the browser may reuse a preflight answer for 2 hours (Chrome's
+// cap). Every Studio request carries an Authorization header, so each one
+// used to send an OPTIONS round trip to Render first (2026-11-22, measured:
+// the Overview's load began with two preflights).
+app.use(cors({ origin: allowedOrigins, maxAge: 7200 }));
 // 100 kB is far above the largest legitimate body (a 5000-character
 // message, or the About copy) and keeps oversized payloads out.
 app.use(express.json({ limit: '100kb' }));

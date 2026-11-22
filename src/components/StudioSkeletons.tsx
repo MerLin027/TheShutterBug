@@ -1,4 +1,6 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useEffect, useState, type CSSProperties } from "react";
 
 /**
  * Loading and boot placeholders for the Studio, shaped like what's coming:
@@ -40,19 +42,39 @@ export function MessageListSkeleton() {
 }
 
 /**
- * The pre-auth screen, between mount and the localStorage token check
- * resolving. Both the server and the client's first pass render this — see
- * useAdminToken for why that matters (hydration).
+ * The Studio's full-screen wait: before the localStorage token check resolves
+ * (both the server and the client's first pass render this — see
+ * useAdminToken for why that matters for hydration), and while a page's first
+ * data loads.
+ *
+ * Render's free instance sleeps when idle and takes ~30 s to wake (measured
+ * 2026-11-21). This screen used to say "Checking your session" for all of
+ * that, which read as broken (owner, 2026-11-22: "switching to /admin takes
+ * a lot of time"). After a few seconds it now says what is happening.
+ * The timer starts in an effect, so the first render matches the server.
  */
-export function StudioBoot() {
+const WAKING_AFTER_MS = 3000;
+
+export function StudioBoot({ label = "Checking your session" }: { label?: string }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSlow(true), WAKING_AFTER_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+
   return (
     <div
       role="status"
-      className="flex h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-paper"
+      className="flex h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-paper px-6 text-center"
     >
       <p className="wordmark">The Shutter Bug</p>
       <div className="admin-spinner mt-2 !size-6" aria-hidden="true" />
-      <p className="caps">Checking your session</p>
+      <p className="caps">{label}</p>
+      {slow && (
+        <p className="msg-in max-w-xs text-label text-fg-3">
+          The server is waking up after a quiet spell. This can take up to half a minute.
+        </p>
+      )}
     </div>
   );
 }

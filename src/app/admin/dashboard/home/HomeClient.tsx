@@ -273,7 +273,7 @@ export default function HomeClient() {
   }
 
   if (!ready || !token || loading) {
-    return <StudioBoot />;
+    return <StudioBoot label={ready && token ? "Loading the Studio" : undefined} />;
   }
 
   return (

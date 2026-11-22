@@ -62,6 +62,17 @@ export default function SignInClient({
     }
   }, [initialIndex, photos.length]);
 
+  // Wake the API as soon as the sign-in page opens. Render's free instance
+  // sleeps when idle and takes ~30 s to start; started now, it wakes while
+  // the owner types, instead of after they press Sign in (or, when already
+  // signed in, it is already starting when the Overview asks for data).
+  // A plain GET with no headers: no CORS preflight, and nothing is read.
+  // Only here, in the Studio; the public site never does this (the owner
+  // declined a keep-alive, 2026-11-21).
+  useEffect(() => {
+    fetch(apiUrl("/api/health"), { cache: "no-store" }).catch(() => {});
+  }, []);
+
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
