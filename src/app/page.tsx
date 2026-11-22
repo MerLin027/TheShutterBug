@@ -5,6 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import Hero from "@/components/Hero";
 import SelectedFrames from "@/components/SelectedFrames";
 import HomeSection from "@/components/HomeSection";
+import TitleFlight from "@/components/TitleFlight";
 
 // Revalidate every 60 s (matches the fetch revalidation in data.ts).
 export const revalidate = 60;
@@ -28,6 +29,7 @@ export default async function Home() {
     <div className="flex min-h-[100dvh] flex-col bg-paper text-fg antialiased">
       <main id="main">
         <Hero image={heroImage(content)} />
+        <TitleFlight />
 
         {/* Below the hero, every section shares one shape (HomeSection):
             numbered, a hairline that draws across, a serif title on the

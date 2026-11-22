@@ -975,3 +975,19 @@ Verified locally (local build + local API on the real DB, read-only, a locally m
 - With every API request held for 12 s, the waking note appears at 3.2 s and the Overview fills at 12.2 s.
 - On the Photographs page, a list already loaded (All) skips the preflight; each other list's first request still sends one, then it's cached.
 - `tsc`, `eslint src backend`, `next build`.
+
+## Home: the title flies into the navbar (owner, 2026-11-22)
+
+The owner asked: "While the title is visible, the title on the navbar should not be there… when I scroll, the main title should flow to that position on the navbar."
+
+- On Home, the navbar wordmark carries `.wordmark-docked`: its opacity is `var(--dock, 0)`, so it is hidden at the top. Keyboard focus still shows it (`:focus-visible`).
+- `TitleFlight.tsx` (client, mounted on Home only): over the first half-screen of scroll, a fixed copy of the title travels from the hero title's live position and size to the wordmark's, eased (cubic in-out). Over the last 12 % it crossfades into the real wordmark. Scrolling back reverses it.
+- **Why a copy:** the real title is inside the hero, which clips (`hero-print`) and fades (`hero-lift`), so it can't leave it. The copy is drawn at the title's size and scaled down, so it stays crisp; both ends are read from text Ranges every frame, so it lines up on the letters.
+- The real title is only hidden while the copy is out, so its develop/safelight animation at the top is untouched. The eyebrow group fades out in the first fifth of the flight, clearing the path on phones.
+- **Reduced motion, or a title wrapped onto two lines:** no flight; the wordmark appears once the title has scrolled away.
+
+Verified on a local production build, 28/28:
+- At 1366×768, 1920×1080 and a 390 px phone: at the top the wordmark is hidden and there's no copy; at the first pixel of scroll the copy sits exactly on the title (0.0 px); at 25 / 50 / 75 % it's between; at the end it lands exactly on the wordmark (0.0 px) as they crossfade; afterwards the wordmark is shown and the copy is gone; back at the top it's reversed.
+- Navigating to Gallery leaves the wordmark visible and no copy behind; coming back to Home hides it again.
+- Keyboard focus reveals it; reduced motion gives no copy.
+- `tsc`, `eslint src`, `next build`.

@@ -811,6 +811,27 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     white-space: nowrap;
 }
 
+/* Home: the navbar wordmark is hidden while the hero title is on screen and
+   revealed as the title flies into its place (TitleFlight.tsx sets --dock,
+   0 to 1). Keyboard focus always shows it. Without JavaScript it stays
+   hidden on Home, where the hero title is the name anyway. */
+.wordmark-docked { opacity: var(--dock, 0); }
+.wordmark-docked:focus-visible { opacity: 1; }
+
+/* The travelling copy of the hero title: fixed above the header (50) and
+   below the phone menu (60). Positioned and scaled by TitleFlight. */
+.title-flight {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 55;
+    margin: 0;
+    white-space: nowrap;
+    transform-origin: 0 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
 .nav-link {
     position: relative;
     display: inline-flex;

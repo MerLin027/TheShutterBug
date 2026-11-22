@@ -62,7 +62,13 @@ export default function SiteNav() {
         aria-label="Primary"
         className="site-container relative flex h-[4.75rem] items-center justify-between"
       >
-        <Link href="/" className="wordmark" aria-current={pathname === "/" ? "page" : undefined}>
+        {/* On Home the wordmark waits for the hero title to fly into its place
+            (TitleFlight.tsx); `.wordmark-docked` hides it until then. */}
+        <Link
+          href="/"
+          className={pathname === "/" ? "wordmark wordmark-docked" : "wordmark"}
+          aria-current={pathname === "/" ? "page" : undefined}
+        >
           The Shutter Bug
         </Link>
 
