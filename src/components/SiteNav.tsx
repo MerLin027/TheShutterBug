@@ -50,7 +50,13 @@ const LINKS = [
  * back out, and the page behind can't scroll.
  */
 export default function SiteNav() {
-  const pathname = usePathname();
+  // When Vercel re-renders the cached Home page in the background, the path
+  // reads "/index", not "/". The server HTML then had the plain wordmark and
+  // no current-page mark, the browser (path "/") built the animated one, and
+  // React threw a hydration error (#418) and redrew the page on every visit
+  // (2026-11-22 audit, live only). Both spellings are Home.
+  const raw = usePathname();
+  const pathname = raw === "/index" ? "/" : raw;
   // One navbar for the whole public site, rendered by the root layout so it
   // persists across page changes (2026-11-21). Each page used to render its
   // own copy, so it was rebuilt on every navigation: nothing could animate
