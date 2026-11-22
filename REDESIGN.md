@@ -991,3 +991,6 @@ Verified on a local production build, 28/28:
 - Navigating to Gallery leaves the wordmark visible and no copy behind; coming back to Home hides it again.
 - Keyboard focus reveals it; reduced motion gives no copy.
 - `tsc`, `eslint src`, `next build`.
+- **Replaced by a fade, same day.** The owner said "nope. something like fading", and that the mouse could find the invisible wordmark ("my mouse can track where the button was on the navbar"): it was only `opacity: 0`, so it could still be hovered and clicked. `TitleFlight.tsx` was removed.
+- `.wordmark-docked` is now scroll-driven CSS (`dock-in`, `scroll(root)`, 30–55dvh). The hero already fades over 0–65dvh (hero-lift), so the two crossfade. The keyframes keep `visibility: hidden` until half-way, so the wordmark can't be hovered, clicked or tabbed to until it's at least half visible. Opacity only, so it stays on under reduced motion. Without scroll timelines (Firefox) it simply shows.
+- Verified at 1366×768 and a 390 px phone: at the top, nothing under the mouse where the wordmark sits; it's only hittable from ≥ 0.5 opacity (0.8 at 50dvh); fully shown from 60dvh; Gallery shows it at the top; reduced motion hides it at the top and shows it after scrolling.

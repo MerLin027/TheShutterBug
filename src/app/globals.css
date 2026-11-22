@@ -811,25 +811,26 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     white-space: nowrap;
 }
 
-/* Home: the navbar wordmark is hidden while the hero title is on screen and
-   revealed as the title flies into its place (TitleFlight.tsx sets --dock,
-   0 to 1). Keyboard focus always shows it. Without JavaScript it stays
-   hidden on Home, where the hero title is the name anyway. */
-.wordmark-docked { opacity: var(--dock, 0); }
-.wordmark-docked:focus-visible { opacity: 1; }
-
-/* The travelling copy of the hero title: fixed above the header (50) and
-   below the phone menu (60). Positioned and scaled by TitleFlight. */
-.title-flight {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 55;
-    margin: 0;
-    white-space: nowrap;
-    transform-origin: 0 0;
-    pointer-events: none;
-    visibility: hidden;
+/* Home: the navbar wordmark is absent while the big hero title is on screen,
+   and fades in as the title fades away on scroll (owner, 2026-11-22: "something
+   like fading"; a flying title was tried the same day and rejected).
+   `visibility` keeps it from being hovered or clicked while hidden ("my mouse
+   can track where the button was"): it only becomes visible, and clickable,
+   from half-way through its fade. Scroll-driven CSS on the same timeline as
+   the hero's own fade (hero-lift, 0–65dvh). Opacity only, so it stays on
+   under reduced motion. Browsers without scroll timelines (Firefox today)
+   simply show it, as before. */
+@supports (animation-timeline: scroll()) {
+    .wordmark-docked {
+        animation: dock-in linear both;
+        animation-timeline: scroll(root);
+        animation-range: 30dvh 55dvh;
+    }
+}
+@keyframes dock-in {
+    0%   { opacity: 0;   visibility: hidden; }
+    50%  { opacity: 0.5; visibility: hidden; }
+    100% { opacity: 1;   visibility: visible; }
 }
 
 .nav-link {

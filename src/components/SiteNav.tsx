@@ -62,8 +62,8 @@ export default function SiteNav() {
         aria-label="Primary"
         className="site-container relative flex h-[4.75rem] items-center justify-between"
       >
-        {/* On Home the wordmark waits for the hero title to fly into its place
-            (TitleFlight.tsx); `.wordmark-docked` hides it until then. */}
+        {/* On Home the wordmark fades in as the hero title fades away
+            (`.wordmark-docked`, scroll-driven CSS in globals.css). */}
         <Link
           href="/"
           className={pathname === "/" ? "wordmark wordmark-docked" : "wordmark"}
