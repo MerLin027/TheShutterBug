@@ -946,3 +946,13 @@ Verified on a local production build: `/work` at 375 / 768 / 900 / 1366 px — s
 ## Site logo removed (owner, 2026-11-22: "remove the image entirely, revert it")
 
 After four versions (photo square, photo round, a drawn mark, an enhanced round photo), the owner asked for the logo to be removed entirely. The four logo commits were reverted: the navbar is the plain "The Shutter Bug" wordmark again, and the tab icon is the original `favicon.ico`. Their log entries were removed with them. The owner's source image (`src/wp14667430.jpg`) was never committed.
+
+## About portrait: Google Drive links work (owner, 2026-11-22: "I uploaded a drive link but the photo isn't showing up")
+
+The owner saved `https://drive.google.com/file/d/<id>/view?usp=sharing` as the portrait. That address is Drive's preview page (HTML), not an image, so `<img>` showed nothing. A Drive share link (`/file/d/<id>`, `open?id=`, `uc?id=`) is now rewritten to Google's direct image address, `https://lh3.googleusercontent.com/d/<id>=w2000`. For this photo that's 2000×2667, ~500 KB, against a 2 MB original. The rewrite is in two places, which must stay in step:
+- `backend/routes/siteContent.js` (`directImageUrl`), on save;
+- `src/lib/data.ts` (`directImageUrl`), on read, so the link already stored works without re-saving.
+
+The Studio About field shows the stored (rewritten) address after a save, and gains a hint: a Drive link works if the file is shared as "Anyone with the link". No new host was needed: CSP `img-src` already allows https, and the hero placeholder already came from lh3.googleusercontent.com.
+
+Verified: the rewrite unit-checked on 4 Drive link forms (plus a folder link, a normal URL and junk, all passed through unchanged); `/about` on a local build against the live API loads the portrait at 2000×2667 with no console errors, desktop and phone; `tsc`, `eslint src backend`, `next build`.

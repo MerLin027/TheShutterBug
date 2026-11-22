@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { apiUrl } from "@/lib/api";
+import { directImageUrl } from "@/lib/data";
 import { useAdminToken } from "@/lib/useAdminToken";
 import StudioShell from "@/components/StudioShell";
 import StudioTopBar from "@/components/StudioTopBar";
@@ -75,7 +76,7 @@ export default function AboutClient() {
         // would otherwise blank the input.
         if (data.quote) setQuote(data.quote);
         if (data.bio) setBio(data.bio);
-        if (data.aboutImageUrl) setImageUrl(data.aboutImageUrl);
+        if (data.aboutImageUrl) setImageUrl(directImageUrl(data.aboutImageUrl));
       } catch {
         if (!cancelled) {
           setError("Couldn't reach the server, so the defaults are shown.");
@@ -118,6 +119,11 @@ export default function AboutClient() {
         setSaving(false);
         return;
       }
+
+      // Show what was stored: a Google Drive share link comes back rewritten
+      // to its direct image address.
+      const stored: { aboutImageUrl?: string } | null = await res.json().catch(() => null);
+      if (stored?.aboutImageUrl) setImageUrl(stored.aboutImageUrl);
 
       // Purge the cached /about (and / and /work) so the change is visible
       // immediately rather than after the 60 s ISR window. Caught separately:
@@ -204,8 +210,12 @@ export default function AboutClient() {
               onChange={(e) => setImageUrl(e.target.value)}
               disabled={saving}
               placeholder="https://"
+              aria-describedby="account-image-hint"
               className="field"
             />
+            <p id="account-image-hint" className="mt-2 text-label text-fg-3">
+              A Google Drive share link works: set the file to &ldquo;Anyone with the link&rdquo; first.
+            </p>
           </div>
 
           {error && (

@@ -332,7 +332,7 @@ export async function fetchSiteContent(): Promise<SiteContent> {
     return {
       quote: raw.quote || DEFAULT_SITE_CONTENT.quote,
       bio: raw.bio || DEFAULT_SITE_CONTENT.bio,
-      aboutImageUrl: raw.aboutImageUrl || DEFAULT_SITE_CONTENT.aboutImageUrl,
+      aboutImageUrl: directImageUrl(raw.aboutImageUrl || DEFAULT_SITE_CONTENT.aboutImageUrl),
       heroImageUrl: raw.heroImageUrl || DEFAULT_SITE_CONTENT.heroImageUrl,
       heroImages: raw.heroImages && typeof raw.heroImages === "object" ? raw.heroImages : null,
       heroImageAlt: raw.heroImageAlt || DEFAULT_SITE_CONTENT.heroImageAlt,
@@ -347,6 +347,25 @@ export async function fetchSiteContent(): Promise<SiteContent> {
     console.error("[data] GET /api/site-content threw —", err);
     return DEFAULT_SITE_CONTENT;
   }
+}
+
+/**
+ * A Google Drive share link points at Drive's preview page, not an image, so
+ * an About portrait pasted as one showed nothing (owner, 2026-11-22). Rewrite
+ * it to Google's direct image address (2000 px wide). The API does the same
+ * on save (backend/routes/siteContent.js, keep the two in step); this covers
+ * a link saved before that existed. Anything else is returned unchanged.
+ */
+export function directImageUrl(value: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return value;
+  }
+  if (url.hostname !== "drive.google.com") return value;
+  const id = url.pathname.match(/^\/file\/d\/([^/]+)/)?.[1] ?? url.searchParams.get("id");
+  return id && /^[A-Za-z0-9_-]{20,}$/.test(id) ? `https://lh3.googleusercontent.com/d/${id}=w2000` : value;
 }
 
 /** Split a stored bio into paragraphs on blank lines. */

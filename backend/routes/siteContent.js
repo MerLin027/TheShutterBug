@@ -29,6 +29,28 @@ const NOT_EMPTY = {
   heroImageAlt: 'The photograph description',
 };
 
+/**
+ * A Google Drive share link ("…/file/d/<id>/view?usp=sharing", "open?id=",
+ * "uc?id=") points at Drive's preview PAGE, not an image, so the About
+ * portrait showed nothing (owner, 2026-11-22). Rewritten to Google's direct
+ * image address, capped at 2000 px wide (~500 KB for a phone photo, vs the
+ * 2 MB original). Mirrored in src/lib/data.ts, which applies the same rewrite
+ * on read for links saved before this existed. Anything else passes through.
+ */
+const DRIVE_ID = /^[A-Za-z0-9_-]{20,}$/;
+export function directImageUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return value;
+  }
+  if (url.hostname !== 'drive.google.com') return value;
+  const fromPath = url.pathname.match(/^\/file\/d\/([^/]+)/)?.[1];
+  const id = fromPath ?? url.searchParams.get('id');
+  return id && DRIVE_ID.test(id) ? `https://lh3.googleusercontent.com/d/${id}=w2000` : value;
+}
+
 /** https: only. The About portrait is a free-text URL field. */
 function isHttpsUrl(value) {
   try {
@@ -80,7 +102,7 @@ router.put('/', protect, async (req, res) => {
   // The portrait URL is rendered as an <img src> on a public page: only an
   // https: URL may be stored (no javascript:, data:, or plain http:).
   if (update.aboutImageUrl !== undefined) {
-    update.aboutImageUrl = update.aboutImageUrl.trim();
+    update.aboutImageUrl = directImageUrl(update.aboutImageUrl.trim());
     if (!isHttpsUrl(update.aboutImageUrl)) {
       return res.status(400).json({ message: 'The portrait must be an https:// address' });
     }
