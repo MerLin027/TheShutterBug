@@ -1,12 +1,19 @@
+# Reference only. The Render service was created in the dashboard, not from
+# this Blueprint, so Render does not read this file; it mirrors the
+# dashboard's settings (checked 2026-11-22). Change the dashboard first.
 services:
   - type: web
     name: shutterbug-api
     env: node
-    # npm ci: installs exactly what backend/package-lock.json records (the
-    # versions that were tested), and --omit=dev leaves developer-only
-    # packages off the server. Node is pinned by "engines" in package.json.
-    buildCommand: cd backend && npm ci --omit=dev
-    startCommand: cd backend && npm start
+    # Render runs every command from backend/, and only changes under it
+    # trigger a deploy.
+    rootDir: backend
+    # npm ci: exactly what backend/package-lock.json records (the tested
+    # versions); --omit=dev leaves developer-only packages off the server.
+    # Node is pinned by "engines" in backend/package.json.
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
