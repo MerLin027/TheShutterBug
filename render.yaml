@@ -2,7 +2,10 @@ services:
   - type: web
     name: shutterbug-api
     env: node
-    buildCommand: cd backend && npm install
+    # npm ci: installs exactly what backend/package-lock.json records (the
+    # versions that were tested), and --omit=dev leaves developer-only
+    # packages off the server. Node is pinned by "engines" in package.json.
+    buildCommand: cd backend && npm ci --omit=dev
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
@@ -16,4 +19,8 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: JWT_SECRET
+        sync: false
+      # Same value as PROXY_KEY in the Vercel project: lets the API trust the
+      # visitor address the site's /api proxy passes on (src/proxy.ts).
+      - key: PROXY_KEY
         sync: false

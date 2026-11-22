@@ -43,14 +43,16 @@ immediately rather than after the ISR window.
 ## Tech
 
 **Frontend** — Next.js 16 (App Router, Turbopack) · React 19 · TypeScript ·
-Tailwind CSS v4 · Framer Motion · dnd-kit · deployed on Vercel
+Tailwind CSS v4 · dnd-kit · deployed on Vercel (all animation is CSS)
 
 **Backend** — Express 5 · Mongoose 9 · MongoDB Atlas · Cloudinary · JWT ·
 deployed on Render
 
 Public pages are Server Components that fetch through `src/lib/data.ts` with a
-60-second revalidation window; the Studio is client-rendered because its auth
-state lives in `localStorage`.
+60-second revalidation window, purged at once when the Studio changes
+something. The Studio is client-rendered; it asks `GET /api/auth/me` whether
+it is signed in, because the session is an httpOnly cookie that no script can
+read.
 
 ---
 
@@ -67,19 +69,34 @@ state lives in `localStorage`.
 | `POST` | `/api/contact` | public |
 | `GET` | `/api/contact` | admin |
 | `DELETE` | `/api/contact/:id` | admin |
-| `POST` | `/api/auth/login` | public |
+| `POST` | `/api/auth/login` | public — sets the session cookie |
+| `GET` | `/api/auth/me` | admin — who is signed in |
+| `PUT` | `/api/auth/credentials` | admin — change email/password (current password required) |
+| `GET` | `/api/auth/sessions` | admin — how many browsers are signed in |
+| `POST` | `/api/auth/logout` | admin — ends this session on the server |
+| `POST` | `/api/auth/logout-all` | admin — ends every session |
 | `GET` | `/api/site-content` | public |
 | `PUT` | `/api/site-content` | admin |
-| `GET` | `/api/health` | public — no DB call, used by the keep-alive ping |
+| `POST` | `/api/site-content/hero` | admin — multipart, fields `image`, `alt` |
+| `GET` | `/api/site-content/hero/download` | admin — 5-minute private link to the stored hero |
+| `GET` | `/api/health` | public — no DB call; reports the DB connection state |
 
-Admin routes take `Authorization: Bearer <token>`. There is no public
-registration route, by design — the single admin is seeded from the CLI.
+**Sessions.** The browser reaches the API through the site's own domain:
+`next.config.ts` rewrites `/api/*` to the Render service, so the session can
+be an `__Host-` cookie that is `HttpOnly`, `Secure` and `SameSite=Strict`. It
+is never in a response body or in browser storage, and `Authorization: Bearer`
+headers are not accepted. Each session is recorded on the server: signing out
+ends it at once, a day without use ends it, and it lasts 7 days at most. Any
+request that changes something must come from the site itself (other origins
+get 403), and the API sends no CORS headers, so no other website can read its
+responses. There is no public registration route, by design: the single
+admin is seeded from the CLI.
 
 ---
 
 ## Running it locally
 
-You'll need Node 20+, a MongoDB Atlas connection string, and a Cloudinary
+You'll need Node 22, a MongoDB Atlas connection string, and a Cloudinary
 account.
 
 ### Backend
@@ -104,8 +121,12 @@ CLOUDINARY_CLOUD_NAME=<...>
 CLOUDINARY_API_KEY=<...>
 CLOUDINARY_API_SECRET=<...>
 
+# Only for scripts/seedAdmin.js; don't keep these in a hosted dashboard.
 ADMIN_EMAIL=<...>
 ADMIN_PASSWORD=<...>
+
+# Optional locally; required on Render (same value as on Vercel).
+PROXY_KEY=<a long random string>
 ```
 
 `MONGODB_URI` and `JWT_SECRET` are required — the server exits at boot without
@@ -133,10 +154,11 @@ npm run dev              # http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-> If `.env.local` points at the deployed API, a real environment variable
-> overrides it — `NEXT_PUBLIC_API_URL=http://localhost:5000 npm run dev` — which
-> is the quickest way to exercise the Studio against a local backend. CORS
-> allows `localhost:3000` only when `NODE_ENV` isn't `production`.
+> The site proxies `/api/*` to `NEXT_PUBLIC_API_URL`, so the Studio works
+> against a local backend with no extra setup. A real environment variable
+> overrides `.env.local`: `NEXT_PUBLIC_API_URL=http://localhost:5000 npm run dev`.
+> The backend accepts state-changing requests from `http://localhost:3000`
+> only when `NODE_ENV` isn't `production`.
 
 ### Checks
 
@@ -189,8 +211,12 @@ Two things worth knowing:
 
 - **Environment variables on both hosts are set in their dashboards.** A git push
   cannot carry a credential change to production.
-- **Render's free tier idles.** An external cron ping to `/api/health` every 10
-  minutes keeps it warm; a cold start still takes tens of seconds.
+- **`PROXY_KEY` must hold the same value on Vercel and Render.** The site's
+  proxy (`src/proxy.ts`) passes on the visitor's address with it, and the API
+  only trusts that address (for its rate limits) when the key matches.
+- **Render's free tier idles.** Nothing keeps it awake, so the first request
+  after ~15 quiet minutes waits for a cold start (up to about 30 seconds); the
+  Studio and the contact form say so while they wait.
 
 ---
 

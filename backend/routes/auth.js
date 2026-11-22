@@ -10,6 +10,13 @@ import { startSession, setSessionCookie, clearSessionCookie, TOKEN_LIFETIME } fr
 
 const router = express.Router();
 
+// Every answer here is about a session (it sets, reads or clears the cookie),
+// so none may be cached (S2, as in middleware/auth.js).
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, private');
+  next();
+});
+
 // The session is a JWT in an httpOnly, Secure, SameSite=Strict cookie
 // (audit F2, 2026-11-22; config/sessions.js). It used to be returned in the
 // response body and kept in localStorage, where any script on the page could

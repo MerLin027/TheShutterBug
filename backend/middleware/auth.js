@@ -35,6 +35,13 @@ async function sessionAlive(user, sid) {
  * script could hold is exactly what this change removed.
  */
 export const protect = async (req, res, next) => {
+  // Nothing behind sign-in may be kept by any cache, browser or shared
+  // (2026-11-22 system audit, S2): with no header of its own, a response
+  // went out as Vercel's default "Cache-Control: public", which lets a
+  // shared cache store, say, the messages list. Set first, so the 401s carry
+  // it too.
+  res.set('Cache-Control', 'no-store, private');
+
   const token = readSessionCookie(req);
   if (!token) {
     return res.status(401).json({ message: 'Not signed in' });
