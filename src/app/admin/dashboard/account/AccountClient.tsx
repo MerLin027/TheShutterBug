@@ -8,6 +8,7 @@ import StudioTopBar from "@/components/StudioTopBar";
 import Spinner from "@/components/Spinner";
 import { StudioBoot } from "@/components/StudioSkeletons";
 import TwoStepSection from "./TwoStepSection";
+import SessionsSection from "./SessionsSection";
 
 /** In step with PASSWORD_MIN in backend/routes/auth.js. */
 const PASSWORD_MIN = 12;
@@ -242,6 +243,8 @@ export default function AccountClient() {
         </form>
 
         <TwoStepSection token={token} email={email} signOut={signOut} updateSession={updateSession} />
+
+        <SessionsSection token={token} signOut={signOut} />
       </div>
     </StudioShell>
   );

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
 // useAdminToken — the Studio's session, read once and shared.
@@ -39,8 +40,17 @@ type AdminSession = {
   email: string;
   /** False until the localStorage read has happened on the client. */
   ready: boolean;
-  /** Clear both keys and return to the login page. */
+  /**
+   * Clear both keys and return to the login page. Local only: for when the
+   * server has already refused the token (a 401), so there is nothing to end.
+   */
   signOut: () => void;
+  /**
+   * The Sign out button: end this session ON THE SERVER first (the token is
+   * dead from then on, even if copied), then sign out locally. Signs out
+   * locally even if the server can't be reached.
+   */
+  endSession: () => Promise<void>;
   /** Store a fresh token and email (after a credentials change). */
   updateSession: (token: string, email: string) => void;
 };
@@ -83,11 +93,28 @@ export function useAdminToken(
     router.replace("/admin");
   }, [router]);
 
+  const endSession = useCallback(async () => {
+    const token = localStorage.getItem("admin_token");
+    if (token) {
+      try {
+        await fetch(apiUrl("/api/auth/logout"), {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true,
+          signal: AbortSignal.timeout(8000),
+        });
+      } catch {
+        /* unreachable: still sign out here; the session idles out in a day */
+      }
+    }
+    signOut();
+  }, [signOut]);
+
   const updateSession = useCallback((token: string, email: string) => {
     localStorage.setItem("admin_token", token);
     localStorage.setItem("admin_email", email);
     setSession({ token, email, ready: true });
   }, []);
 
-  return { ...session, signOut, updateSession };
+  return { ...session, signOut, endSession, updateSession };
 }

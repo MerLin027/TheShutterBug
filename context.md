@@ -89,6 +89,7 @@ build history**: where they disagree with this section, this section wins.
   - The contact form has a honeypot and length caps.
   - JWT: 7 days, HS256 pinned.
   - Two-step sign-in (TOTP, 2026-11-22): optional, turned on in Studio → Account. Secret sealed with a key derived from JWT_SECRET (changing JWT_SECRET means re-enrolling). Locked out? `node --env-file=.env scripts/resetTwoFactor.js --apply` in backend/.
+  - Sessions (2026-11-22): every token names a session stored on the admin (`sessions`, backend/config/sessions.js). Sign out deletes it server-side; idle > 24 h ends it; 7 days max. "Sign out everywhere" is in Studio → Account. A token without a `sid` is refused, so a hand-minted test token must go through the real sign-in (test on an isolated database, never the real admin).
   - Security events are logged as JSON lines with `"security":true` (middleware/securityLog.js); search the Render log for them.
 - **Never give a route that redirects or 404s a `loading.tsx`.** The response streams, and the status is committed as 200 (Stage 5).
 - **CORS allows only the production site.** Vercel preview URLs show the gallery's load-failed state, and that is expected.

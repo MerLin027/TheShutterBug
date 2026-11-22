@@ -30,7 +30,20 @@ const adminUserSchema = new mongoose.Schema({
   totpSecret: { type: String, default: '' },
   totpPending: { type: String, default: '' },
   totpLastStep: { type: Number, default: -1 },
-  recoveryCodes: { type: [String], default: [] }
+  recoveryCodes: { type: [String], default: [] },
+  // Signed-in sessions (2026-11-22; OWASP session management). Every token
+  // names one by `sid`; middleware/auth.js refuses a token whose session is
+  // gone (signed out) or idle for over a day. Kept short: at most
+  // MAX_SESSIONS in config/sessions.js, pruned on each sign-in.
+  sessions: {
+    type: [{
+      _id: false,
+      sid: { type: String, required: true },
+      createdAt: { type: Date, required: true },
+      lastSeen: { type: Date, required: true },
+    }],
+    default: [],
+  }
 }, { timestamps: true });
 
 export default mongoose.model('AdminUser', adminUserSchema);

@@ -12,6 +12,7 @@ import {
 } from '../middleware/rateLimit.js';
 import { securityEvent } from '../middleware/securityLog.js';
 import { EMAIL_REGEX } from '../models/Contact.js';
+import { startSession } from '../config/sessions.js';
 import {
   generateSecret,
   verifyCode,
@@ -35,9 +36,13 @@ const TOKEN_LIFETIME = '7d';
 
 // Generate JWT. HS256 is pinned on both sides (here and in middleware/auth.js)
 // so a token can't name a different algorithm.
-// `v` is the account's tokenVersion at issue time (see models/AdminUser.js).
-const generateToken = (user) => {
-  return jwt.sign({ id: user._id, v: user.tokenVersion ?? 0 }, process.env.JWT_SECRET, {
+// `v` is the account's tokenVersion at issue time (see models/AdminUser.js);
+// `sid` names the session (config/sessions.js), which signing out deletes.
+// Starts a session on `user` and SAVES it, so call it last.
+const issueSession = async (user, { only = false } = {}) => {
+  const sid = startSession(user, { only });
+  await user.save();
+  return jwt.sign({ id: user._id, v: user.tokenVersion ?? 0, sid }, process.env.JWT_SECRET, {
     algorithm: 'HS256',
     expiresIn: TOKEN_LIFETIME,
   });
@@ -143,11 +148,12 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 
   securityEvent(req, 'login.succeeded', { secondStep: false });
+  const token = await issueSession(user);
   // passwordHash is never included in the response.
   res.json({
     _id: user._id,
     email: user.email,
-    token: generateToken(user),
+    token,
   });
 });
 
@@ -189,7 +195,7 @@ router.post('/login/verify', codeLimiter, async (req, res) => {
     securityEvent(req, 'login.code_failed');
     return res.status(401).json({ message: "That code didn't work. Check your app and try again." });
   }
-  await user.save();
+  const token = await issueSession(user); // also saves the used code / step
 
   if (used === 'recovery') {
     securityEvent(req, '2fa.recovery_code_used', { left: user.recoveryCodes.length });
@@ -198,7 +204,7 @@ router.post('/login/verify', codeLimiter, async (req, res) => {
   res.json({
     _id: user._id,
     email: user.email,
-    token: generateToken(user),
+    token,
     ...(used === 'recovery' ? { recoveryCodesLeft: user.recoveryCodes.length } : {}),
   });
 });
@@ -282,8 +288,10 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
   if (emailChanged) user.email = nextEmail;
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
 
+  // A credentials change ends every other session; this one gets a fresh one.
+  let token;
   try {
-    await user.save();
+    token = await issueSession(user, { only: true });
   } catch (err) {
     if (err?.code === 11000) {
       return res.status(409).json({ message: 'That email is already in use' });
@@ -295,7 +303,7 @@ router.put('/credentials', credentialsLimiter, protect, async (req, res) => {
     changed: [emailChanged && 'email', passwordChanged && 'password'].filter(Boolean).join(' + '),
   });
 
-  res.json({ email: user.email, token: generateToken(user) });
+  res.json({ email: user.email, token });
 });
 
 // -- Two-step sign-in management (Studio -> Account) --------------------------
@@ -371,11 +379,11 @@ router.post('/2fa/enable', credentialsLimiter, protect, async (req, res) => {
   user.totpLastStep = step;
   user.recoveryCodes = recoveryCodes.map(hashRecoveryCode);
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
-  await user.save();
+  const token = await issueSession(user, { only: true });
 
   securityEvent(req, '2fa.enabled');
   // The recovery codes are shown once and never again (only hashes are kept).
-  res.json({ enabled: true, recoveryCodes, token: generateToken(user) });
+  res.json({ enabled: true, recoveryCodes, token });
 });
 
 // @route   POST /api/auth/2fa/disable
@@ -398,10 +406,38 @@ router.post('/2fa/disable', credentialsLimiter, protect, async (req, res) => {
   user.totpLastStep = -1;
   user.recoveryCodes = [];
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
-  await user.save();
+  const token = await issueSession(user, { only: true });
 
   securityEvent(req, '2fa.disabled');
-  res.json({ enabled: false, token: generateToken(user) });
+  res.json({ enabled: false, token });
+});
+
+// -- Sessions ------------------------------------------------------------------
+
+// @route   GET /api/auth/sessions
+// @desc    How many browsers are signed in (for Studio -> Account)
+// @access  Private
+router.get('/sessions', protect, async (req, res) => {
+  const user = await AdminUser.findById(req.user._id).select('sessions');
+  res.json({ count: user?.sessions?.length ?? 0 });
+});
+
+// @route   POST /api/auth/logout
+// @desc    Sign out: delete this session on the server, so the token is dead
+// @access  Private
+router.post('/logout', protect, async (req, res) => {
+  await AdminUser.updateOne({ _id: req.user._id }, { $pull: { sessions: { sid: req.sessionId } } });
+  securityEvent(req, 'logout');
+  res.json({ message: 'Signed out' });
+});
+
+// @route   POST /api/auth/logout-all
+// @desc    Sign out everywhere: every session, this one included
+// @access  Private
+router.post('/logout-all', protect, async (req, res) => {
+  await AdminUser.updateOne({ _id: req.user._id }, { $set: { sessions: [] }, $inc: { tokenVersion: 1 } });
+  securityEvent(req, 'logout.everywhere');
+  res.json({ message: 'Signed out everywhere' });
 });
 
 // There is deliberately no POST /register route.

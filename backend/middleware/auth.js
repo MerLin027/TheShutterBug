@@ -1,9 +1,28 @@
 import jwt from 'jsonwebtoken';
 import AdminUser from '../models/AdminUser.js';
 import { securityEvent } from './securityLog.js';
+import { SESSION_IDLE_MS, SEEN_WRITE_INTERVAL_MS } from '../config/sessions.js';
 
 /** Never loaded into req.user: hashes and two-step secrets. */
 const HIDDEN = '-passwordHash -totpSecret -totpPending -recoveryCodes';
+
+/**
+ * The token's session must still exist and have been used within the last
+ * day. Signing out deletes it, so a copied token stops working at once
+ * (it used to stay valid for up to 7 days after "Sign out"). Use keeps it
+ * alive: lastSeen is refreshed, at most every few minutes to spare the DB.
+ */
+async function sessionAlive(req, user, sid) {
+  if (typeof sid !== 'string') return 'no session id (issued before sessions existed)';
+  const session = user.sessions?.find((s) => s.sid === sid);
+  if (!session) return 'signed out';
+  const idle = Date.now() - new Date(session.lastSeen).getTime();
+  if (idle > SESSION_IDLE_MS) return 'idle for over a day';
+  if (idle > SEEN_WRITE_INTERVAL_MS) {
+    await AdminUser.updateOne({ _id: user._id, 'sessions.sid': sid }, { $set: { 'sessions.$.lastSeen': new Date() } });
+  }
+  return null;
+}
 
 export const protect = async (req, res, next) => {
   let token;
@@ -48,6 +67,13 @@ export const protect = async (req, res, next) => {
     securityEvent(req, 'token.rejected', { reason: 'signed out by a credentials change' });
     return res.status(401).json({ message: 'Not authorized, session ended' });
   }
+
+  const ended = await sessionAlive(req, req.user, decoded.sid);
+  if (ended) {
+    securityEvent(req, 'token.rejected', { reason: ended });
+    return res.status(401).json({ message: 'Not authorized, session ended' });
+  }
+  req.sessionId = decoded.sid;
 
   return next();
 };

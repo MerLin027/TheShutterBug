@@ -54,7 +54,8 @@ export default function StudioShell({ children }: { children: ReactNode }) {
   // Sign-out lives in useAdminToken alongside the read, so "what counts as a
   // session" is defined in one place. redirectWhenMissing is off because the
   // page inside this shell already owns that guard — two copies would race.
-  const { signOut } = useAdminToken({ redirectWhenMissing: false });
+  // endSession, not signOut: the button ends the session on the server too.
+  const { endSession } = useAdminToken({ redirectWhenMissing: false });
 
   return (
     <div className="min-h-[100dvh] bg-paper text-fg antialiased">
@@ -96,7 +97,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
               </Link>
             </li>
             <li>
-              <button type="button" onClick={signOut} className="studio-nav-row w-full">
+              <button type="button" onClick={() => void endSession()} className="studio-nav-row w-full">
                 <LogOut size={18} aria-hidden="true" />
                 Sign out
               </button>
@@ -112,7 +113,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
           pathname={pathname}
           open={menuOpen}
           onOpenChange={setMenuOpen}
-          onSignOut={signOut}
+          onSignOut={() => void endSession()}
         />
 
         <main id="main" className="relative h-full flex-1 overflow-y-auto overflow-x-hidden md:ml-64">
