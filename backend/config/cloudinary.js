@@ -92,9 +92,14 @@ export function privateDownloadUrl(publicId, type, format) {
 // Uploads
 // ---------------------------------------------------------------------------
 
-// 25 MB clears a full-frame JPEG comfortably. Without a limit, a single
-// request could stream unbounded data into memory and on to Cloudinary.
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+// The Cloudinary account is on the Free plan, which refuses any image over
+// 10 MB. This was 25 MB, so a bigger file passed
+// every check here and then failed at Cloudinary as a bare "Server Error"
+// (2026-11-22, owner report; plan limits read from the usage API). Raise it
+// only if the plan changes. Without a limit, a single request could stream
+// unbounded data into memory.
+export const MAX_UPLOAD_MB = 10;
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 // Rejecting on mimetype fails on the first chunk, with a message worth
 // reading, instead of after the whole body has reached Cloudinary.
@@ -110,7 +115,7 @@ function fileFilter(req, file, cb) {
 // Memory storage, then an explicit Cloudinary upload in the route (via
 // uploadImage below). This replaced multer-storage-cloudinary (unmaintained
 // since 2020, and pinned to the Cloudinary v1 SDK, which has a known
-// vulnerability). Holding one ≤25 MB file in memory is fine on Render.
+// vulnerability). Holding one ≤10 MB file in memory is fine on Render.
 export const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,

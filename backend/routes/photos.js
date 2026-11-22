@@ -124,7 +124,7 @@ router.post('/', protect, upload.single('image'), async (req, res, next) => {
   }
 
   // Check what the schema would reject BEFORE the upload. These used to fail
-  // only at Photo.create, after the whole file (up to 25 MB) had gone to
+  // only at Photo.create, after the whole file (up to 10 MB) had gone to
   // Cloudinary, which then had to be deleted again, and an asset was
   // orphaned whenever that delete failed (2026-11-21 audit). The hero route
   // checks its alt text first for the same reason.

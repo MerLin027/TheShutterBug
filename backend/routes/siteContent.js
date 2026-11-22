@@ -143,7 +143,7 @@ router.put('/', protect, async (req, res) => {
 //
 // `protect` before `upload` is load-bearing: reversed, an unauthenticated
 // request would stream its body into Cloudinary storage before being
-// rejected. The upload middleware enforces image-only and 25 MB.
+// rejected. The upload middleware enforces image-only and 10 MB.
 router.post('/hero', protect, upload.single('image'), async (req, res, next) => {
   if (!req.file) {
     return res.status(400).json({ message: 'Please choose an image file' });

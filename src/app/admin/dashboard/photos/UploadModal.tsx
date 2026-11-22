@@ -16,13 +16,13 @@ import { CloudUpload } from "lucide-react";
 
 /**
  * Client-side ceiling, in step with MAX_UPLOAD_BYTES in
- * backend/config/cloudinary.js (25 MB). Change the two together: the client
- * used to refuse anything over 10 MB while the server accepted 25, so a
- * 12 MB frame the API would take never left the browser.
+ * backend/config/cloudinary.js (10 MB, the Cloudinary Free plan's own cap).
+ * Change the two together. Both were 25 MB until 2026-11-22, and a file
+ * between 10 and 25 MB was refused by Cloudinary as a bare "Server Error".
  *
  * This is UX only. The server limit is the one that enforces anything.
  */
-const MAX_FILE_SIZE_MB = 25;
+const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type Props = {
@@ -139,7 +139,8 @@ export default function UploadModal({
     // (2026-11-21 audit).
     let aspectRatio: number;
     try {
-      aspectRatio = await getAspectRatio(file);
+      const { width, height } = await getDimensions(file);
+      aspectRatio = width / height;
     } catch {
       setError("This browser can't read that image. Export it as JPEG, PNG or WebP and try again.");
       setUploading(false);
@@ -307,13 +308,13 @@ export default function UploadModal({
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
-/** Read an image file and return width/height ratio. */
-function getAspectRatio(file: File): Promise<number> {
+/** Read an image file's pixel size. */
+function getDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(img.src);
-      resolve(img.naturalWidth / img.naturalHeight);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
     };
     img.onerror = () => {
       // Release the copy on failure too; only onload did.

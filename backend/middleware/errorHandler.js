@@ -45,8 +45,25 @@ export const errorHandler = (err, req, res, next) => {
   if (err.name === 'MulterError') {
     const message =
       err.code === 'LIMIT_FILE_SIZE'
-        ? 'Image is too large — maximum size is 25 MB'
+        ? 'Image is too large — maximum size is 10 MB'
         : `Upload failed — ${err.code}`;
+    return res.status(400).json({ message });
+  }
+
+  // Cloudinary refused the file (its errors carry `http_code`, not
+  // `status`). These are about the image, so say so instead of answering a
+  // bare 500: the plan caps size and resolution (config/cloudinary.js).
+  if (err.http_code && err.http_code >= 400 && err.http_code < 500) {
+    const text = String(err.message || '');
+    let message = "The image host didn't accept this file. Try exporting it as a JPEG.";
+    if (/file size too large/i.test(text)) {
+      message = 'Image is too large — maximum size is 10 MB. Export a smaller JPEG and try again.';
+    } else if (/resolution|megapixel|too large/i.test(text)) {
+      message = 'Image resolution is too high — maximum is 25 megapixels (for example 6000 × 4000). Export it smaller and try again.';
+    } else if (/invalid image|unsupported|format/i.test(text)) {
+      message = "The image host couldn't read this file. Export it as a JPEG, PNG or WebP and try again.";
+    }
+    console.error('[cloudinary] upload refused:', text);
     return res.status(400).json({ message });
   }
 

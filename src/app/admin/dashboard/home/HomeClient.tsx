@@ -16,7 +16,7 @@ import { revalidatePublicPages } from "../../actions";
 /** In step with backend/models/SiteContent.js and config/cloudinary.js. */
 const STATEMENT_MAX = 1000;
 const ALT_MAX = 300;
-const MAX_FILE_MB = 25;
+const MAX_FILE_MB = 10;
 
 /** The preview URL for the hero as the API sends it: a signed display size
  *  for an uploaded hero (Phase D10), or the placeholder's own URL. */
