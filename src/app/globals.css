@@ -811,26 +811,80 @@ select.field option { background: var(--color-card); color: var(--color-fg); }
     white-space: nowrap;
 }
 
-/* Home: the navbar wordmark is absent while the big hero title is on screen,
-   and fades in as the title fades away on scroll (owner, 2026-11-22: "something
-   like fading"; a flying title was tried the same day and rejected).
-   `visibility` keeps it from being hovered or clicked while hidden ("my mouse
-   can track where the button was"): it only becomes visible, and clickable,
-   from half-way through its fade. Scroll-driven CSS on the same timeline as
-   the hero's own fade (hero-lift, 0–65dvh). Opacity only, so it stays on
-   under reduced motion. Browsers without scroll timelines (Firefox today)
-   simply show it, as before. */
+/* Home: the navbar wordmark is absent while the hero is on screen, and
+   "develops" into place only once the hero has gone (owner, 2026-11-22:
+   "slower fade in… fully appears only after the enter gallery button
+   disappears… a cool animation, elegant though"; a flying title and a plain
+   fade were tried first).
+
+   The hero fades over 0–65dvh of scroll (hero-lift). The wordmark's letters
+   surface one after another from 62dvh (the hero nearly gone), each from a soft, warm, slightly low
+   blur to the sharp paper-white print, while the tracking draws in like a
+   lens racking into focus. It is the hero title's own develop / focus-pull /
+   safelight, scaled to the navbar. The last letter settles at ~112dvh, well after
+   "Enter the gallery" has gone. Scroll-driven, so it reverses on the way up.
+
+   At the very top it is visibility: hidden (no invisible link to find), and
+   it can't be hovered or clicked until it is mostly there ("my mouse can
+   track where the button was"). Reduced motion:
+   the letters only fade. Browsers without scroll timelines (Firefox today)
+   simply show it. Letters are spans (SiteNav, on "/" only) inside one
+   `.wordmark-text`, because the phone wordmark is a flex box and loose
+   inline-blocks would lose the spaces. */
+.wordmark-text .wm-char { display: inline-block; }
 @supports (animation-timeline: scroll()) {
+    /* Start and end of the whole reveal. On a long page, 62dvh and 112dvh of
+       scroll. A percentage here is of the page's total scroll, so min() makes
+       a short page (an empty gallery, a tall screen) finish by the bottom
+       instead of stopping half-developed (it then starts at 75% of the page,
+       once the hero is nearly gone). Each letter takes half the span, the last
+       ending at 92% so it is fully sharp before the bottom; staggered evenly
+       across the 13 letters. */
     .wordmark-docked {
+        --dock-from: min(62dvh, 75%);
+        --dock-to: min(112dvh, 100%);
+        --dock-span: calc(var(--dock-to) - var(--dock-from));
         animation: dock-in linear both;
         animation-timeline: scroll(root);
-        animation-range: 30dvh 55dvh;
+        animation-range: var(--dock-from) var(--dock-to);
+    }
+    .wordmark-docked .wm-char {
+        animation: dock-letter linear both;
+        animation-timeline: scroll(root);
+        animation-range:
+            calc(var(--dock-from) + var(--dock-span) * var(--i) * 0.035)
+            calc(var(--dock-from) + var(--dock-span) * (0.5 + var(--i) * 0.035));
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .wordmark-docked { animation-name: dock-in-plain; }
+        .wordmark-docked .wm-char { animation-name: dock-letter-plain; }
     }
 }
+/* Visible from the first moment, so the slow start of the reveal is seen;
+   pointer-events (discrete) keep the mouse from catching the link until ~60%,
+   when most letters are in. Hidden only at the very top, so there is no
+   invisible link there at all. */
 @keyframes dock-in {
-    0%   { opacity: 0;   visibility: hidden; }
-    50%  { opacity: 0.5; visibility: hidden; }
-    100% { opacity: 1;   visibility: visible; }
+    0%   { visibility: hidden; pointer-events: none; letter-spacing: 0.24em; }
+    2%   { visibility: visible; }
+    60%  { pointer-events: none; }
+    62%  { pointer-events: auto; }
+    100% { visibility: visible; pointer-events: auto; letter-spacing: 0.005em; }
+}
+@keyframes dock-letter {
+    0%   { opacity: 0; transform: translateY(0.35em); filter: blur(7px) brightness(1.8); color: #f4d2a8; }
+    55%  { opacity: 1; filter: blur(1.5px) brightness(1.15); color: #f2dcc0; }
+    100% { opacity: 1; transform: none; filter: none; color: var(--color-fg); }
+}
+@keyframes dock-in-plain {
+    0%   { visibility: hidden; pointer-events: none; }
+    2%   { visibility: visible; }
+    60%  { pointer-events: none; }
+    62%, 100% { visibility: visible; pointer-events: auto; }
+}
+@keyframes dock-letter-plain {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .nav-link {

@@ -4,6 +4,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
+/**
+ * The wordmark as letter spans, for Home only, where it "develops" into place
+ * as the hero scrolls away (`.wordmark-docked` in globals.css). One wrapper
+ * span, so the phone wordmark (a flex box) keeps the spaces between words.
+ */
+function WordmarkLetters() {
+  let n = 0;
+  return (
+    <span className="wordmark-text">
+      {"The Shutter Bug".split(" ").map((word, w) => (
+        <span key={word}>
+          {w > 0 && " "}
+          {[...word].map((ch) => {
+            const i = n++;
+            return (
+              <span key={i} className="wm-char" style={{ "--i": i } as CSSProperties}>
+                {ch}
+              </span>
+            );
+          })}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const LINKS = [
   { href: "/work", label: "Gallery" },
   { href: "/about", label: "About" },
@@ -69,7 +95,7 @@ export default function SiteNav() {
           className={pathname === "/" ? "wordmark wordmark-docked" : "wordmark"}
           aria-current={pathname === "/" ? "page" : undefined}
         >
-          The Shutter Bug
+          {pathname === "/" ? <WordmarkLetters /> : "The Shutter Bug"}
         </Link>
 
         <ul className="hidden items-center gap-9 sm:flex">
